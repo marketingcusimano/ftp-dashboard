@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import express from 'express';
-import { Client } from 'basic-ftp';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -9,20 +8,37 @@ import { parse } from 'csv-parse/sync';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static('public', { maxAge: 0 }));
+// Serve statici da /public se esiste, altrimenti dalla root
+const staticDir = fs.existsSync('public') ? 'public' : '.';
+app.use(express.static(staticDir, { maxAge: 0 }));
+
+// Home -> index.html
+app.get('/', (req, res) => {
+  const file = path.join(process.cwd(), staticDir, 'index.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  res.status(404).send('index.html non trovato');
+});
+
+// Healthcheck
+app.get('/healthz', (_, res) => res.send('ok'));
 
 async function fetchCsvFromFtp() {
-  const client = new Client(Number(process.env.FTP_TIMEOUT || 15000));
+  const { FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE, FTP_SECURE, FTP_TIMEOUT } = process.env;
+  if (!FTP_HOST || !FTP_USER || !FTP_PASS || !FTP_FILE) {
+    throw new Error('Variabili FTP mancanti. Imposta FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE.');
+  }
+  const { Client } = await import('basic-ftp');
+  const client = new Client(Number(FTP_TIMEOUT || 15000));
   client.ftp.verbose = false;
   const tmpFile = path.join(os.tmpdir(), `generalb2b_${Date.now()}.csv`);
   try {
     await client.access({
-      host: process.env.FTP_HOST,
-      user: process.env.FTP_USER,
-      password: process.env.FTP_PASS,
-      secure: String(process.env.FTP_SECURE).toLowerCase() === 'true',
+      host: FTP_HOST,
+      user: FTP_USER,
+      password: FTP_PASS,
+      secure: String(FTP_SECURE).toLowerCase() === 'true',
     });
-    await client.downloadTo(tmpFile, process.env.FTP_FILE);
+    await client.downloadTo(tmpFile, FTP_FILE);
     const csvBuffer = fs.readFileSync(tmpFile);
     const records = parse(csvBuffer, { columns: true, skip_empty_lines: true, trim: true });
     return records;
@@ -32,7 +48,7 @@ async function fetchCsvFromFtp() {
   }
 }
 
-app.get('/data', async (req, res) => {
+app.get('/data', async (_req, res) => {
   try {
     const data = await fetchCsvFromFtp();
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -48,4 +64,6 @@ app.get('/data', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server avviato su http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server avviato su http://0.0.0.0:${PORT}`);
+});
