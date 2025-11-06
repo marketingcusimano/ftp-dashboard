@@ -8,37 +8,43 @@ import { parse } from 'csv-parse/sync';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve statici da /public se esiste, altrimenti dalla root
+// Static dir (public se esiste, altrimenti root)
 const staticDir = fs.existsSync('public') ? 'public' : '.';
 app.use(express.static(staticDir, { maxAge: 0 }));
 
-// Home -> index.html
 app.get('/', (req, res) => {
   const file = path.join(process.cwd(), staticDir, 'index.html');
   if (fs.existsSync(file)) return res.sendFile(file);
   res.status(404).send('index.html non trovato');
 });
 
-// Healthcheck
 app.get('/healthz', (_, res) => res.send('ok'));
 
 async function fetchCsvFromFtp() {
-  const { FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE, FTP_SECURE, FTP_TIMEOUT } = process.env;
+  const { FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE, FTP_SECURE, FTP_TIMEOUT, FTP_TLS_INSECURE, FTP_TLS_SERVERNAME } = process.env;
   if (!FTP_HOST || !FTP_USER || !FTP_PASS || !FTP_FILE) {
     throw new Error('Variabili FTP mancanti. Imposta FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE.');
   }
+
   const { Client } = await import('basic-ftp');
   const client = new Client(Number(FTP_TIMEOUT || 15000));
   client.ftp.verbose = false;
-  const tmpFile = path.join(os.tmpdir(), `generalb2b_${Date.now()}.csv`);
+  const tmpFile = '/tmp/generalb2b_' + Date.now() + '.csv';
+
   try {
     await client.access({
       host: FTP_HOST,
       user: FTP_USER,
       password: FTP_PASS,
       secure: String(FTP_SECURE).toLowerCase() === 'true',
+      secureOptions: {
+        rejectUnauthorized: String(FTP_TLS_INSECURE).toLowerCase() === 'true' ? false : true,
+        servername: FTP_TLS_SERVERNAME || FTP_HOST
+      }
     });
+
     await client.downloadTo(tmpFile, FTP_FILE);
+
     const csvBuffer = fs.readFileSync(tmpFile);
     const records = parse(csvBuffer, { columns: true, skip_empty_lines: true, trim: true });
     return records;
