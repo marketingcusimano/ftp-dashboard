@@ -1,11 +1,42 @@
-app.get('/peek', async (_req, res) => {
+import 'dotenv/config';
+import express from 'express';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Static (usa /public se esiste, altrimenti root)
+const staticDir = fs.existsSync('public') ? 'public' : '.';
+app.use(express.static(staticDir, { maxAge: 0 }));
+
+app.get('/', (req, res) => {
+  const file = path.join(process.cwd(), staticDir, 'index.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  res.status(404).send('index.html non trovato');
+});
+
+app.get('/healthz', (_, res) => res.send('ok'));
+
+// /raw -> scarica dal FTP e restituisce il TESTO GREZZO (nessun parsing lato server)
+app.get('/raw', async (_req, res) => {
+  const {
+    FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE,
+    FTP_SECURE, FTP_TIMEOUT, FTP_TLS_INSECURE, FTP_TLS_SERVERNAME
+  } = process.env;
+
+  if (!FTP_HOST || !FTP_USER || !FTP_PASS || !FTP_FILE) {
+    return res.status(500).send('Mancano variabili FTP (FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE).');
+  }
+
+  const { Client } = await import('basic-ftp');
+  const client = new Client(Number(FTP_TIMEOUT || 25000));
+  client.ftp.verbose = false;
+
+  const tmp = path.join(os.tmpdir(), `generalb2b_${Date.now()}.txt`);
+
   try {
-    const { Client } = await import('basic-ftp');
-    const {
-      FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE,
-      FTP_SECURE, FTP_TIMEOUT, FTP_TLS_INSECURE, FTP_TLS_SERVERNAME
-    } = process.env;
-    const client = new Client(Number(FTP_TIMEOUT || 20000));
     await client.access({
       host: FTP_HOST,
       user: FTP_USER,
@@ -16,15 +47,26 @@ app.get('/peek', async (_req, res) => {
         servername: FTP_TLS_SERVERNAME || FTP_HOST
       }
     });
-    const tmp = '/tmp/testpeek_' + Date.now() + '.txt';
+
     await client.downloadTo(tmp, FTP_FILE);
-    const txt = fs.readFileSync(tmp, 'utf8');
-    client.close();
-    try { fs.unlinkSync(tmp); } catch {}
-    // Inviamo solo le prime 30 righe per vedere i separatori reali
-    const preview = txt.split(/\r?\n/).slice(0, 30);
-    res.type('text').send(preview.join('\n'));
+    const text = fs.readFileSync(tmp, 'utf8');
+
+    res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.type('text/plain').send(text);
   } catch (e) {
-    res.status(500).send(String(e));
+    console.error('Errore /raw:', e);
+    res.status(500).type('text/plain').send(String(e?.message || e));
+  } finally {
+    try { client.close(); } catch {}
+    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch {}
   }
+});
+
+// alias compatibilità: /data restituisce JSON già pronto lato client
+app.get('/data', async (_req, res) => {
+  res.redirect(307, '/raw'); // il front-end userà /raw
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server avviato su http://0.0.0.0:${PORT}`);
 });
