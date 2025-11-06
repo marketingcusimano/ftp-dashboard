@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard B2B</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #0b1320; color: #e2e8f0; margin: 0; padding: 20px; }
+    h1 { color: #3b82f6; }
+    .panel { background: #131e33; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #283556; padding: 6px 8px; text-align: left; }
+    th { background: #0f172a; position: sticky; top: 0; }
+    button { background-color: #3b82f6; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard B2B</h1>
+  <button onclick="loadData()">Aggiorna</button>
+  <div id="status">Caricamento...</div>
+  <div class="panel"><table id="dataTable"></table></div>
+  <canvas id="chart" height="150"></canvas>
+  <script>
+    let chart, DATA=[];
+    async function loadData(){
+      document.getElementById('status').innerText='Caricamento...';
+      const res = await fetch('/data');
+      const json = await res.json();
+      DATA=json.rows;
+      const cols=json.columns;
+      const table=document.getElementById('dataTable');
+      table.innerHTML='<thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead>'+
+        '<tbody>'+DATA.slice(0,50).map(r=>'<tr>'+cols.map(c=>'<td>'+r[c]+'</td>').join('')+'</tr>').join('')+'</tbody>';
+      document.getElementById('status').innerText=`${json.rowCount} righe - ${cols.length} colonne`;
+      if(chart) chart.destroy();
+      const ctx=document.getElementById('chart').getContext('2d');
+      const labels=DATA.slice(0,20).map((r,i)=>i+1);
+      const firstNumCol=cols.find(c=>!isNaN(parseFloat(DATA[0][c])));
+      const values=DATA.slice(0,20).map(r=>parseFloat(r[firstNumCol])||0);
+      chart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:firstNumCol,data:values}]} });
+    }
+    loadData();
+  </script>
+</body>
+</html>
