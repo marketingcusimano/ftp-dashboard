@@ -3,7 +3,6 @@ import express from 'express';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { parse } from 'csv-parse/sync';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,6 +18,84 @@ app.get('/', (req, res) => {
 });
 
 app.get('/healthz', (_, res) => res.send('ok'));
+
+// --- Helpers ---------------------------------------------------------
+
+function splitLines(text) {
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+}
+
+// se la riga ha TAB e non è vuota, non è commento
+function isDataLine(line) {
+  const t = line.trim();
+  return t !== '' && !t.startsWith('#') && !t.startsWith('##') && t.includes('\t');
+}
+
+// estrae eventuale titolo sezione da riga tipo "## SEZIONE 1: RIEPILOGO"
+function sectionTitleFrom(line) {
+  const m = line.match(/^##\s*(.+)$/);
+  return m ? m[1].trim() : null;
+}
+
+// converte array di valori in oggetto secondo header
+function rowToObject(header, row) {
+  const obj = {};
+  for (let i = 0; i < header.length; i++) {
+    const key = (header[i] || '').trim();
+    if (!key) continue;
+    obj[key] = (row[i] ?? '').toString().trim();
+  }
+  return obj;
+}
+
+// parser “section-aware” per file tab-delimited con più header sparsi
+function parseTabbedMultiSection(csvText) {
+  const lines = splitLines(csvText);
+
+  let currentSection = null;            // testo titolo sezione (se presente)
+  let currentHeader = null;             // array di colonne correnti
+  const records = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+
+    // aggiorna titolo sezione quando vedi "## ..."
+    const maybeTitle = sectionTitleFrom(raw.trim());
+    if (maybeTitle) {
+      currentSection = maybeTitle;
+      continue;
+    }
+
+    if (!isDataLine(raw)) continue;
+
+    const parts = raw.split('\t');
+
+    // header di una sezione: riga che inizia con "Tipo_Dato" (o simile)
+    if (!currentHeader && /^tipo[_\s]?dato$/i.test((parts[0] || '').trim())) {
+      currentHeader = parts.map(s => s.trim());
+      continue;
+    }
+
+    // può capitare che l'header compaia di nuovo (nuova sezione)
+    if (/^tipo[_\s]?dato$/i.test((parts[0] || '').trim())) {
+      currentHeader = parts.map(s => s.trim());
+      continue;
+    }
+
+    // riga dati: serve un header attivo
+    if (currentHeader) {
+      const obj = rowToObject(currentHeader, parts);
+      if (Object.keys(obj).length > 0) {
+        if (currentSection) obj['__Sezione'] = currentSection;
+        records.push(obj);
+      }
+    }
+  }
+
+  return records;
+}
+
+// --- FTP fetch + parse ------------------------------------------------
 
 async function fetchCsvFromFtp() {
   const {
@@ -37,7 +114,7 @@ async function fetchCsvFromFtp() {
   }
 
   const { Client } = await import('basic-ftp');
-  const client = new Client(Number(FTP_TIMEOUT || 15000));
+  const client = new Client(Number(FTP_TIMEOUT || 25000));
   client.ftp.verbose = false;
   const tmpFile = path.join(os.tmpdir(), `generalb2b_${Date.now()}.csv`);
 
@@ -56,44 +133,28 @@ async function fetchCsvFromFtp() {
     await client.downloadTo(tmpFile, FTP_FILE);
     const csvText = fs.readFileSync(tmpFile, 'utf8');
 
-    // 🔹 1. Filtra righe non utili (#, vuote)
-    const cleanText = csvText
-      .split(/\r?\n/)
-      .filter(line =>
-        line.trim() !== '' &&
-        !line.startsWith('#') &&
-        !line.startsWith('##') &&
-        line.includes('\t')
-      )
-      .join('\n');
+    // 1) pulizia base: teniamo tutto (anche righe sezione) per inferenza
+    // 2) parser multi-sezione tab-delimited
+    const rows = parseTabbedMultiSection(csvText);
 
-    // 🔹 2. Parso con separatore TAB
-    const records = parse(cleanText, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      bom: true,
-      delimiter: '\t',
-      relax_column_count: true,
-      relax_quotes: true
-    });
-
-    return records;
+    return rows;
   } finally {
     try { client.close(); } catch {}
     try { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile); } catch {}
   }
 }
 
+// --- API --------------------------------------------------------------
+
 app.get('/data', async (_req, res) => {
   try {
-    const data = await fetchCsvFromFtp();
+    const rows = await fetchCsvFromFtp();
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.json({
       updatedAt: new Date().toISOString(),
-      rows: data,
-      rowCount: data.length,
-      columns: Object.keys(data[0] || {})
+      rows,
+      rowCount: rows.length,
+      columns: rows.length ? Object.keys(rows[0]) : []
     });
   } catch (err) {
     console.error('Errore /data:', err);
@@ -103,6 +164,8 @@ app.get('/data', async (_req, res) => {
     });
   }
 });
+
+// ---------------------------------------------------------------------
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server avviato su http://0.0.0.0:${PORT}`);
