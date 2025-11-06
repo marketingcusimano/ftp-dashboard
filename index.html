@@ -4,50 +4,41 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Dashboard B2B</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root{--bg:#0b1320;--panel:#131e33;--muted:#94a3b8;--text:#e2e8f0;--accent:#3b82f6;--ok:#22c55e;--warn:#f59e0b;}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Inter,system-ui,Segoe UI,Roboto,sans-serif}
-    .wrap{max-width:1200px;margin:0 auto;padding:24px}
-    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
-    h1{margin:0;font-size:28px;letter-spacing:.3px}
-    .muted{color:var(--muted)} .panel{background:var(--panel);border:1px solid #1f2a44;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-    .grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.controls{display:flex;gap:8px;flex-wrap:wrap}
+    :root{--bg:#0b1320;--panel:#131e33;--muted:#94a3b8;--text:#e2e8f0;--accent:#3b82f6}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px} h1{margin:0 0 8px}
+    .panel{background:var(--panel);border:1px solid #1f2a44;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
     select,input,button{background:#0f172a;color:var(--text);border:1px solid #283556;border-radius:10px;padding:10px 12px}
     button{cursor:pointer;background:var(--accent);border:none}
-    table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid #223055;padding:8px 10px;text-align:left;white-space:nowrap}
-    thead th{position:sticky;top:0;background:#0f172a;z-index:1}
-    .table-wrap{overflow:auto;max-height:460px;border:1px solid #1f2a44;border-radius:12px}
-    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi .card{padding:14px}.kpi h3{color:var(--muted);margin:0;font-size:12px}.kpi p{margin:6px 0 0;font-weight:700;font-size:22px}
-    .badge{display:inline-flex;align-items:center;gap:6px;background:#0f172a;border:1px solid #283556;border-radius:999px;padding:6px 10px;font-size:12px}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+    .table-wrap{overflow:auto;max-height:500px;border:1px solid #1f2a44;border-radius:12px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{position:sticky;top:0;background:#0f172a}
+    th,td{padding:8px 10px;border-bottom:1px solid #223055;white-space:nowrap;text-align:left}
+    .muted{color:var(--muted)}
   </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div><h1>Dashboard B2B</h1><div id="meta" class="muted">Caricamento…</div></div>
-    <div class="controls">
-      <select id="section"></select>
-      <input id="search" placeholder="Cerca… (cliente, provincia, categoria)"/>
-      <button id="refresh">Aggiorna</button>
-    </div>
-  </header>
+  <h1>Dashboard B2B</h1>
+  <div id="meta" class="muted">Caricamento…</div>
 
-  <section class="kpi">
-    <div class="panel card"><h3>Righe</h3><p id="kRows">–</p></div>
-    <div class="panel card"><h3>Colonne</h3><p id="kCols">–</p></div>
-    <div class="panel card"><h3>Fatturato (sez.)</h3><p id="kTot">–</p></div>
-    <div class="panel card"><h3>Aggiornato</h3><p id="kUpd">–</p></div>
-  </section>
+  <div class="controls">
+    <button id="refresh">Aggiorna</button>
+    <select id="section"></select>
+    <input id="search" placeholder="Cerca…">
+  </div>
 
-  <div class="grid g2">
+  <div class="grid">
     <section class="panel">
-      <h3 style="margin:0 0 12px">Grafico</h3>
+      <h3 style="margin:0 0 8px">Grafico</h3>
       <canvas id="chart" height="320"></canvas>
     </section>
     <section class="panel">
-      <h3 style="margin:0 0 12px">Tabella</h3>
+      <h3 style="margin:0 0 8px">Tabella</h3>
       <div class="table-wrap"><table id="tbl"></table></div>
     </section>
   </div>
@@ -57,83 +48,105 @@
 let RAW=[], VIEW=[], chart;
 
 const el = id => document.getElementById(id);
-const fmt = n => (n==null||isNaN(n)) ? '' : n.toLocaleString('it-IT',{maximumFractionDigits:2});
+const euro = s => {
+  if (s==null) return null;
+  const t = String(s).replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
+  const n = Number(t);
+  return Number.isFinite(n)? n : null;
+};
 
-function updateKpi(rows, cols, upd){
-  el('kRows').textContent = rows.length;
-  el('kCols').textContent = cols.length;
-  el('kUpd').textContent  = new Date(upd).toLocaleString('it-IT');
-  // somma fatturato/importi se esistono
-  const key = ['Fatturato','Importo_Totale','Importo','Valore'].find(k=>rows[0]&&k in rows[0]);
-  const tot = key ? rows.reduce((a,r)=>a+(+r[key]||0),0) : 0;
-  el('kTot').textContent = key ? fmt(tot) : '–';
+// ---- PARSING TESTO GREZZO (TAB o SPAZI, sezioni, commenti) ----
+function splitLines(t){ return t.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n'); }
+function splitFlex(line){
+  const norm = line.replace(/\u00A0/g,' ');
+  return (norm.includes('\t') ? norm.split(/\t+/) : norm.split(/ {2,}/)).map(s=>s.trim());
+}
+function parseText(text){
+  const lines = splitLines(text);
+  let section = null, header = null;
+  const out = [];
+  for (const raw of lines){
+    const t = raw.trim();
+    if (!t) continue;
+    if (t.startsWith('##')){ section = t.replace(/^##\s*/,''); header=null; continue; }
+    if (t.startsWith('#')) continue;
+
+    const cells = splitFlex(raw);
+    if (!header && /^tipo[_\s]?dato$/i.test((cells[0]||'').trim())){ header=cells; continue; }
+    if (/^tipo[_\s]?dato$/i.test((cells[0]||'').trim())){ header=cells; continue; }
+    if (!header) continue;
+
+    const row = {};
+    for (let i=0;i<header.length;i++){
+      const k = (header[i]||'').trim(); if (!k) continue;
+      let v = (cells[i] ?? '').toString().trim();
+      // prova numerico su alcune chiavi note
+      if (['Anno_Precedente','Anno_Corrente','Obiettivo','Percentuale_Obiettivo','Clienti_Anno_Precedente','Clienti_Anno_Corrente','Obiettivo_Clienti','Percentuale_Obiettivo_Clienti','Fatturato','Importo_Totale','Importo','Percentuale','Valore','Clienti_Serviti'].includes(k)){
+        const n = euro(v); if (n!=null) v = n;
+      }
+      row[k]=v;
+    }
+    if (section) row['__Sezione']=section;
+    out.push(row);
+  }
+  return out;
 }
 
+// ---- UI ----
 function fillSectionOptions(){
   const s = el('section');
-  const sections = Array.from(new Set(RAW.map(r=>r.__Sezione||'Generale')));
+  const sections = Array.from(new Set(RAW.map(r=>r.__Sezione||'Generale'))).filter(Boolean);
   s.innerHTML = '<option value="">Tutte le sezioni</option>' + sections.map(x=>`<option>${x}</option>`).join('');
 }
-
 function filterRows(){
-  const sec = el('section').value;
-  const q = el('search').value.toLowerCase().trim();
+  const sec = el('section').value, q = el('search').value.toLowerCase().trim();
   let rows = RAW;
   if (sec) rows = rows.filter(r=> (r.__Sezione||'') === sec);
   if (q) rows = rows.filter(r=> JSON.stringify(r).toLowerCase().includes(q));
   return rows;
 }
-
 function drawTable(rows){
   const tbl = el('tbl');
-  if (!rows.length){ tbl.innerHTML='<thead><tr><th>Nessun dato</th></tr></thead>'; return; }
+  if (!rows.length){ tbl.innerHTML = '<thead><tr><th>Nessun dato</th></tr></thead>'; return []; }
   const cols = Object.keys(rows[0]);
   const head = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>';
   const body = rows.slice(0,200).map(r=>'<tr>'+cols.map(c=>`<td>${r[c]??''}</td>`).join('')+'</tr>').join('');
-  tbl.innerHTML = head + '<tbody>' + body + '</tbody>';
+  tbl.innerHTML = head + '<tbody>'+body+'</tbody>';
   return cols;
 }
-
 function drawChart(rows){
-  const ctx = el('chart').getContext('2d');
+  const ctx = document.getElementById('chart').getContext('2d');
   if (chart) chart.destroy();
   if (!rows.length){ chart = new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label:'',data:[]}]}}); return; }
 
-  // pick best dims per sezione
   const has = k => rows[0] && k in rows[0];
-  let labelKey=null, valueKey=null, title='';
-
-  if (has('Provincia') && has('Fatturato')) { labelKey='Provincia'; valueKey='Fatturato'; title='Fatturato per Provincia'; }
-  else if (has('Ragione_Sociale_Cliente') && has('Fatturato')) { labelKey='Ragione_Sociale_Cliente'; valueKey='Fatturato'; title='Top Vendite per Cliente'; }
-  else if (has('Categoria') && (has('Importo_Totale')||has('Importo'))) { labelKey='Categoria'; valueKey=has('Importo_Totale')?'Importo_Totale':'Importo'; title='Riepilogo per Categoria'; }
-  else if (has('Provincia') && has('Clienti_Serviti')) { labelKey='Provincia'; valueKey='Clienti_Serviti'; title='Clienti serviti per Provincia'; }
-  else { labelKey=Object.keys(rows[0])[0]; valueKey=Object.keys(rows[0]).find(k=>typeof rows[0][k]==='number')||Object.keys(rows[0])[1]; title=''; }
-
-  const map = new Map();
-  for (const r of rows) map.set(r[labelKey]||'(vuoto)', (map.get(r[labelKey])||0) + (+r[valueKey]||0));
-  const labels = Array.from(map.keys());
-  const data = Array.from(map.values());
-  chart = new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:title||valueKey,data}]},options:{responsive:true,maintainAspectRatio:false}});
+  let label='Provincia', value='Fatturato', title='Fatturato per Provincia';
+  if (has('Ragione_Sociale_Cliente') && has('Fatturato')) { label='Ragione_Sociale_Cliente'; value='Fatturato'; title='Top Vendite per Cliente'; }
+  else if (has('Categoria') && (has('Importo_Totale')||has('Importo'))) { label='Categoria'; value=has('Importo_Totale')?'Importo_Totale':'Importo'; title='Riepilogo Categoria'; }
+  else if (has('Provincia') && has('Clienti_Serviti')) { label='Provincia'; value='Clienti_Serviti'; title='Clienti per Provincia'; }
+  const agg = new Map();
+  for (const r of rows) agg.set(r[label]||'(vuoto)', (agg.get(r[label])||0) + (+r[value]||0));
+  const labels = Array.from(agg.keys()), data = Array.from(agg.values());
+  chart = new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:title,data}]},options:{responsive:true,maintainAspectRatio:false}});
 }
 
-async function loadData(){
+async function load(){
   el('meta').textContent='Caricamento…';
-  const res = await fetch('/data',{cache:'no-store'});
-  const json = await res.json();
-  RAW = json.rows || [];
+  const res = await fetch('/raw',{cache:'no-store'});
+  const txt = await res.text();
+  RAW = parseText(txt);
   fillSectionOptions();
   VIEW = filterRows();
-  const cols = drawTable(VIEW) || [];
+  const cols = drawTable(VIEW);
   drawChart(VIEW);
-  updateKpi(VIEW, cols, json.updatedAt);
-  el('meta').textContent = `${VIEW.length} righe · ${cols.length} colonne · aggiornato ${new Date(json.updatedAt).toLocaleString('it-IT')}`;
+  el('meta').textContent = `${VIEW.length} righe · ${cols.length} colonne`;
 }
 
-el('refresh').addEventListener('click', loadData);
-el('section').addEventListener('change', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW)||[]; drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
-el('search').addEventListener('input', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW)||[]; drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
+document.getElementById('refresh').addEventListener('click', load);
+document.getElementById('section').addEventListener('change', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); });
+document.getElementById('search').addEventListener('input', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); });
 
-loadData().catch(e=>{ el('meta').textContent='Errore: '+e.message; console.error(e); });
+load().catch(e=>{ el('meta').textContent='Errore: '+e.message; console.error(e); });
 </script>
 </body>
 </html>
