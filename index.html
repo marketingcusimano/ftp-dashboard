@@ -7,18 +7,20 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root{--bg:#0b1320;--panel:#131e33;--muted:#94a3b8;--text:#e2e8f0;--accent:#3b82f6}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif}
-    .wrap{max-width:1200px;margin:0 auto;padding:24px} h1{margin:0 0 8px}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px}
+    h1{margin:0 0 8px}
+    .muted{color:var(--muted)}
     .panel{background:var(--panel);border:1px solid #1f2a44;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
     select,input,button{background:#0f172a;color:var(--text);border:1px solid #283556;border-radius:10px;padding:10px 12px}
     button{cursor:pointer;background:var(--accent);border:none}
     .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
-    .table-wrap{overflow:auto;max-height:500px;border:1px solid #1f2a44;border-radius:12px}
+    .table-wrap{overflow:auto;max-height:520px;border:1px solid #1f2a44;border-radius:12px}
     table{width:100%;border-collapse:collapse;font-size:13px}
     thead th{position:sticky;top:0;background:#0f172a}
     th,td{padding:8px 10px;border-bottom:1px solid #223055;white-space:nowrap;text-align:left}
-    .muted{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -55,44 +57,91 @@ const euro = s => {
   return Number.isFinite(n)? n : null;
 };
 
-// ---- PARSING TESTO GREZZO (TAB o SPAZI, sezioni, commenti) ----
-function splitLines(t){ return t.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n'); }
+/* ----------------- PARSING ROBUSTO ----------------- */
+function splitLines(t){
+  return t.replace(/^\uFEFF/, '')      // BOM
+          .replace(/\r\n/g,'\n')
+          .replace(/\r/g,'\n')
+          .split('\n');
+}
+
+// prova TAB, 2+ SPAZI, ';', ',', '|' e sceglie quello che produce più colonne (>=2)
 function splitFlex(line){
   const norm = line.replace(/\u00A0/g,' ');
-  return (norm.includes('\t') ? norm.split(/\t+/) : norm.split(/ {2,}/)).map(s=>s.trim());
+  const cand = [/\t+/, / {2,}/, /;/, /,/, /\|/];
+  let bestArr = [norm], bestCount = 1;
+  for (const rx of cand){
+    const arr = norm.split(rx).map(s=>s.trim());
+    const cnt = arr.filter(Boolean).length;
+    if (cnt > bestCount){ bestArr = arr; bestCount = cnt; }
+  }
+  return bestArr;
 }
+
+const isComment = l => {
+  const t = l.trim().replace(/^\uFEFF/, '');
+  return !t || t.startsWith('#');
+};
+
+// riconosce "Tipo_Dato", "Tipo Dato", "tipo_dato", ecc.
+function looksLikeHeader(cells){
+  if (!cells || !cells.length) return false;
+  const k = (cells[0]||'').toString().toLowerCase().replace(/[\s_]/g,'');
+  return k.startsWith('tipodato');
+}
+
+// restituisce titolo sezione da "## SEZIONE ..."
+function sectionTitle(line){
+  const t = line.trim().replace(/^\uFEFF/,'');
+  const m = t.match(/^##\s*(.+)$/);
+  return m ? m[1].trim() : null;
+}
+
 function parseText(text){
   const lines = splitLines(text);
   let section = null, header = null;
   const out = [];
+
   for (const raw of lines){
-    const t = raw.trim();
-    if (!t) continue;
-    if (t.startsWith('##')){ section = t.replace(/^##\s*/,''); header=null; continue; }
-    if (t.startsWith('#')) continue;
+    if (isComment(raw)) continue;
+
+    const sec = sectionTitle(raw);
+    if (sec){ section = sec; header = null; continue; }
 
     const cells = splitFlex(raw);
-    if (!header && /^tipo[_\s]?dato$/i.test((cells[0]||'').trim())){ header=cells; continue; }
-    if (/^tipo[_\s]?dato$/i.test((cells[0]||'').trim())){ header=cells; continue; }
+
+    // header “tollerante”
+    if (!header && looksLikeHeader(cells)){ header = cells; continue; }
+    if (header && looksLikeHeader(cells)){ header = cells; continue; }
+
     if (!header) continue;
 
+    // costruisci riga
     const row = {};
     for (let i=0;i<header.length;i++){
-      const k = (header[i]||'').trim(); if (!k) continue;
-      let v = (cells[i] ?? '').toString().trim();
-      // prova numerico su alcune chiavi note
-      if (['Anno_Precedente','Anno_Corrente','Obiettivo','Percentuale_Obiettivo','Clienti_Anno_Precedente','Clienti_Anno_Corrente','Obiettivo_Clienti','Percentuale_Obiettivo_Clienti','Fatturato','Importo_Totale','Importo','Percentuale','Valore','Clienti_Serviti'].includes(k)){
-        const n = euro(v); if (n!=null) v = n;
+      const key = (header[i]||'').trim();
+      if (!key) continue;
+      let val = (cells[i] ?? '').toString().trim();
+
+      if ([
+        'Anno_Precedente','Anno_Corrente','Obiettivo','Percentuale_Obiettivo',
+        'Clienti_Anno_Precedente','Clienti_Anno_Corrente','Obiettivo_Clienti','Percentuale_Obiettivo_Clienti',
+        'Fatturato','Importo_Totale','Importo','Percentuale','Valore','Clienti_Serviti'
+      ].includes(key)){
+        const n = euro(val);
+        if (n!=null) val = n;
       }
-      row[k]=v;
+      row[key] = val;
     }
-    if (section) row['__Sezione']=section;
-    out.push(row);
+    if (Object.keys(row).length){
+      if (section) row['__Sezione'] = section;
+      out.push(row);
+    }
   }
   return out;
 }
 
-// ---- UI ----
+/* ----------------- UI ----------------- */
 function fillSectionOptions(){
   const s = el('section');
   const sections = Array.from(new Set(RAW.map(r=>r.__Sezione||'Generale'))).filter(Boolean);
@@ -110,7 +159,7 @@ function drawTable(rows){
   if (!rows.length){ tbl.innerHTML = '<thead><tr><th>Nessun dato</th></tr></thead>'; return []; }
   const cols = Object.keys(rows[0]);
   const head = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>';
-  const body = rows.slice(0,200).map(r=>'<tr>'+cols.map(c=>`<td>${r[c]??''}</td>`).join('')+'</tr>').join('');
+  const body = rows.slice(0,300).map(r=>'<tr>'+cols.map(c=>`<td>${r[c]??''}</td>`).join('')+'</tr>').join('');
   tbl.innerHTML = head + '<tbody>'+body+'</tbody>';
   return cols;
 }
@@ -130,11 +179,17 @@ function drawChart(rows){
   chart = new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:title,data}]},options:{responsive:true,maintainAspectRatio:false}});
 }
 
+/* ----------------- LOAD ----------------- */
 async function load(){
   el('meta').textContent='Caricamento…';
   const res = await fetch('/raw',{cache:'no-store'});
   const txt = await res.text();
   RAW = parseText(txt);
+
+  if (!RAW.length){
+    console.warn('Parser non ha trovato righe; prime 20 righe grezze:', splitLines(txt).slice(0,20));
+  }
+
   fillSectionOptions();
   VIEW = filterRows();
   const cols = drawTable(VIEW);
