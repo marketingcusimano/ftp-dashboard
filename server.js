@@ -25,10 +25,10 @@ function splitLines(text) {
   return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 }
 
-// se la riga ha TAB e non è vuota, non è commento
+// se la riga ha ; e non è vuota, non è commento
 function isDataLine(line) {
   const t = line.trim();
-  return t !== '' && !t.startsWith('#') && !t.startsWith('##') && t.includes('\t');
+  return t !== '' && !t.startsWith('#') && !t.startsWith('##') && t.includes(';');
 }
 
 // estrae eventuale titolo sezione da riga tipo "## SEZIONE 1: RIEPILOGO"
@@ -48,8 +48,8 @@ function rowToObject(header, row) {
   return obj;
 }
 
-// parser “section-aware” per file tab-delimited con più header sparsi
-function parseTabbedMultiSection(csvText) {
+// parser "section-aware" per file delimitato da ; con più header sparsi
+function parseCsvMultiSection(csvText) {
   const lines = splitLines(csvText);
 
   let currentSection = null;            // testo titolo sezione (se presente)
@@ -68,7 +68,7 @@ function parseTabbedMultiSection(csvText) {
 
     if (!isDataLine(raw)) continue;
 
-    const parts = raw.split('\t');
+    const parts = raw.split(';');
 
     // header di una sezione: riga che inizia con "Tipo_Dato" (o simile)
     if (!currentHeader && /^tipo[_\s]?dato$/i.test((parts[0] || '').trim())) {
@@ -133,9 +133,8 @@ async function fetchCsvFromFtp() {
     await client.downloadTo(tmpFile, FTP_FILE);
     const csvText = fs.readFileSync(tmpFile, 'utf8');
 
-    // 1) pulizia base: teniamo tutto (anche righe sezione) per inferenza
-    // 2) parser multi-sezione tab-delimited
-    const rows = parseTabbedMultiSection(csvText);
+    // parser multi-sezione con delimitatore ;
+    const rows = parseCsvMultiSection(csvText);
 
     return rows;
   } finally {
