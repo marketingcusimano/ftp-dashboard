@@ -3,205 +3,334 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dashboard B2B</title>
+  <title>Dashboard B2B • Pro</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: "#0b1320",
+            panel: "#0f172a",
+            stroke: "#1e293b",
+            text: "#e2e8f0",
+            muted: "#94a3b8",
+            brand: "#3b82f6",
+            good: "#22c55e",
+            warn: "#f59e0b",
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <style>
-    :root{--bg:#0b1320;--panel:#131e33;--muted:#94a3b8;--text:#e2e8f0;--accent:#3b82f6}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif}
-    .wrap{max-width:1200px;margin:0 auto;padding:24px}
-    h1{margin:0 0 8px}
-    .muted{color:var(--muted)}
-    .panel{background:var(--panel);border:1px solid #1f2a44;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
-    select,input,button{background:#0f172a;color:var(--text);border:1px solid #283556;border-radius:10px;padding:10px 12px}
-    button{cursor:pointer;background:var(--accent);border:none}
-    .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
-    .table-wrap{overflow:auto;max-height:520px;border:1px solid #1f2a44;border-radius:12px}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    thead th{position:sticky;top:0;background:#0f172a}
-    th,td{padding:8px 10px;border-bottom:1px solid #223055;white-space:nowrap;text-align:left}
+    /* piccoli ritocchi */
+    .card { @apply bg-panel border border-stroke rounded-2xl shadow-xl; }
+    .kpi   { @apply p-5 flex flex-col gap-1; }
+    .kpi h4{ @apply text-xs tracking-wide text-muted font-semibold uppercase; }
+    .kpi p { @apply text-2xl font-bold text-text; }
+    .btn   { @apply px-4 py-2 rounded-xl border border-stroke text-sm; }
+    .btn-brand{ @apply bg-brand text-white border-brand; }
+    .input { @apply bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 text-sm text-text placeholder-muted; }
+    th,td { white-space: nowrap; }
+    thead th { position: sticky; top: 0; background: #0b1222; z-index: 1; }
   </style>
 </head>
-<body>
-<div class="wrap">
-  <h1>Dashboard B2B</h1>
-  <div id="meta" class="muted">Caricamento…</div>
+<body class="bg-bg text-text">
+  <!-- HEADER -->
+  <header class="border-b border-stroke/70 sticky top-0 backdrop-blur z-40">
+    <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-brand/20 grid place-items-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#3b82f6"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold">Dashboard B2B</h1>
+          <p id="meta" class="text-xs text-muted">Caricamento…</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="refresh" class="btn btn-brand">Aggiorna</button>
+        <button id="export" class="btn">Esporta CSV</button>
+      </div>
+    </div>
+  </header>
 
-  <div class="controls">
-    <button id="refresh">Aggiorna</button>
-    <select id="section"></select>
-    <input id="search" placeholder="Cerca…">
-  </div>
-
-  <div class="grid">
-    <section class="panel">
-      <h3 style="margin:0 0 8px">Grafico</h3>
-      <canvas id="chart" height="320"></canvas>
+  <!-- CONTENUTO -->
+  <main class="max-w-6xl mx-auto px-5 py-6 grid gap-5">
+    <!-- CONTROLLI -->
+    <section class="grid gap-3 card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-muted min-w-28">Sezione</label>
+          <select id="section" class="input w-full"></select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-muted min-w-28">Metrica grafico</label>
+          <select id="metric" class="input w-full">
+            <option value="auto">Automatica</option>
+            <option value="Fatturato">Fatturato</option>
+            <option value="Anno_Corrente">Anno_Corrente</option>
+            <option value="Clienti_Serviti">Clienti_Serviti</option>
+            <option value="Percentuale_Obiettivo">Percentuale_Obiettivo</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-muted min-w-28">Cerca</label>
+          <input id="search" class="input w-full" placeholder="cliente, provincia, categoria…"/>
+        </div>
+      </div>
     </section>
-    <section class="panel">
-      <h3 style="margin:0 0 8px">Tabella</h3>
-      <div class="table-wrap"><table id="tbl"></table></div>
+
+    <!-- KPI -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card kpi"><h4>Righe</h4><p id="k-rows">–</p><span class="text-xs text-muted" id="k-sec">Tutte le sezioni</span></div>
+      <div class="card kpi"><h4>Colonne</h4><p id="k-cols">–</p><span class="text-xs text-muted">schema variabile</span></div>
+      <div class="card kpi"><h4>Fatturato</h4><p id="k-tot">–</p><span class="text-xs text-muted" id="k-tot-note">somma metrica</span></div>
+      <div class="card kpi"><h4>Percentuale media</h4><p id="k-perc">–</p><span class="text-xs text-muted">per colonne %</span></div>
     </section>
-  </div>
-</div>
 
-<script>
-let RAW=[], VIEW=[], chart;
+    <!-- GRAFICI + TABELLA -->
+    <section class="grid lg:grid-cols-2 gap-5">
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Grafico</h3>
+          <span class="text-xs text-muted" id="chart-note"></span>
+        </div>
+        <div class="h-[340px]"><canvas id="chart"></canvas></div>
+      </div>
 
-const el = id => document.getElementById(id);
-const euro = s => {
-  if (s==null) return null;
-  const t = String(s).replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
-  const n = Number(t);
-  return Number.isFinite(n)? n : null;
-};
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Tabella</h3>
+          <span class="text-xs text-muted">prime 300 righe</span>
+        </div>
+        <div class="overflow-auto border border-stroke rounded-xl">
+          <table id="tbl" class="w-full text-sm"></table>
+        </div>
+      </div>
+    </section>
+  </main>
 
-/* ----------------- PARSING ROBUSTO ----------------- */
-function splitLines(t){
-  return t.replace(/^\uFEFF/, '')      // BOM
-          .replace(/\r\n/g,'\n')
-          .replace(/\r/g,'\n')
-          .split('\n');
-}
+  <!-- LOGICA -->
+  <script>
+    let RAW=[], VIEW=[], chart;
 
-// prova TAB, 2+ SPAZI, ';', ',', '|' e sceglie quello che produce più colonne (>=2)
-function splitFlex(line){
-  const norm = line.replace(/\u00A0/g,' ');
-  const cand = [/\t+/, / {2,}/, /;/, /,/, /\|/];
-  let bestArr = [norm], bestCount = 1;
-  for (const rx of cand){
-    const arr = norm.split(rx).map(s=>s.trim());
-    const cnt = arr.filter(Boolean).length;
-    if (cnt > bestCount){ bestArr = arr; bestCount = cnt; }
-  }
-  return bestArr;
-}
+    const el = id => document.getElementById(id);
+    const euro = s => {
+      if (s==null) return null;
+      const t = String(s).replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
+      const n = Number(t);
+      return Number.isFinite(n)? n : null;
+    };
+    const fmt = n => (n==null||isNaN(n)) ? '' : n.toLocaleString('it-IT',{maximumFractionDigits:2});
 
-const isComment = l => {
-  const t = l.trim().replace(/^\uFEFF/, '');
-  return !t || t.startsWith('#');
-};
-
-// riconosce "Tipo_Dato", "Tipo Dato", "tipo_dato", ecc.
-function looksLikeHeader(cells){
-  if (!cells || !cells.length) return false;
-  const k = (cells[0]||'').toString().toLowerCase().replace(/[\s_]/g,'');
-  return k.startsWith('tipodato');
-}
-
-// restituisce titolo sezione da "## SEZIONE ..."
-function sectionTitle(line){
-  const t = line.trim().replace(/^\uFEFF/,'');
-  const m = t.match(/^##\s*(.+)$/);
-  return m ? m[1].trim() : null;
-}
-
-function parseText(text){
-  const lines = splitLines(text);
-  let section = null, header = null;
-  const out = [];
-
-  for (const raw of lines){
-    if (isComment(raw)) continue;
-
-    const sec = sectionTitle(raw);
-    if (sec){ section = sec; header = null; continue; }
-
-    const cells = splitFlex(raw);
-
-    // header “tollerante”
-    if (!header && looksLikeHeader(cells)){ header = cells; continue; }
-    if (header && looksLikeHeader(cells)){ header = cells; continue; }
-
-    if (!header) continue;
-
-    // costruisci riga
-    const row = {};
-    for (let i=0;i<header.length;i++){
-      const key = (header[i]||'').trim();
-      if (!key) continue;
-      let val = (cells[i] ?? '').toString().trim();
-
-      if ([
-        'Anno_Precedente','Anno_Corrente','Obiettivo','Percentuale_Obiettivo',
-        'Clienti_Anno_Precedente','Clienti_Anno_Corrente','Obiettivo_Clienti','Percentuale_Obiettivo_Clienti',
-        'Fatturato','Importo_Totale','Importo','Percentuale','Valore','Clienti_Serviti'
-      ].includes(key)){
-        const n = euro(val);
-        if (n!=null) val = n;
+    /* ---------- parsing robusto ---------- */
+    function splitLines(t){ return t.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n'); }
+    function splitFlex(line){
+      const norm = line.replace(/\u00A0/g,' ');
+      const cand=[/\t+/,/ {2,}/, /;/, /,/, /\|/];
+      let best=[ [norm],1 ];
+      for (const rx of cand){
+        const arr=norm.split(rx).map(s=>s.trim());
+        const cnt=arr.filter(Boolean).length;
+        if (cnt>best[1]) best=[arr,cnt];
       }
-      row[key] = val;
+      return best[0];
     }
-    if (Object.keys(row).length){
-      if (section) row['__Sezione'] = section;
-      out.push(row);
+    const isComment = l => { const t=l.trim().replace(/^\uFEFF/,''); return !t || t.startsWith('#'); };
+    const looksLikeHeader = cells => { const k=(cells[0]||'').toLowerCase().replace(/[\s_]/g,''); return k.startsWith('tipodato'); };
+    const sectionTitle   = line => { const m=line.trim().match(/^##\s*(.+)$/); return m?m[1].trim():null; };
+
+    function parseText(text){
+      const lines = splitLines(text);
+      let section=null, header=null; const out=[];
+      for (const raw of lines){
+        if (isComment(raw)) continue;
+        const sec = sectionTitle(raw); if (sec){ section=sec; header=null; continue; }
+        const cells = splitFlex(raw);
+        if (!header && looksLikeHeader(cells)){ header=cells; continue; }
+        if (header && looksLikeHeader(cells)){ header=cells; continue; }
+        if (!header) continue;
+
+        const row={};
+        for (let i=0;i<header.length;i++){
+          const key=(header[i]||'').trim(); if(!key) continue;
+          let val=(cells[i]??'').toString().trim();
+          val = val.replace(/^["']|["']$/g,'').replace(/\s+/g,' ').trim();
+
+          const isPercentKey = key.toLowerCase().includes('percentuale');
+          if (/%\s*$/.test(val)){
+            let n = val.replace('%','').trim().replace(/\./g,'').replace(',', '.');
+            let num = Number(n); if (!Number.isFinite(num) || num>1000) num=null; val=num; // 0–100
+          } else if (/^[0-9.,]+$/.test(val)){
+            let n=val.replace(/\./g,'').replace(',', '.'); let num=Number(n);
+            if (!Number.isFinite(num)) num=null;
+            if (num===999999 || num===99999900) num=null;
+            if (isPercentKey && num>1000) num=null;
+            val=num;
+          }
+          row[key]=val;
+        }
+        if (Object.keys(row).length){ if(section) row['__Sezione']=section; out.push(row); }
+      }
+      return out;
     }
-  }
-  return out;
-}
 
-/* ----------------- UI ----------------- */
-function fillSectionOptions(){
-  const s = el('section');
-  const sections = Array.from(new Set(RAW.map(r=>r.__Sezione||'Generale'))).filter(Boolean);
-  s.innerHTML = '<option value="">Tutte le sezioni</option>' + sections.map(x=>`<option>${x}</option>`).join('');
-}
-function filterRows(){
-  const sec = el('section').value, q = el('search').value.toLowerCase().trim();
-  let rows = RAW;
-  if (sec) rows = rows.filter(r=> (r.__Sezione||'') === sec);
-  if (q) rows = rows.filter(r=> JSON.stringify(r).toLowerCase().includes(q));
-  return rows;
-}
-function drawTable(rows){
-  const tbl = el('tbl');
-  if (!rows.length){ tbl.innerHTML = '<thead><tr><th>Nessun dato</th></tr></thead>'; return []; }
-  const cols = Object.keys(rows[0]);
-  const head = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>';
-  const body = rows.slice(0,300).map(r=>'<tr>'+cols.map(c=>`<td>${r[c]??''}</td>`).join('')+'</tr>').join('');
-  tbl.innerHTML = head + '<tbody>'+body+'</tbody>';
-  return cols;
-}
-function drawChart(rows){
-  const ctx = document.getElementById('chart').getContext('2d');
-  if (chart) chart.destroy();
-  if (!rows.length){ chart = new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label:'',data:[]}]}}); return; }
+    /* ---------- ui helpers ---------- */
+    function fillSectionOptions(){
+      const s = el('section');
+      const sections = Array.from(new Set(RAW.map(r=>r.__Sezione||'Generale'))).filter(Boolean);
+      s.innerHTML = '<option value="">Tutte le sezioni</option>' + sections.map(x=>`<option>${x}</option>`).join('');
+    }
+    function filterRows(){
+      const sec=el('section').value, q=el('search').value.toLowerCase().trim();
+      let rows=RAW;
+      if (sec) rows = rows.filter(r=> (r.__Sezione||'')===sec);
+      if (q) rows = rows.filter(r=> JSON.stringify(r).toLowerCase().includes(q));
+      return rows;
+    }
+    function drawTable(rows){
+      const tbl=el('tbl');
+      if (!rows.length){ tbl.innerHTML='<thead><tr><th class="px-3 py-2 text-left text-muted">Nessun dato</th></tr></thead>'; return []; }
+      const cols=Object.keys(rows[0]);
+      const percCols = new Set(cols.filter(c=>c.toLowerCase().includes('percentuale')));
+      const head='<thead class="border-b border-stroke"><tr>'+cols.map(c=>`<th class="px-3 py-2 text-left">${c}</th>`).join('')+'</tr></thead>';
+      const body=rows.slice(0,300).map(r=>'<tr class="border-b border-stroke/60">'+
+        cols.map(c=>{
+          let v=r[c];
+          if (v==null) v='';
+          else if (percCols.has(c) && typeof v==='number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
+          else if (typeof v==='number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2});
+          return `<td class="px-3 py-2">${v}</td>`;
+        }).join('')+'</tr>').join('');
+      tbl.innerHTML=head+'<tbody>'+body+'</tbody>';
+      return cols;
+    }
 
-  const has = k => rows[0] && k in rows[0];
-  let label='Provincia', value='Fatturato', title='Fatturato per Provincia';
-  if (has('Ragione_Sociale_Cliente') && has('Fatturato')) { label='Ragione_Sociale_Cliente'; value='Fatturato'; title='Top Vendite per Cliente'; }
-  else if (has('Categoria') && (has('Importo_Totale')||has('Importo'))) { label='Categoria'; value=has('Importo_Totale')?'Importo_Totale':'Importo'; title='Riepilogo Categoria'; }
-  else if (has('Provincia') && has('Clienti_Serviti')) { label='Provincia'; value='Clienti_Serviti'; title='Clienti per Provincia'; }
-  const agg = new Map();
-  for (const r of rows) agg.set(r[label]||'(vuoto)', (agg.get(r[label])||0) + (+r[value]||0));
-  const labels = Array.from(agg.keys()), data = Array.from(agg.values());
-  chart = new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:title,data}]},options:{responsive:true,maintainAspectRatio:false}});
-}
+    function updateKpi(rows, cols){
+      el('k-rows').textContent = rows.length;
+      el('k-cols').textContent = cols.length;
+      el('k-sec').textContent  = el('section').value || 'Tutte le sezioni';
 
-/* ----------------- LOAD ----------------- */
-async function load(){
-  el('meta').textContent='Caricamento…';
-  const res = await fetch('/raw',{cache:'no-store'});
-  const txt = await res.text();
-  RAW = parseText(txt);
+      const numKey = ['Fatturato','Anno_Corrente','Importo_Totale','Importo','Valore'].find(k=>rows[0] && k in rows[0]);
+      const tot = numKey ? rows.reduce((a,r)=>a + (+r[numKey]||0), 0) : 0;
+      el('k-tot').textContent = numKey ? '€ ' + fmt(tot) : '—';
+      el('k-tot-note').textContent = numKey ? `somma ${numKey}` : 'nessuna metrica monetaria trovata';
 
-  if (!RAW.length){
-    console.warn('Parser non ha trovato righe; prime 20 righe grezze:', splitLines(txt).slice(0,20));
-  }
+      const pCols = cols.filter(c=>c.toLowerCase().includes('percentuale'));
+      let pAvg = null;
+      if (pCols.length){
+        const k=pCols[0];
+        const arr = rows.map(r=>+r[k]).filter(Number.isFinite);
+        pAvg = arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+      }
+      el('k-perc').textContent = pAvg==null ? '—' : pAvg.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
+    }
 
-  fillSectionOptions();
-  VIEW = filterRows();
-  const cols = drawTable(VIEW);
-  drawChart(VIEW);
-  el('meta').textContent = `${VIEW.length} righe · ${cols.length} colonne`;
-}
+    function drawChart(rows){
+      const ctx = el('chart').getContext('2d');
+      if (chart) chart.destroy();
+      if (!rows.length){ chart=new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label:'',data:[]}]}}); el('chart-note').textContent=''; return; }
 
-document.getElementById('refresh').addEventListener('click', load);
-document.getElementById('section').addEventListener('change', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); });
-document.getElementById('search').addEventListener('input', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); });
+      const chosen = el('metric').value;
+      const has = k => rows[0] && k in rows[0];
+      let label='Provincia', value='Fatturato', title='Fatturato per Provincia';
 
-load().catch(e=>{ el('meta').textContent='Errore: '+e.message; console.error(e); });
-</script>
+      if (chosen!=='auto'){ value = chosen; }
+      else {
+        if (has('Provincia') && has('Fatturato')) { label='Provincia'; value='Fatturato'; title='Fatturato per Provincia'; }
+        else if (has('Ragione_Sociale_Cliente') && has('Fatturato')) { label='Ragione_Sociale_Cliente'; value='Fatturato'; title='Top clienti'; }
+        else if (has('Categoria') && (has('Importo_Totale')||has('Importo'))) { label='Categoria'; value=has('Importo_Totale')?'Importo_Totale':'Importo'; title='Categorie prodotto'; }
+        else if (has('Provincia') && has('Clienti_Serviti')) { label='Provincia'; value='Clienti_Serviti'; title='Clienti serviti'; }
+        else if (has('Provincia') && has('Anno_Corrente')) { label='Provincia'; value='Anno_Corrente'; title='Anno corrente per provincia'; }
+      }
+
+      const isPercent = String(value).toLowerCase().includes('percentuale');
+
+      // aggregazione
+      const agg=new Map();
+      for (const r of rows){
+        const k = (r[label]||'(vuoto)').toString();
+        const v = Number(r[value]);
+        if (!Number.isFinite(v)) continue;
+        const rec = agg.get(k) || {sum:0,count:0};
+        rec.sum += v; rec.count++; agg.set(k,rec);
+      }
+      const labels=Array.from(agg.keys());
+      const data = labels.map(k => {
+        const {sum,count} = agg.get(k);
+        return isPercent ? (count? sum/count : 0) : sum;
+      });
+
+      chart = new Chart(ctx,{
+        type:'bar',
+        data:{ labels, datasets:[{ label: title, data, backgroundColor:'#3b82f6' }] },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{ labels:{ color:'#e2e8f0' } },
+            tooltip:{ callbacks:{ label: (ctx)=> {
+              const v=ctx.parsed.y;
+              return isPercent ? (v.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%')
+                               : ('€ ' + v.toLocaleString('it-IT',{maximumFractionDigits:0}));
+            }}},
+            title:{ display:true, text:title, color:'#e2e8f0', font:{ size:16, weight:'600' } }
+          },
+          scales:{
+            x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'#1f2942' } },
+            y:{ ticks:{ color:'#94a3b8', callback:v=> isPercent? v+'%' : v }, grid:{ color:'#1f2942' },
+                suggestedMin:0, suggestedMax: isPercent ? 100 : undefined }
+          }
+        }
+      });
+
+      el('chart-note').textContent = isPercent ? 'media percentuale (0–100)' : 'valore aggregato';
+    }
+
+    /* ---------- export ---------- */
+    function exportCSV(rows){
+      if (!rows.length) return;
+      const cols = Object.keys(rows[0]);
+      const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+      const csv = [cols.join(','), ...rows.map(r=>cols.map(c=>esc(r[c])).join(','))].join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'dashboard.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    /* ---------- load ---------- */
+    async function load(){
+      el('meta').textContent='Carico dati…';
+      const res = await fetch('/raw', {cache:'no-store'});
+      const txt = await res.text();
+      RAW = parseText(txt);
+
+      fillSectionOptions();
+      VIEW = filterRows();
+      const cols = drawTable(VIEW);
+      drawChart(VIEW);
+      updateKpi(VIEW, cols);
+
+      el('meta').textContent = `${VIEW.length} righe • ${cols.length} colonne • aggiornato ora`;
+    }
+
+    el('refresh').addEventListener('click', load);
+    el('section').addEventListener('change', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c); });
+    el('metric').addEventListener('change',  ()=>{ const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c); });
+    el('search').addEventListener('input',  ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c); });
+    el('export').addEventListener('click', ()=> exportCSV(VIEW));
+
+    load().catch(e=>{ el('meta').textContent='Errore: '+e.message; console.error(e); });
+  </script>
 </body>
 </html>
