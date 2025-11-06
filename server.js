@@ -62,9 +62,9 @@ app.get('/raw', async (_req, res) => {
   }
 });
 
-// alias compatibilità: /data restituisce JSON già pronto lato client
+// compat: /data reindirizza a /raw (il parsing avviene nel browser)
 app.get('/data', async (_req, res) => {
-  res.redirect(307, '/raw'); // il front-end userà /raw
+  res.redirect(307, '/raw');
 });
 
 app.listen(PORT, '0.0.0.0', () => {
