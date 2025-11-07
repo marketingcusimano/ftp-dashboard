@@ -21,18 +21,6 @@ app.get('/healthz', (_, res) => res.send('ok'));
 const splitLines = t =>
   t.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
-function bestSplit(line) {
-  const norm = line.replace(/\u00A0/g, ' ');
-  const cand = [/\t+/, / {2,}/, /;/, /,/, /\|/];
-  let bestArr = [norm], bestCount = 1;
-  for (const rx of cand) {
-    const arr = norm.split(rx).map(s => s.trim());
-    const cnt = arr.filter(Boolean).length;
-    if (cnt > bestCount) { bestArr = arr; bestCount = cnt; }
-  }
-  return bestArr;
-}
-
 const looksLikeHeader = cells => {
   const k = (cells[0] || '').toLowerCase().replace(/[\s_]/g, '');
   return k.startsWith('tipodato');
@@ -43,7 +31,6 @@ const sectionTitle = line => {
 };
 const trimQuotes = s => s.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
 
-/* numeri italiani -> number */
 function euroToNumber(s) {
   if (s == null) return null;
   const t = String(s).replace(/\./g, '').replace(',', '.').replace(/\s/g, '');
@@ -51,16 +38,32 @@ function euroToNumber(s) {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Parser multi-sezione + metadata Agente su ogni riga */
+/** Sceglie 1 separatore a partire dall'header (NO virgola). */
+function pickDelimiterFromHeader(line) {
+  const norm = line.replace(/\u00A0/g, ' ');
+  const candidates = [/\t+/, / {2,}/, /;/, /\|/]; // <-- niente virgola!
+  let best = { rx: /\t+/, cols: 1, arr: [norm] };
+  for (const rx of candidates) {
+    const arr = norm.split(rx).map(s => s.trim());
+    const cols = arr.filter(Boolean).length;
+    if (cols > best.cols) best = { rx, cols, arr };
+  }
+  return best.rx;
+}
+
+/** Parser multi-sezione + metadata Agente, con separatore coerente per tabella */
 function parseTextToRows(text) {
   const lines = splitLines(text);
 
-  let section = null, header = null;
+  let section = null;
+  let header = null;
+  let delimiter = null; // scelto sull'header e riusato per le righe
   let agenteCodice = null, agenteNome = null, periodo = null;
 
   const rows = [];
 
-  for (const raw of lines) {
+  for (const raw0 of lines) {
+    const raw = raw0 ?? '';
     const line = raw.trim().replace(/^\uFEFF/, '');
     if (!line) continue;
 
@@ -72,21 +75,41 @@ function parseTextToRows(text) {
     const mPer = line.match(/^#\s*Periodo:\s*(.+)$/i);
     if (mPer) { periodo = trimQuotes(mPer[1]); continue; }
 
-    // --- sezione ---
+    // --- titolo sezione ---
     const sec = sectionTitle(line);
-    if (sec) { section = sec; header = null; continue; }
+    if (sec) { section = sec; header = null; delimiter = null; continue; }
 
-    // altre righe commento con # -> skip
+    // altre righe di commento -> skip
     if (line.startsWith('#')) continue;
 
-    const cells = bestSplit(raw);
+    // se non ho ancora header, provo a individuarlo e scelgo il delimitatore
+    if (!header) {
+      const rx = pickDelimiterFromHeader(raw);
+      const cells = raw.replace(/\u00A0/g, ' ').split(rx).map(s => s.trim());
+      if (looksLikeHeader(cells)) {
+        header = cells;
+        delimiter = rx;         // <---- scelto qui
+        continue;
+      } else {
+        // non è header e non ho header -> salto
+        continue;
+      }
+    }
 
-    // header tabellare
-    if (!header && looksLikeHeader(cells)) { header = cells; continue; }
-    if (header && looksLikeHeader(cells))  { header = cells; continue; }
-    if (!header) continue;
+    // ho un header e un delimiter: split coerente
+    const cells = raw.replace(/\u00A0/g, ' ').split(delimiter).map(s => s.trim());
 
-    // riga dati
+    // se la riga ha meno colonne dell'header, padding
+    if (cells.length < header.length) {
+      while (cells.length < header.length) cells.push('');
+    }
+
+    // se ne ha molte di più è sintomo di linea sporca: tronco alle colonne dell’header
+    if (cells.length > header.length) {
+      cells.length = header.length;
+    }
+
+    // costruzione oggetto
     const obj = {};
     for (let i = 0; i < header.length; i++) {
       const key = (header[i] || '').trim();
@@ -96,14 +119,14 @@ function parseTextToRows(text) {
       const isPercentKey = key.toLowerCase().includes('percentuale');
 
       if (/%\s*$/.test(val)) {
-        // percentuali in scala 0-100
+        // percentuali 0–100
         let n = val.replace('%','').trim().replace(/\./g,'').replace(',', '.');
         let num = Number(n);
         if (!Number.isFinite(num) || num > 1000) num = null;
         val = num;
-      } else if (/^[0-9.,]+$/.test(val)) {
+      } else if (/^[0-9.\s,]+$/.test(val)) {
         let num = euroToNumber(val);
-        if (num === 999999 || num === 99999900) num = null; // placeholder
+        if (num === 999999 || num === 99999900) num = null;
         if (isPercentKey && num > 1000) num = null;
         val = num;
       }
