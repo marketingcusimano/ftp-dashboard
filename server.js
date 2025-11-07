@@ -7,7 +7,7 @@ import path from 'path';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ---------------- Static ---------------- */
+/* ---------- static ---------- */
 const staticDir = fs.existsSync('public') ? 'public' : '.';
 app.use(express.static(staticDir, { maxAge: 0 }));
 app.get('/', (req, res) => {
@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 });
 app.get('/healthz', (_, res) => res.send('ok'));
 
-/* ---------------- Helpers parsing ---------------- */
+/* ---------- helpers ---------- */
 const splitLines = t =>
   t.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
@@ -33,10 +33,6 @@ function bestSplit(line) {
   return bestArr;
 }
 
-const isComment = l => {
-  const t = l.trim().replace(/^\uFEFF/, '');
-  return !t || t.startsWith('#');
-};
 const looksLikeHeader = cells => {
   const k = (cells[0] || '').toLowerCase().replace(/[\s_]/g, '');
   return k.startsWith('tipodato');
@@ -45,7 +41,9 @@ const sectionTitle = line => {
   const m = line.trim().match(/^##\s*(.+)$/);
   return m ? m[1].trim() : null;
 };
+const trimQuotes = s => s.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
 
+/* numeri italiani -> number */
 function euroToNumber(s) {
   if (s == null) return null;
   const t = String(s).replace(/\./g, '').replace(',', '.').replace(/\s/g, '');
@@ -53,62 +51,78 @@ function euroToNumber(s) {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Parser multi-sezione robusto: restituisce array di oggetti tipizzati. */
+/** Parser multi-sezione + metadata Agente su ogni riga */
 function parseTextToRows(text) {
   const lines = splitLines(text);
+
   let section = null, header = null;
+  let agenteCodice = null, agenteNome = null, periodo = null;
+
   const rows = [];
 
   for (const raw of lines) {
-    if (isComment(raw)) continue;
+    const line = raw.trim().replace(/^\uFEFF/, '');
+    if (!line) continue;
 
-    const sec = sectionTitle(raw);
+    // --- metadata agente dai commenti ---
+    const mCod = line.match(/^#\s*Codice\s+Agente:\s*(.+)$/i);
+    if (mCod) { agenteCodice = trimQuotes(mCod[1]); continue; }
+    const mNome = line.match(/^#\s*Ragione\s+Sociale:\s*(.+)$/i);
+    if (mNome) { agenteNome = trimQuotes(mNome[1]); continue; }
+    const mPer = line.match(/^#\s*Periodo:\s*(.+)$/i);
+    if (mPer) { periodo = trimQuotes(mPer[1]); continue; }
+
+    // --- sezione ---
+    const sec = sectionTitle(line);
     if (sec) { section = sec; header = null; continue; }
+
+    // altre righe commento con # -> skip
+    if (line.startsWith('#')) continue;
 
     const cells = bestSplit(raw);
 
-    // header
+    // header tabellare
     if (!header && looksLikeHeader(cells)) { header = cells; continue; }
-    if (header && looksLikeHeader(cells)) { header = cells; continue; }
+    if (header && looksLikeHeader(cells))  { header = cells; continue; }
     if (!header) continue;
 
+    // riga dati
     const obj = {};
     for (let i = 0; i < header.length; i++) {
       const key = (header[i] || '').trim();
       if (!key) continue;
-      let val = (cells[i] ?? '').toString().trim();
-      val = val.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
+      let val = trimQuotes((cells[i] ?? '').toString());
 
       const isPercentKey = key.toLowerCase().includes('percentuale');
 
       if (/%\s*$/.test(val)) {
-        // percentuale in 0–100 (es. "66,51%") -> 66.51
-        let n = val.replace('%', '').trim().replace(/\./g, '').replace(',', '.');
+        // percentuali in scala 0-100
+        let n = val.replace('%','').trim().replace(/\./g,'').replace(',', '.');
         let num = Number(n);
         if (!Number.isFinite(num) || num > 1000) num = null;
         val = num;
       } else if (/^[0-9.,]+$/.test(val)) {
-        let n = val.replace(/\./g, '').replace(',', '.');
-        let num = Number(n);
-        if (!Number.isFinite(num)) num = null;
+        let num = euroToNumber(val);
         if (num === 999999 || num === 99999900) num = null; // placeholder
         if (isPercentKey && num > 1000) num = null;
         val = num;
       }
-
       obj[key] = val;
     }
+    if (!Object.keys(obj).length) continue;
 
-    if (Object.keys(obj).length) {
-      if (section) obj['__Sezione'] = section;
-      rows.push(obj);
-    }
+    if (section) obj['__Sezione'] = section;
+    if (agenteCodice) obj['Agente_Codice'] = agenteCodice;
+    if (agenteNome)   obj['Agente_Nome']   = agenteNome;
+    if (periodo)      obj['Periodo']       = periodo;
+
+    rows.push(obj);
   }
 
   return rows;
 }
 
-/* ---------------- FTP fetch + parse ---------------- */
+/* ---------- FTP ---------- */
 async function fetchTextFromFtp() {
   const {
     FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE,
@@ -144,20 +158,7 @@ async function fetchTextFromFtp() {
   }
 }
 
-/* ---------------- API ---------------- */
-// Grezzo (per debug): mostra il testo del file
-app.get('/raw', async (_req, res) => {
-  try {
-    const txt = await fetchTextFromFtp();
-    res.set('Cache-Control', 'no-store');
-    res.type('text/plain').send(txt);
-  } catch (e) {
-    console.error('Errore /raw:', e);
-    res.status(500).send(String(e?.message || e));
-  }
-});
-
-// Pulito (per la dashboard): JSON tipizzato
+/* ---------- API ---------- */
 app.get('/data', async (_req, res) => {
   try {
     const txt = await fetchTextFromFtp();
