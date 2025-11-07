@@ -6,222 +6,215 @@
   <title>Dashboard B2B</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: { bg:"#0b1320", panel:"#0f172a", stroke:"#1e293b", text:"#e2e8f0", muted:"#94a3b8", brand:"#3b82f6", good:"#22c55e" }
+          colors: {
+            bg: "#0b1320",
+            panel: "#0f172a",
+            stroke: "#1e293b",
+            text: "#e2e8f0",
+            muted: "#94a3b8",
+            brand: "#3b82f6",
+            good: "#22c55e",
+            warn: "#f59e0b",
+          }
         }
       }
     }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <style>
-    th,td{white-space:nowrap}
-    thead th{position:sticky;top:0;background:#0b1222;z-index:1}
+    th, td { white-space: nowrap; }
+    thead th { position: sticky; top: 0; background: #0b1320; }
   </style>
 </head>
 <body class="bg-bg text-text">
-  <main class="max-w-6xl mx-auto p-5 grid gap-5">
+  <main class="max-w-7xl mx-auto p-6 grid gap-6">
     <header class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-bold">Dashboard B2B</h1>
-        <p id="meta" class="text-sm text-muted">Caricamento…</p>
+      <h1 class="text-2xl font-bold">Dashboard B2B</h1>
+      <div class="flex items-center gap-2">
+        <select id="agent" class="bg-panel border border-stroke rounded-xl px-3 py-2 text-sm"></select>
+        <button id="refresh" class="px-4 py-2 bg-brand text-white rounded-xl font-medium">Aggiorna</button>
       </div>
-      <button id="refresh" class="px-4 py-2 rounded-xl bg-brand text-white">Aggiorna</button>
     </header>
 
-    <!-- Filtri -->
-    <section class="bg-panel border border-stroke rounded-2xl p-4 grid gap-3">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-muted min-w-28">Agente</label>
-          <select id="agent" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full"></select>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-muted min-w-28">Sezione</label>
-          <select id="section" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full"></select>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-muted min-w-28">Cerca</label>
-          <input id="search" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full" placeholder="cliente, provincia, categoria…"/>
-        </div>
-      </div>
-    </section>
+    <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4"></section>
 
-    <!-- KPI -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">Righe</div><div id="k-rows" class="text-2xl font-bold">–</div></div>
-      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">Fatturato Totale</div><div id="k-fat" class="text-2xl font-bold">–</div></div>
-      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">% Obiettivo (media)</div><div id="k-perc" class="text-2xl font-bold">–</div></div>
-      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">Clienti Serviti</div><div id="k-cli" class="text-2xl font-bold">–</div></div>
-    </section>
-
-    <!-- Grafico + Tabella -->
-    <section class="grid lg:grid-cols-2 gap-5">
-      <div class="bg-panel border border-stroke rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Fatturato per Provincia</h3>
-          <span id="chart-note" class="text-xs text-muted"></span>
-        </div>
-        <div class="h-[340px]"><canvas id="chart"></canvas></div>
-      </div>
-
-      <div class="bg-panel border border-stroke rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Tabella</h3>
-          <span class="text-xs text-muted">prime 300 righe</span>
-        </div>
-        <div class="overflow-auto border border-stroke rounded-xl">
-          <table id="tbl" class="w-full text-sm"></table>
-        </div>
-      </div>
-    </section>
+    <section id="sections" class="grid gap-6"></section>
   </main>
 
-<script>
-let RAW=[], VIEW=[], chart;
-const el = id => document.getElementById(id);
-const fmt = n => (n==null||isNaN(n)) ? '—' : n.toLocaleString('it-IT',{maximumFractionDigits:2});
+  <script>
+    let RAW = [], CURRENT_AGENT = null, chartRefs = {};
 
-function buildAgents(){
-  const byKey = r => (r.Agente_Codice || '') + '|' + (r.Agente_Nome || '');
-  const set = new Set(RAW.map(byKey));
-  const options = ['|Tutti gli agenti', ...Array.from(set)];
-  el('agent').innerHTML = options.map(k=>{
-    const [cod, nome] = k.split('|');
-    const label = nome || 'Tutti gli agenti';
-    return `<option value="${cod}||${nome}">${label}</option>`;
-  }).join('');
-}
+    const el = id => document.getElementById(id);
+    const fmt = n => (n==null||isNaN(n)) ? '—' : n.toLocaleString('it-IT',{maximumFractionDigits:2});
 
-function buildSections(){
-  const set = new Set(RAW.map(r=>r.__Sezione||'Generale').filter(Boolean));
-  el('section').innerHTML = '<option value="">Tutte le sezioni</option>' +
-    Array.from(set).map(x=>`<option>${x}</option>`).join('');
-}
+    async function loadData() {
+      const res = await fetch('/data', {cache: 'no-store'});
+      const data = await res.json();
+      RAW = data.rows || [];
+      buildAgentSelect();
+      el('agent').dispatchEvent(new Event('change'));
+    }
 
-function filterRows(){
-  const [cod, nome] = (el('agent').value||'|').split('||');
-  const sec = el('section').value;
-  const q   = el('search').value.toLowerCase().trim();
+    function buildAgentSelect() {
+      const agents = [...new Map(RAW.map(r => [r.Agente_Codice, r.Agente_Nome]))];
+      el('agent').innerHTML = '<option value="">Tutti gli agenti</option>' +
+        agents.map(([cod, nome]) => `<option value="${cod}">${nome || cod}</option>`).join('');
+    }
 
-  let rows = RAW;
-  // filtro agente (se non è "Tutti gli agenti")
-  if (cod || nome){
-    rows = rows.filter(r =>
-      (r.Agente_Codice||'')===cod && (r.Agente_Nome||'')===nome
-    );
-  }
-  if (sec) rows = rows.filter(r => (r.__Sezione||'')===sec);
-  if (q) rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(q));
-  return rows;
-}
+    function groupBy(arr, key) {
+      return arr.reduce((acc, r) => {
+        const k = r[key] || 'Generale';
+        (acc[k] = acc[k] || []).push(r);
+        return acc;
+      }, {});
+    }
 
-function computeTotals(rows){
-  // somme per Fatturato/Anno_Corrente/Importo_* e clienti
-  const num = k => rows.reduce((a,r)=>a + (Number(r[k])||0), 0);
-  const arr = k => rows.map(r=>Number(r[k])).filter(Number.isFinite);
+    function drawKPI(agentRows) {
+      const container = el('kpis');
+      const fatturato = sum(agentRows, ['Fatturato','Importo_Totale','Importo','Anno_Corrente']);
+      const clienti = sum(agentRows, ['Clienti_Serviti','Clienti_Totale','Clienti_Anno_Corrente']);
+      const perc = avg(agentRows, ['Percentuale_Obiettivo','Percentuale_Obiettivo_Clienti']);
+      const periodo = (agentRows.find(r => r.Periodo) || {}).Periodo || '';
 
-  const fatturato = num('Fatturato') + num('Importo_Totale') + num('Importo') + num('Anno_Corrente');
-  const clienti   = num('Clienti_Serviti') + num('Clienti_Totale') + num('Clienti_Anno_Corrente');
+      const cards = [
+        {label:'Fatturato Totale', val:'€ '+fmt(fatturato)},
+        {label:'Clienti Serviti', val:fmt(clienti)},
+        {label:'Media % Obiettivo', val:fmt(perc)+'%'},
+        {label:'Periodo', val:periodo},
+      ];
 
-  const percCols = ['Percentuale_Obiettivo','Percentuale_Obiettivo_Clienti'];
-  const pVals = percCols.flatMap(k => arr(k));
-  const pAvg  = pVals.length ? pVals.reduce((a,b)=>a+b,0) / pVals.length : null;
+      container.innerHTML = cards.map(c => `
+        <div class="bg-panel border border-stroke rounded-2xl p-5">
+          <div class="text-xs text-muted">${c.label}</div>
+          <div class="text-2xl font-bold mt-1">${c.val}</div>
+        </div>
+      `).join('');
+    }
 
-  return { fatturato, clienti, pAvg };
-}
+    function sum(rows, keys) {
+      return rows.reduce((acc,r)=>{
+        for (const k of keys) if (r[k] && !isNaN(r[k])) return acc + parseFloat(r[k]);
+        return acc;
+      },0);
+    }
 
-function drawTable(rows){
-  const tbl = el('tbl');
-  if (!rows.length){ tbl.innerHTML = '<thead><tr><th class="px-3 py-2 text-left text-gray-400">Nessun dato</th></tr></thead>'; return []; }
-  const cols = Object.keys(rows[0]);
-  const percCols = new Set(cols.filter(c => c.toLowerCase().includes('percentuale')));
-  const head = '<thead class="border-b border-stroke"><tr>'+cols.map(c=>`<th class="px-3 py-2 text-left">${c}</th>`).join('')+'</tr></thead>';
-  const body = rows.slice(0,300).map(r=>{
-    return '<tr class="border-b border-stroke/50">'+cols.map(c=>{
-      let v = r[c];
-      if (v == null) v = '';
-      else if (percCols.has(c) && typeof v === 'number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
-      else if (typeof v === 'number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2});
-      return `<td class="px-3 py-2">${v}</td>`;
-    }).join('')+'</tr>';
-  }).join('');
-  tbl.innerHTML = head + '<tbody>' + body + '</tbody>';
-  return cols;
-}
+    function avg(rows, keys) {
+      const vals = [];
+      for (const r of rows) {
+        for (const k of keys) if (r[k] && !isNaN(r[k])) vals.push(parseFloat(r[k]));
+      }
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+    }
 
-function drawChart(rows){
-  const ctx = el('chart').getContext('2d');
-  if (chart) chart.destroy();
-  if (!rows.length){ chart = new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label:'',data:[]}]}}); el('chart-note').textContent=''; return; }
+    function buildSections(agentRows) {
+      const bySection = groupBy(agentRows, '__Sezione');
+      const container = el('sections');
+      container.innerHTML = '';
 
-  // Aggrego Fatturato per Provincia (usando Fatturato || Importo_Totale || Anno_Corrente come fallback)
-  const valueKeys = ['Fatturato','Importo_Totale','Importo','Anno_Corrente'];
-  const pick = r => {
-    for (const k of valueKeys){ if (Number.isFinite(+r[k])) return +r[k]; }
-    return 0;
-  };
+      for (const [sec, rows] of Object.entries(bySection)) {
+        const block = document.createElement('div');
+        block.className = "bg-panel border border-stroke rounded-2xl p-5";
+        block.innerHTML = `
+          <h2 class="text-lg font-semibold mb-3">${sec}</h2>
+          <div class="grid md:grid-cols-2 gap-4 items-start">
+            <div><canvas id="chart_${sec}"></canvas></div>
+            <div class="overflow-auto border border-stroke rounded-xl max-h-[300px]">
+              <table class="w-full text-sm"><thead></thead><tbody></tbody></table>
+            </div>
+          </div>`;
+        container.appendChild(block);
 
-  const agg = new Map();
-  for (const r of rows){
-    const prov = (r.Provincia || 'Generale').toString();
-    agg.set(prov, (agg.get(prov)||0) + pick(r));
-  }
-  const labels = Array.from(agg.keys());
-  const data   = Array.from(agg.values());
-
-  chart = new Chart(ctx,{
-    type:'bar',
-    data:{ labels, datasets:[{ label:'Fatturato', data, backgroundColor:'#3b82f6' }] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{ labels:{ color:'#e2e8f0' } },
-        tooltip:{ callbacks:{ label:(ctx)=> '€ ' + ctx.parsed.y.toLocaleString('it-IT') } }
-      },
-      scales:{
-        x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'#1f2942' } },
-        y:{ ticks:{ color:'#94a3b8' }, grid:{ color:'#1f2942' }, suggestedMin:0 }
+        drawTable(block.querySelector('table'), rows);
+        drawChart(block.querySelector('canvas').id, sec, rows);
       }
     }
-  });
-  el('chart-note').textContent = 'Somma valori per provincia';
-}
 
-function updateKpi(rows, cols, updatedAt){
-  const t = computeTotals(rows);
-  el('k-rows').textContent = rows.length;
-  el('k-fat').textContent  = '€ ' + fmt(t.fatturato);
-  el('k-cli').textContent  = fmt(t.clienti);
-  el('k-perc').textContent = t.pAvg==null ? '—' : t.pAvg.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
-  el('meta').textContent   = `${rows.length} righe • ${cols.length} colonne • aggiornato ${new Date(updatedAt).toLocaleString('it-IT')}`;
-}
+    function drawTable(tbl, rows) {
+      if (!rows.length) {
+        tbl.querySelector('thead').innerHTML = '<tr><th class="px-3 py-2 text-left text-muted">Nessun dato</th></tr>';
+        return;
+      }
+      const cols = Object.keys(rows[0]);
+      const head = '<tr>' + cols.map(c=>`<th class="px-3 py-2 text-left">${c}</th>`).join('') + '</tr>';
+      const body = rows.slice(0,30).map(r=>
+        '<tr class="border-b border-stroke/50">'+
+        cols.map(c=>`<td class="px-3 py-1">${fmt(r[c])}</td>`).join('')+
+        '</tr>'
+      ).join('');
+      tbl.querySelector('thead').innerHTML = head;
+      tbl.querySelector('tbody').innerHTML = body;
+    }
 
-async function load(){
-  el('meta').textContent = 'Carico dati…';
-  const res = await fetch('/data', { cache:'no-store' });
-  const json = await res.json();
-  RAW = json.rows || [];
+    function drawChart(id, section, rows) {
+      const ctx = document.getElementById(id).getContext('2d');
+      if (chartRefs[id]) chartRefs[id].destroy();
 
-  // costruisco tendine
-  buildAgents();
-  buildSections();
+      let labels = [], data = [], type = 'bar', label = 'Valore';
 
-  // applico filtri e disegno
-  VIEW = filterRows();
-  const cols = drawTable(VIEW);
-  drawChart(VIEW);
-  updateKpi(VIEW, cols, json.updatedAt || new Date());
-}
+      if (/OBIETTIVI/i.test(section)) {
+        const group = groupBy(rows,'Provincia');
+        labels = Object.keys(group);
+        data = labels.map(p => sum(group[p], ['Anno_Corrente']));
+        label = 'Anno Corrente';
+      } else if (/CLIENTI/i.test(section)) {
+        const group = groupBy(rows,'Provincia');
+        labels = Object.keys(group);
+        data = labels.map(p => sum(group[p], ['Fatturato','Clienti_Serviti']));
+        label = 'Fatturato';
+      } else if (/VENDITE/i.test(section)) {
+        const top = rows.sort((a,b)=>b.Fatturato - a.Fatturato).slice(0,10);
+        labels = top.map(r=>r.Ragione_Sociale_Cliente);
+        data = top.map(r=>r.Fatturato);
+        label = 'Fatturato';
+      } else if (/CATEGORIA/i.test(section)) {
+        const group = groupBy(rows,'Categoria');
+        labels = Object.keys(group);
+        data = labels.map(c => sum(group[c], ['Importo_Totale']));
+        label = 'Importo';
+        type = 'doughnut';
+      } else if (/RIPARTIZIONE/i.test(section)) {
+        labels = rows.map(r=>r.Categoria_Prodotto);
+        data = rows.map(r=>r.Percentuale || r.Importo);
+        label = '%';
+        type = 'doughnut';
+      } else if (/RIEPILOGHI/i.test(section) || /TOTALE/i.test(section)) {
+        const val = sum(rows, ['Valore','Fatturato_Totale']);
+        labels = ['Totale'];
+        data = [val];
+        label = 'Totale';
+      }
 
-el('refresh').addEventListener('click', load);
-el('agent').addEventListener('change',  ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
-el('section').addEventListener('change',()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
-el('search').addEventListener('input',   ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
+      chartRefs[id] = new Chart(ctx, {
+        type,
+        data: { labels, datasets: [{ label, data, backgroundColor:'#3b82f6' }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend:{ labels:{ color:'#e2e8f0' } } },
+          scales: type==='doughnut'?{}:{
+            x:{ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}},
+            y:{ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}}
+          }
+        }
+      });
+    }
 
-load().catch(e=>{ el('meta').textContent='Errore: '+e.message; console.error(e); });
-</script>
+    el('refresh').addEventListener('click', loadData);
+    el('agent').addEventListener('change', e => {
+      const code = e.target.value;
+      CURRENT_AGENT = code || null;
+      const rows = code ? RAW.filter(r=>r.Agente_Codice===code) : RAW;
+      drawKPI(rows);
+      buildSections(rows);
+    });
+
+    loadData();
+  </script>
 </body>
 </html>
