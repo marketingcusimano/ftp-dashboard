@@ -1,204 +1,122 @@
-import 'dotenv/config';
-import express from 'express';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+// --- utils nuove (incolla in server.js) ---
+const U_NBSP = /\u00A0/g; // non-breaking space
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-/* ---------- static ---------- */
-const staticDir = fs.existsSync('public') ? 'public' : '.';
-app.use(express.static(staticDir, { maxAge: 0 }));
-app.get('/', (req, res) => {
-  const file = path.join(process.cwd(), staticDir, 'index.html');
-  if (fs.existsSync(file)) return res.sendFile(file);
-  res.status(404).send('index.html non trovato');
-});
-app.get('/healthz', (_, res) => res.send('ok'));
-
-/* ---------- helpers ---------- */
-const splitLines = t =>
-  t.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-
-const looksLikeHeader = cells => {
-  const k = (cells[0] || '').toLowerCase().replace(/[\s_]/g, '');
-  return k.startsWith('tipodato');
-};
-const sectionTitle = line => {
-  const m = line.trim().match(/^##\s*(.+)$/);
-  return m ? m[1].trim() : null;
-};
-const trimQuotes = s => s.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
-
-function euroToNumber(s) {
-  if (s == null) return null;
-  const t = String(s).replace(/\./g, '').replace(',', '.').replace(/\s/g, '');
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
+function normalizeLine(s) {
+  // rimuove BOM, NBSP e spazi strani
+  return String(s ?? '')
+    .replace(/^\uFEFF/, '')
+    .replace(U_NBSP, ' ')
+    .replace(/\t+/g, '\t')        // compattare tab
+    .replace(/\s+$/,'')           // trim end
+    .trim();
 }
 
-/** Sceglie 1 separatore a partire dall'header (NO virgola). */
 function pickDelimiterFromHeader(line) {
-  const norm = line.replace(/\u00A0/g, ' ');
-  const candidates = [/\t+/, / {2,}/, /;/, /\|/]; // <-- niente virgola!
-  let best = { rx: /\t+/, cols: 1, arr: [norm] };
+  // NO VIRGOLA: i numeri italiani la usano come decimale
+  const candidates = [/\t+/, / {2,}/, /;/, /\|/];
+  const norm = line.replace(U_NBSP, ' ');
+  let best = { rx: null, cols: 1 };
   for (const rx of candidates) {
-    const arr = norm.split(rx).map(s => s.trim());
-    const cols = arr.filter(Boolean).length;
-    if (cols > best.cols) best = { rx, cols, arr };
+    const arr = norm.split(rx).map(s => s.trim()).filter(Boolean);
+    if (arr.length > best.cols) best = { rx, cols: arr.length };
   }
-  return best.rx;
+  // fallback sicuro: tab o 2+ spazi
+  return best.rx || /\t+| {2,}/;
 }
 
-/** Parser multi-sezione + metadata Agente, con separatore coerente per tabella */
 function parseTextToRows(text) {
-  const lines = splitLines(text);
+  const rawLines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const lines = rawLines.map(normalizeLine);
 
+  let rows = [];
   let section = null;
-  let header = null;
-  let delimiter = null; // scelto sull'header e riusato per le righe
   let agenteCodice = null, agenteNome = null, periodo = null;
 
-  const rows = [];
+  // 1) trova tutte le righe header (contengono "Tipo_Dato")
+  const headerIdx = [];
+  for (let i=0;i<lines.length;i++){
+    const L = lines[i];
+    if (!L) continue;
+    if (/^#\s*Codice\s+Agente:/i.test(L)) { agenteCodice = L.replace(/^#\s*Codice\s+Agente:\s*/i,'').trim(); continue; }
+    if (/^#\s*Ragione\s+Sociale:/i.test(L)) { agenteNome   = L.replace(/^#\s*Ragione\s+Sociale:\s*/i,'').trim(); continue; }
+    if (/^#\s*Periodo:/i.test(L))          { periodo      = L.replace(/^#\s*Periodo:\s*/i,'').trim(); continue; }
 
-  for (const raw0 of lines) {
-    const raw = raw0 ?? '';
-    const line = raw.trim().replace(/^\uFEFF/, '');
-    if (!line) continue;
+    const sec = L.match(/^##\s*(.+)$/);
+    if (sec) { section = sec[1].trim(); continue; }
 
-    // --- metadata agente dai commenti ---
-    const mCod = line.match(/^#\s*Codice\s+Agente:\s*(.+)$/i);
-    if (mCod) { agenteCodice = trimQuotes(mCod[1]); continue; }
-    const mNome = line.match(/^#\s*Ragione\s+Sociale:\s*(.+)$/i);
-    if (mNome) { agenteNome = trimQuotes(mNome[1]); continue; }
-    const mPer = line.match(/^#\s*Periodo:\s*(.+)$/i);
-    if (mPer) { periodo = trimQuotes(mPer[1]); continue; }
+    if (/^#/.test(L)) continue; // altri commenti
 
-    // --- titolo sezione ---
-    const sec = sectionTitle(line);
-    if (sec) { section = sec; header = null; delimiter = null; continue; }
+    if (/tipo[_ ]?dato/i.test(L)) {
+      headerIdx.push({ i, sectionAt: section ?? null });
+    }
+  }
 
-    // altre righe di commento -> skip
-    if (line.startsWith('#')) continue;
+  // 2) per ogni header, scegli il separatore e parse le righe fino al prossimo header/sezione
+  for (let h = 0; h < headerIdx.length; h++){
+    const start = headerIdx[h].i;
+    const end   = (h+1 < headerIdx.length ? headerIdx[h+1].i : lines.length);
+    const sectionHere = headerIdx[h].sectionAt;
 
-    // se non ho ancora header, provo a individuarlo e scelgo il delimitatore
-    if (!header) {
-      const rx = pickDelimiterFromHeader(raw);
-      const cells = raw.replace(/\u00A0/g, ' ').split(rx).map(s => s.trim());
-      if (looksLikeHeader(cells)) {
-        header = cells;
-        delimiter = rx;         // <---- scelto qui
-        continue;
-      } else {
-        // non è header e non ho header -> salto
-        continue;
+    const headerLine = lines[start];
+    const delim = pickDelimiterFromHeader(headerLine);
+    const header = headerLine.split(delim).map(s=>s.trim());
+
+    // salta header malformati
+    if (!header.length || !/tipo[_ ]?dato/i.test(header[0])) continue;
+
+    for (let r = start+1; r < end; r++){
+      let L = lines[r];
+      if (!L) continue;
+      if (/^#/.test(L)) continue;
+      // se parte una nuova sezione, interrompi
+      if (/^##\s+/.test(L)) break;
+
+      let cells = L.split(delim).map(s=>s.trim());
+
+      // uniforma numero di colonne
+      if (cells.length < header.length) {
+        while (cells.length < header.length) cells.push('');
+      } else if (cells.length > header.length) {
+        cells = cells.slice(0, header.length);
+      }
+
+      const obj = {};
+      for (let c=0;c<header.length;c++){
+        const keyRaw = header[c] || '';
+        const key = keyRaw.trim();
+        if (!key) continue;
+        let val = (cells[c] ?? '').replace(/^["']|["']$/g,'').trim();
+
+        const isPercentKey = key.toLowerCase().includes('percentuale');
+
+        if (/%\s*$/.test(val)) {
+          // percentuali 0–100, es "66,51%" -> 66.51
+          let n = val.replace('%','').replace(/\./g,'').replace(',', '.').trim();
+          let num = Number(n);
+          if (!Number.isFinite(num) || num > 1000) num = null;
+          obj[key] = num;
+        } else if (/^[0-9.\s,]+$/.test(val)) {
+          // numeri italiani -> float
+          let n = val.replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
+          let num = Number(n);
+          if (!Number.isFinite(num)) num = null;
+          if (num === 999999 || num === 99999900) num = null;
+          if (isPercentKey && num > 1000) num = null;
+          obj[key] = num;
+        } else {
+          obj[key] = val || null;
+        }
+      }
+
+      if (Object.keys(obj).length){
+        if (sectionHere) obj['__Sezione'] = sectionHere;
+        if (agenteCodice) obj['Agente_Codice'] = agenteCodice;
+        if (agenteNome)   obj['Agente_Nome']   = agenteNome;
+        if (periodo)      obj['Periodo']       = periodo;
+        rows.push(obj);
       }
     }
-
-    // ho un header e un delimiter: split coerente
-    const cells = raw.replace(/\u00A0/g, ' ').split(delimiter).map(s => s.trim());
-
-    // se la riga ha meno colonne dell'header, padding
-    if (cells.length < header.length) {
-      while (cells.length < header.length) cells.push('');
-    }
-
-    // se ne ha molte di più è sintomo di linea sporca: tronco alle colonne dell’header
-    if (cells.length > header.length) {
-      cells.length = header.length;
-    }
-
-    // costruzione oggetto
-    const obj = {};
-    for (let i = 0; i < header.length; i++) {
-      const key = (header[i] || '').trim();
-      if (!key) continue;
-      let val = trimQuotes((cells[i] ?? '').toString());
-
-      const isPercentKey = key.toLowerCase().includes('percentuale');
-
-      if (/%\s*$/.test(val)) {
-        // percentuali 0–100
-        let n = val.replace('%','').trim().replace(/\./g,'').replace(',', '.');
-        let num = Number(n);
-        if (!Number.isFinite(num) || num > 1000) num = null;
-        val = num;
-      } else if (/^[0-9.\s,]+$/.test(val)) {
-        let num = euroToNumber(val);
-        if (num === 999999 || num === 99999900) num = null;
-        if (isPercentKey && num > 1000) num = null;
-        val = num;
-      }
-      obj[key] = val;
-    }
-    if (!Object.keys(obj).length) continue;
-
-    if (section) obj['__Sezione'] = section;
-    if (agenteCodice) obj['Agente_Codice'] = agenteCodice;
-    if (agenteNome)   obj['Agente_Nome']   = agenteNome;
-    if (periodo)      obj['Periodo']       = periodo;
-
-    rows.push(obj);
   }
 
   return rows;
 }
-
-/* ---------- FTP ---------- */
-async function fetchTextFromFtp() {
-  const {
-    FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE,
-    FTP_SECURE, FTP_TIMEOUT, FTP_TLS_INSECURE, FTP_TLS_SERVERNAME
-  } = process.env;
-
-  if (!FTP_HOST || !FTP_USER || !FTP_PASS || !FTP_FILE) {
-    throw new Error('Mancano FTP_HOST, FTP_USER, FTP_PASS o FTP_FILE.');
-  }
-
-  const { Client } = await import('basic-ftp');
-  const client = new Client(Number(FTP_TIMEOUT || 25000));
-  client.ftp.verbose = false;
-
-  const tmp = path.join(os.tmpdir(), `generalb2b_${Date.now()}.txt`);
-  try {
-    await client.access({
-      host: FTP_HOST,
-      user: FTP_USER,
-      password: FTP_PASS,
-      secure: String(FTP_SECURE).toLowerCase() === 'true',
-      secureOptions: {
-        rejectUnauthorized: String(FTP_TLS_INSECURE).toLowerCase() === 'true' ? false : true,
-        servername: FTP_TLS_SERVERNAME || FTP_HOST
-      }
-    });
-
-    await client.downloadTo(tmp, FTP_FILE);
-    return fs.readFileSync(tmp, 'utf8');
-  } finally {
-    try { client.close(); } catch {}
-    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch {}
-  }
-}
-
-/* ---------- API ---------- */
-app.get('/data', async (_req, res) => {
-  try {
-    const txt = await fetchTextFromFtp();
-    const rows = parseTextToRows(txt);
-    res.set('Cache-Control', 'no-store');
-    res.json({
-      updatedAt: new Date().toISOString(),
-      rowCount: rows.length,
-      columns: rows.length ? Object.keys(rows[0]) : [],
-      rows
-    });
-  } catch (e) {
-    console.error('Errore /data:', e);
-    res.status(500).json({ error: 'Lettura/parse fallita', details: String(e?.message || e) });
-  }
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server su http://0.0.0.0:${PORT}`);
-});
