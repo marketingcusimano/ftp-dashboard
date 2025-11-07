@@ -10,14 +10,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            bg: "#0b1320",
-            panel: "#0f172a",
-            stroke: "#1e293b",
-            text: "#e2e8f0",
-            muted: "#94a3b8",
-            brand: "#3b82f6"
-          }
+          colors: { bg:"#0b1320", panel:"#0f172a", stroke:"#1e293b", text:"#e2e8f0", muted:"#94a3b8", brand:"#3b82f6", good:"#22c55e" }
         }
       }
     }
@@ -35,45 +28,50 @@
         <h1 class="text-xl font-bold">Dashboard B2B</h1>
         <p id="meta" class="text-sm text-muted">Caricamento…</p>
       </div>
-      <div class="flex gap-2">
-        <button id="refresh" class="px-4 py-2 rounded-xl bg-brand text-white">Aggiorna</button>
-      </div>
+      <button id="refresh" class="px-4 py-2 rounded-xl bg-brand text-white">Aggiorna</button>
     </header>
 
-    <section class="grid gap-3 bg-panel border border-stroke rounded-2xl p-4">
+    <!-- Filtri -->
+    <section class="bg-panel border border-stroke rounded-2xl p-4 grid gap-3">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-muted min-w-24">Sezione</label>
+          <label class="text-sm text-muted min-w-28">Agente</label>
+          <select id="agent" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full"></select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-muted min-w-28">Sezione</label>
           <select id="section" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full"></select>
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-muted min-w-24">Metrica</label>
-          <select id="metric" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full">
-            <option value="auto">Automatica</option>
-            <option value="Fatturato">Fatturato</option>
-            <option value="Anno_Corrente">Anno_Corrente</option>
-            <option value="Clienti_Serviti">Clienti_Serviti</option>
-            <option value="Percentuale_Obiettivo">Percentuale_Obiettivo</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-muted min-w-24">Cerca</label>
+          <label class="text-sm text-muted min-w-28">Cerca</label>
           <input id="search" class="bg-[#0b1222] border border-stroke rounded-xl px-3 py-2 w-full" placeholder="cliente, provincia, categoria…"/>
         </div>
       </div>
     </section>
 
+    <!-- KPI -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">Righe</div><div id="k-rows" class="text-2xl font-bold">–</div></div>
+      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">Fatturato Totale</div><div id="k-fat" class="text-2xl font-bold">–</div></div>
+      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">% Obiettivo (media)</div><div id="k-perc" class="text-2xl font-bold">–</div></div>
+      <div class="bg-panel border border-stroke rounded-2xl p-5"><div class="text-xs text-muted">Clienti Serviti</div><div id="k-cli" class="text-2xl font-bold">–</div></div>
+    </section>
+
+    <!-- Grafico + Tabella -->
     <section class="grid lg:grid-cols-2 gap-5">
       <div class="bg-panel border border-stroke rounded-2xl p-4">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Grafico</h3>
-          <span class="text-xs text-muted" id="chart-note"></span>
+          <h3 class="font-semibold">Fatturato per Provincia</h3>
+          <span id="chart-note" class="text-xs text-muted"></span>
         </div>
         <div class="h-[340px]"><canvas id="chart"></canvas></div>
       </div>
 
       <div class="bg-panel border border-stroke rounded-2xl p-4">
-        <h3 class="font-semibold mb-2">Tabella</h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Tabella</h3>
+          <span class="text-xs text-muted">prime 300 righe</span>
+        </div>
         <div class="overflow-auto border border-stroke rounded-xl">
           <table id="tbl" class="w-full text-sm"></table>
         </div>
@@ -84,35 +82,68 @@
 <script>
 let RAW=[], VIEW=[], chart;
 const el = id => document.getElementById(id);
-const fmt = n => (n==null||isNaN(n)) ? '' : n.toLocaleString('it-IT',{maximumFractionDigits:2});
+const fmt = n => (n==null||isNaN(n)) ? '—' : n.toLocaleString('it-IT',{maximumFractionDigits:2});
 
-function fillSectionOptions(){
-  const s = el('section');
-  const sections = Array.from(new Set(RAW.map(r=>r.__Sezione||'Generale'))).filter(Boolean);
-  s.innerHTML = '<option value="">Tutte le sezioni</option>' + sections.map(x=>`<option>${x}</option>`).join('');
+function buildAgents(){
+  const byKey = r => (r.Agente_Codice || '') + '|' + (r.Agente_Nome || '');
+  const set = new Set(RAW.map(byKey));
+  const options = ['|Tutti gli agenti', ...Array.from(set)];
+  el('agent').innerHTML = options.map(k=>{
+    const [cod, nome] = k.split('|');
+    const label = nome || 'Tutti gli agenti';
+    return `<option value="${cod}||${nome}">${label}</option>`;
+  }).join('');
+}
+
+function buildSections(){
+  const set = new Set(RAW.map(r=>r.__Sezione||'Generale').filter(Boolean));
+  el('section').innerHTML = '<option value="">Tutte le sezioni</option>' +
+    Array.from(set).map(x=>`<option>${x}</option>`).join('');
 }
 
 function filterRows(){
+  const [cod, nome] = (el('agent').value||'|').split('||');
   const sec = el('section').value;
-  const q = el('search').value.toLowerCase().trim();
+  const q   = el('search').value.toLowerCase().trim();
+
   let rows = RAW;
-  if (sec) rows = rows.filter(r=> (r.__Sezione||'') === sec);
-  if (q) rows = rows.filter(r=> JSON.stringify(r).toLowerCase().includes(q));
+  // filtro agente (se non è "Tutti gli agenti")
+  if (cod || nome){
+    rows = rows.filter(r =>
+      (r.Agente_Codice||'')===cod && (r.Agente_Nome||'')===nome
+    );
+  }
+  if (sec) rows = rows.filter(r => (r.__Sezione||'')===sec);
+  if (q) rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(q));
   return rows;
+}
+
+function computeTotals(rows){
+  // somme per Fatturato/Anno_Corrente/Importo_* e clienti
+  const num = k => rows.reduce((a,r)=>a + (Number(r[k])||0), 0);
+  const arr = k => rows.map(r=>Number(r[k])).filter(Number.isFinite);
+
+  const fatturato = num('Fatturato') + num('Importo_Totale') + num('Importo') + num('Anno_Corrente');
+  const clienti   = num('Clienti_Serviti') + num('Clienti_Totale') + num('Clienti_Anno_Corrente');
+
+  const percCols = ['Percentuale_Obiettivo','Percentuale_Obiettivo_Clienti'];
+  const pVals = percCols.flatMap(k => arr(k));
+  const pAvg  = pVals.length ? pVals.reduce((a,b)=>a+b,0) / pVals.length : null;
+
+  return { fatturato, clienti, pAvg };
 }
 
 function drawTable(rows){
   const tbl = el('tbl');
   if (!rows.length){ tbl.innerHTML = '<thead><tr><th class="px-3 py-2 text-left text-gray-400">Nessun dato</th></tr></thead>'; return []; }
   const cols = Object.keys(rows[0]);
-  const percentCols = new Set(cols.filter(c => c.toLowerCase().includes('percentuale')));
-
+  const percCols = new Set(cols.filter(c => c.toLowerCase().includes('percentuale')));
   const head = '<thead class="border-b border-stroke"><tr>'+cols.map(c=>`<th class="px-3 py-2 text-left">${c}</th>`).join('')+'</tr></thead>';
   const body = rows.slice(0,300).map(r=>{
     return '<tr class="border-b border-stroke/50">'+cols.map(c=>{
       let v = r[c];
       if (v == null) v = '';
-      else if (percentCols.has(c) && typeof v === 'number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
+      else if (percCols.has(c) && typeof v === 'number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
       else if (typeof v === 'number') v = v.toLocaleString('it-IT',{maximumFractionDigits:2});
       return `<td class="px-3 py-2">${v}</td>`;
     }).join('')+'</tr>';
@@ -126,63 +157,46 @@ function drawChart(rows){
   if (chart) chart.destroy();
   if (!rows.length){ chart = new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label:'',data:[]}]}}); el('chart-note').textContent=''; return; }
 
-  const has = k => rows[0] && k in rows[0];
-  let label='Provincia', value='Fatturato', title='Fatturato per Provincia';
+  // Aggrego Fatturato per Provincia (usando Fatturato || Importo_Totale || Anno_Corrente come fallback)
+  const valueKeys = ['Fatturato','Importo_Totale','Importo','Anno_Corrente'];
+  const pick = r => {
+    for (const k of valueKeys){ if (Number.isFinite(+r[k])) return +r[k]; }
+    return 0;
+  };
 
-  const chosen = el('metric').value;
-  if (chosen !== 'auto') value = chosen;
-  else {
-    if (has('Provincia') && has('Fatturato')) { label='Provincia'; value='Fatturato'; title='Fatturato per Provincia'; }
-    else if (has('Ragione_Sociale_Cliente') && has('Fatturato')) { label='Ragione_Sociale_Cliente'; value='Fatturato'; title='Top clienti'; }
-    else if (has('Categoria') && (has('Importo_Totale')||has('Importo'))) { label='Categoria'; value=has('Importo_Totale')?'Importo_Totale':'Importo'; title='Categorie prodotto'; }
-    else if (has('Provincia') && has('Clienti_Serviti')) { label='Provincia'; value='Clienti_Serviti'; title='Clienti serviti'; }
-    else if (has('Provincia') && has('Anno_Corrente')) { label='Provincia'; value='Anno_Corrente'; title='Anno corrente per provincia'; }
-  }
-
-  const isPercent = String(value).toLowerCase().includes('percentuale');
-
-  // aggregazione: somma per metriche assolute, media per percentuali
   const agg = new Map();
   for (const r of rows){
-    const k = (r[label] || '(vuoto)').toString();
-    const v = Number(r[value]);
-    if (!Number.isFinite(v)) continue;
-    const rec = agg.get(k) || { sum:0, count:0 };
-    rec.sum += v; rec.count++; agg.set(k, rec);
+    const prov = (r.Provincia || 'Generale').toString();
+    agg.set(prov, (agg.get(prov)||0) + pick(r));
   }
-
   const labels = Array.from(agg.keys());
-  const data = labels.map(k => {
-    const {sum, count} = agg.get(k);
-    return isPercent ? (count ? sum / count : 0) : sum;
-  });
+  const data   = Array.from(agg.values());
 
   chart = new Chart(ctx,{
     type:'bar',
-    data:{ labels, datasets:[{ label:title, data, backgroundColor:'#3b82f6' }] },
+    data:{ labels, datasets:[{ label:'Fatturato', data, backgroundColor:'#3b82f6' }] },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{ labels:{ color:'#e2e8f0' } },
-        tooltip:{ callbacks:{ label:(ctx)=>{
-          const v = ctx.parsed.y;
-          return isPercent ? (v.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%')
-                           : ('€ ' + v.toLocaleString('it-IT',{maximumFractionDigits:0}));
-        }}},
-        title:{ display:true, text:title, color:'#e2e8f0', font:{size:16} }
+        tooltip:{ callbacks:{ label:(ctx)=> '€ ' + ctx.parsed.y.toLocaleString('it-IT') } }
       },
       scales:{
         x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'#1f2942' } },
-        y:{ ticks:{ color:'#94a3b8', callback: v => isPercent ? v+'%' : v },
-            grid:{ color:'#1f2942' }, suggestedMin:0, suggestedMax: isPercent ? 100 : undefined }
+        y:{ ticks:{ color:'#94a3b8' }, grid:{ color:'#1f2942' }, suggestedMin:0 }
       }
     }
   });
-  el('chart-note').textContent = isPercent ? 'media percentuale (0–100)' : 'valore aggregato';
+  el('chart-note').textContent = 'Somma valori per provincia';
 }
 
-function updateMeta(rows, cols, updatedAt){
-  el('meta').textContent = `${rows.length} righe • ${cols.length} colonne • aggiornato ${new Date(updatedAt).toLocaleString('it-IT')}`;
+function updateKpi(rows, cols, updatedAt){
+  const t = computeTotals(rows);
+  el('k-rows').textContent = rows.length;
+  el('k-fat').textContent  = '€ ' + fmt(t.fatturato);
+  el('k-cli').textContent  = fmt(t.clienti);
+  el('k-perc').textContent = t.pAvg==null ? '—' : t.pAvg.toLocaleString('it-IT',{maximumFractionDigits:2}) + '%';
+  el('meta').textContent   = `${rows.length} righe • ${cols.length} colonne • aggiornato ${new Date(updatedAt).toLocaleString('it-IT')}`;
 }
 
 async function load(){
@@ -190,17 +204,22 @@ async function load(){
   const res = await fetch('/data', { cache:'no-store' });
   const json = await res.json();
   RAW = json.rows || [];
-  fillSectionOptions();
+
+  // costruisco tendine
+  buildAgents();
+  buildSections();
+
+  // applico filtri e disegno
   VIEW = filterRows();
   const cols = drawTable(VIEW);
   drawChart(VIEW);
-  updateMeta(VIEW, cols, json.updatedAt || new Date());
+  updateKpi(VIEW, cols, json.updatedAt || new Date());
 }
 
 el('refresh').addEventListener('click', load);
-el('section').addEventListener('change', ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); });
-el('metric').addEventListener('change',  ()=>{ const c=drawTable(VIEW); drawChart(VIEW); });
-el('search').addEventListener('input',   ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); });
+el('agent').addEventListener('change',  ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
+el('section').addEventListener('change',()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
+el('search').addEventListener('input',   ()=>{ VIEW=filterRows(); const c=drawTable(VIEW); drawChart(VIEW); updateKpi(VIEW,c,new Date()); });
 
 load().catch(e=>{ el('meta').textContent='Errore: '+e.message; console.error(e); });
 </script>
