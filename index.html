@@ -1,183 +1,364 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard B2B • Agenti</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard Commerciale — Rete Agenti</title>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Font + stile leggero -->
+  <!-- Icone -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root { color-scheme: light dark; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b1320; color: #e5e7eb; }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    h1 { margin: 0 0 8px; font-size: 22px; }
-    .muted { color: #94a3b8; font-size: 12px; }
-    .grid { display: grid; gap: 16px; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .title { font-size: 22px; font-weight: 700; }
+    .muted { color:#94a3b8; font-size:12px; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer; }
+    .btn:hover { background:#111b30; }
+    nav { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+    .tab { padding:8px 12px; border-radius:999px; border:1px solid #1e293b; background:#0f172a; cursor:pointer; font-size:13px; }
+    .tab.active { background:#1e293b; }
+    .bar { margin-top:14px; display:grid; gap:8px; grid-template-columns: 1fr 1fr 1fr auto; }
+    @media (max-width: 1000px){ .bar { grid-template-columns: 1fr; } }
+    select, input[type="search"] { width:100%; background:#0f172a; color:#e5e7eb; border:1px solid #1e293b; border-radius:10px; padding:8px 10px; font-size:13px; }
+    .grid { display:grid; gap:12px; }
     .g3 { grid-template-columns: repeat(3, 1fr); }
     .g2 { grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: 900px){ .g3, .g2 { grid-template-columns: 1fr; } }
-    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 16px; }
-    .kpi { font-size: 28px; font-weight: 700; margin-top: 6px; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { padding: 10px 8px; border-bottom: 1px solid #1e293b; text-align: left; }
-    th { color: #cbd5e1; font-weight: 600; }
-    .right { text-align: right; }
-    canvas { width: 100%; height: 340px; }
-    .spacer { height: 8px; }
+    @media (max-width: 1000px){ .g3, .g2 { grid-template-columns: 1fr; } }
+    .card { background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:14px; }
+    .kpi { font-size:28px; font-weight:700; margin-top:6px; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:10px 8px; border-bottom: 1px solid #1e293b; text-align:left; }
+    th { color:#cbd5e1; font-weight:600; }
+    .right { text-align:right; }
+    .section { display:none; }
+    .section.active { display:block; }
+    canvas { width:100%; height:320px; }
+    footer { margin-top:20px; font-size:12px; color:#94a3b8; display:flex; gap:10px; align-items:center; }
+    .shortcut { opacity:.8; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Dashboard B2B • Agenti</h1>
-    <div class="muted">Origine dati: <code>/data</code>. Aggiornamento: <span id="kpiUpdated">—</span></div>
+    <header>
+      <div>
+        <div class="title">Dashboard Commerciale</div>
+        <div class="muted">Origine: <code>/data</code> • Aggiornato: <span id="updated">—</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnPdf">PDF</button>
+        <button class="btn" id="btnXls">Excel</button>
+        <button class="btn" id="btnShare">Condividi</button>
+      </div>
+    </header>
 
-    <!-- KPI -->
-    <div class="grid g3" style="margin-top:16px;">
-      <div class="card">
-        <div class="muted">Fatturato Totale</div>
-        <div class="kpi" id="kpiFatturato">—</div>
-      </div>
-      <div class="card">
-        <div class="muted">Clienti Totali</div>
-        <div class="kpi" id="kpiClienti">—</div>
-      </div>
-      <div class="card">
-        <div class="muted">Note</div>
-        <div id="kpiMeta" class="kpi" style="font-size:16px; font-weight:600">Caricamento…</div>
-      </div>
+    <nav>
+      <button class="tab active" data-section="panoramica">Panoramica</button>
+      <button class="tab" data-section="agenti">Agenti</button>
+      <button class="tab" data-section="regioni">Regioni</button>
+      <button class="tab" data-section="confronta">Confronta</button>
+    </nav>
+
+    <div class="bar">
+      <select id="selAgente">
+        <option value="">Filtra Agenti — Tutti</option>
+      </select>
+      <select id="selRegione">
+        <option value="">Filtra Regioni — Tutte</option>
+      </select>
+      <input id="q" type="search" placeholder="Cerca cliente / ragione sociale…" />
+      <button class="btn" id="btnReset">Reset</button>
     </div>
 
-    <div class="spacer"></div>
-
-    <!-- Charts -->
-    <div class="grid g2">
-      <div class="card">
-        <div class="muted" style="margin-bottom:8px;">Clienti serviti per provincia</div>
-        <canvas id="chartClientiProvincia"></canvas>
+    <!-- PANORAMICA -->
+    <section id="section-panoramica" class="section active">
+      <div class="grid g3" style="margin-top:14px;">
+        <div class="card"><div class="muted">Fatturato Totale</div><div class="kpi" id="kpiFatturato">—</div></div>
+        <div class="card"><div class="muted">Clienti Totali</div><div class="kpi" id="kpiClienti">—</div></div>
+        <div class="card"><div class="muted">Info</div><div class="kpi" id="kpiInfo" style="font-size:16px;font-weight:600">Caricamento…</div></div>
       </div>
-      <div class="card">
-        <div class="muted" style="margin-bottom:8px;">Ripartizione fatturato</div>
-        <canvas id="chartRipartizione"></canvas>
+
+      <div class="grid g2" style="margin-top:12px;">
+        <div class="card">
+          <div class="muted" style="margin-bottom:8px;">Clienti serviti per provincia</div>
+          <canvas id="chartClientiProvincia"></canvas>
+        </div>
+        <div class="card">
+          <div class="muted" style="margin-bottom:8px;">Ripartizione fatturato</div>
+          <canvas id="chartRipartizione"></canvas>
+        </div>
       </div>
-    </div>
 
-    <div class="spacer"></div>
+      <div class="card" style="margin-top:12px;">
+        <div class="muted" style="margin-bottom:8px;">% Obiettivo per provincia</div>
+        <canvas id="chartObiettivi"></canvas>
+      </div>
+    </section>
 
-    <!-- Obiettivi -->
-    <div class="card">
-      <div class="muted" style="margin-bottom:8px;">% Obiettivo per provincia</div>
-      <canvas id="chartObiettivi"></canvas>
-    </div>
+    <!-- AGENTI -->
+    <section id="section-agenti" class="section">
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px;">Classifica Performance — Top 25 Clienti</div>
+        <table>
+          <thead><tr><th>Agente</th><th>Provincia</th><th>Cliente</th><th class="right">Fatturato</th></tr></thead>
+          <tbody id="tblAgenti"><tr><td colspan="4" class="muted">Caricamento…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
 
-    <div class="spacer"></div>
+    <!-- REGIONI -->
+    <section id="section-regioni" class="section">
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px;">Distribuzione per provincia (clienti e fatturato)</div>
+        <table>
+          <thead><tr><th>Provincia</th><th class="right">Clienti</th><th class="right">Fatturato</th></tr></thead>
+          <tbody id="tblRegioni"><tr><td colspan="3" class="muted">Caricamento…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
 
-    <!-- Tabella -->
-    <div class="card">
-      <div class="muted" style="margin-bottom:8px;">Top 25 clienti per fatturato</div>
-      <table>
-        <thead>
-          <tr><th>Provincia</th><th>Ragione Sociale</th><th class="right">Fatturato</th></tr>
-        </thead>
-        <tbody id="tblVendite"><tr><td colspan="3" class="muted">Caricamento…</td></tr></tbody>
-      </table>
-    </div>
+    <!-- CONFRONTA -->
+    <section id="section-confronta" class="section">
+      <div class="grid g2">
+        <div class="card">
+          <div class="muted">Agente 1</div>
+          <select id="cmpA"></select>
+          <canvas id="chartCmpA" style="margin-top:8px;"></canvas>
+        </div>
+        <div class="card">
+          <div class="muted">Agente 2</div>
+          <select id="cmpB"></select>
+          <canvas id="chartCmpB" style="margin-top:8px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span class="shortcut">Scorciatoie: <b>Ctrl+D</b> (Dark Mode) • <b>Ctrl+K</b> (Search) • <b>Esc</b> (Reset)</span>
+    </footer>
   </div>
 
   <script>
-    // --- formatter ---
+    // ---------- utils ----------
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
     const fmtINT = new Intl.NumberFormat('it-IT');
+    const byTipo = (rows, t) => rows.filter(r => r.Tipo_Dato === t);
 
-    // util: filtra per tipo
-    const groupRows = (rows, tipo) => rows.filter(r => r.Tipo_Dato === tipo);
+    const state = {
+      all: [],
+      filtered: [],
+      agenti: [],
+      province: [],
+      search: '',
+      agente: '',
+      regione: ''
+    };
 
-    async function loadData() {
-      const res = await fetch('/data', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Fetch /data failed');
-      const data = await res.json();
-      const rows = data.rows || [];
-      const info = `${data.rowCount} righe • delim: ${JSON.stringify(data.delimiter)}`;
-      document.getElementById('kpiMeta').textContent = info;
-      document.getElementById('kpiUpdated').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
+    function uniq(arr) { return [...new Set(arr.filter(Boolean))]; }
+    function textIncludes(a,b){ return String(a||'').toLowerCase().includes(String(b||'').toLowerCase()); }
 
-      // === KPI FINALI ===
-      const totali = groupRows(rows, 'TOTALE');
-      const fatt = totali.find(r => r.Descrizione === 'Fatturato_Totale');
-      const cli  = totali.find(r => r.Descrizione === 'Clienti_Totale');
-      document.getElementById('kpiFatturato').textContent = fatt ? fmtEUR.format(fatt.Valore || 0) : '—';
-      document.getElementById('kpiClienti').textContent   = cli  ? fmtINT.format(cli.Valore || 0)   : '—';
+    function applyFilters(){
+      const { all, agente, regione, search } = state;
+      let rows = all.slice();
 
-      // === TABELLA: VENDITE PER CLIENTE ===
-      const vendite = groupRows(rows, 'VENDITE_CLIENTE')
-        .sort((a, b) => (b.Fatturato || 0) - (a.Fatturato || 0))
-        .slice(0, 25);
+      if (agente) rows = rows.filter(r => (r.Agente_Codice||'') === agente || (r.Agente_Nome||'') === agente);
+      if (regione) rows = rows.filter(r => (r.Provincia||'') === regione);
+      if (search)  rows = rows.filter(r => textIncludes(r.Ragione_Sociale_Cliente, search));
 
-      const tbody = document.getElementById('tblVendite');
-      tbody.innerHTML = '';
-      vendite.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${r.Provincia ?? ''}</td>
-          <td>${r.Ragione_Sociale_Cliente ?? ''}</td>
-          <td class="right">${r.Fatturato != null ? fmtEUR.format(r.Fatturato) : ''}</td>`;
-        tbody.appendChild(tr);
-      });
-
-      // === CHART: CLIENTI SERVITI PER PROVINCIA ===
-      const perProv = groupRows(rows, 'CLIENTI_PROVINCIA');
-      const lblProv = perProv.map(r => r.Provincia ?? '—');
-      const valProv = perProv.map(r => Number(r.Clienti_Serviti || 0));
-      if (window.Chart && document.getElementById('chartClientiProvincia')) {
-        new Chart(document.getElementById('chartClientiProvincia'), {
-          type: 'bar',
-          data: { labels: lblProv, datasets: [{ label: 'Clienti serviti', data: valProv }] },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-          }
-        });
-      }
-
-      // === CHART: RIPARTIZIONE FATTURATO ===
-      const rip = groupRows(rows, 'RIPARTIZIONE')
-        .filter(r => String(r.Categoria_Prodotto || '').toLowerCase() !== 'totale');
-      const lblRip = rip.map(r => r.Categoria_Prodotto ?? '—');
-      const valRip = rip.map(r => Number(r.Importo || 0));
-      if (window.Chart && document.getElementById('chartRipartizione')) {
-        new Chart(document.getElementById('chartRipartizione'), {
-          type: 'doughnut',
-          data: { labels: lblRip, datasets: [{ data: valRip }] },
-          options: { responsive: true }
-        });
-      }
-
-      // === CHART: % OBIETTIVO PER PROVINCIA (esclude "Generale") ===
-      const ob = groupRows(rows, 'OBIETTIVI').filter(r => r.Provincia && r.Provincia !== 'Generale');
-      const lblOb = ob.map(r => r.Provincia);
-      const valOb = ob.map(r => Number(r.Percentuale_Obiettivo ?? 0)); // 0..100
-      if (window.Chart && document.getElementById('chartObiettivi')) {
-        new Chart(document.getElementById('chartObiettivi'), {
-          type: 'bar',
-          data: { labels: lblOb, datasets: [{ label: '% Obiettivo', data: valOb }] },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
-          }
-        });
-      }
+      state.filtered = rows;
+      renderAll();
     }
 
-    loadData().catch(err => {
+    // ---------- charts refs ----------
+    let chProv=null, chRip=null, chOb=null, chCmpA=null, chCmpB=null;
+    function destroy(c){ if(c && c.destroy) c.destroy(); }
+
+    // ---------- rendering ----------
+    function renderAll(){
+      const rows = state.filtered;
+
+      // KPI
+      const tot = byTipo(rows,'TOTALE');
+      const fatt = tot.find(r => r.Descrizione==='Fatturato_Totale');
+      const cli  = tot.find(r => r.Descrizione==='Clienti_Totale');
+      document.getElementById('kpiFatturato').textContent = fatt ? fmtEUR.format(fatt.Valore||0) : '—';
+      document.getElementById('kpiClienti').textContent   = cli  ? fmtINT.format(cli.Valore||0)   : '—';
+      document.getElementById('kpiInfo').textContent      = `${rows.length} righe • filtro: ${state.agente||'tutti'} / ${state.regione||'tutte'}`;
+
+      // Tab "Agenti" — top 25 clienti
+      const vend = byTipo(rows,'VENDITE_CLIENTE')
+        .sort((a,b)=>(b.Fatturato||0)-(a.Fatturato||0))
+        .slice(0,25);
+      const tbA = document.getElementById('tblAgenti');
+      tbA.innerHTML='';
+      vend.forEach(r=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${r.Agente_Nome||r.Agente_Codice||'—'}</td>
+                      <td>${r.Provincia||''}</td>
+                      <td>${r.Ragione_Sociale_Cliente||''}</td>
+                      <td class="right">${r.Fatturato!=null?fmtEUR.format(r.Fatturato):''}</td>`;
+        tbA.appendChild(tr);
+      });
+
+      // Tab "Regioni" — sintesi per provincia
+      const perProv = byTipo(rows,'CLIENTI_PROVINCIA');
+      const provAgg = {};
+      perProv.forEach(r=>{
+        const k = r.Provincia||'—';
+        if(!provAgg[k]) provAgg[k]={ clienti:0, fatt:0 };
+        provAgg[k].clienti += Number(r.Clienti_Serviti||0);
+        provAgg[k].fatt    += Number(r.Fatturato||0);
+      });
+      const tbR = document.getElementById('tblRegioni');
+      tbR.innerHTML='';
+      Object.entries(provAgg).sort((a,b)=>b[1].fatt-a[1].fatt).forEach(([k,v])=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${k}</td><td class="right">${fmtINT.format(v.clienti)}</td><td class="right">${fmtEUR.format(v.fatt)}</td>`;
+        tbR.appendChild(tr);
+      });
+
+      // Charts
+      const ctxProv = document.getElementById('chartClientiProvincia');
+      const ctxRip  = document.getElementById('chartRipartizione');
+      const ctxOb   = document.getElementById('chartObiettivi');
+      destroy(chProv); destroy(chRip); destroy(chOb);
+
+      const labelsProv = perProv.map(r=>r.Provincia||'—');
+      const dataProv   = perProv.map(r=>Number(r.Clienti_Serviti||0));
+      if (window.Chart && ctxProv) {
+        chProv = new Chart(ctxProv, {
+          type:'bar',
+          data:{ labels: labelsProv, datasets:[{ label:'Clienti', data: dataProv }] },
+          options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 }}}}
+        });
+      }
+
+      const rip = byTipo(rows,'RIPARTIZIONE').filter(r => String(r.Categoria_Prodotto||'').toLowerCase()!=='totale');
+      const lblRip = rip.map(r=>r.Categoria_Prodotto||'—');
+      const valRip = rip.map(r=>Number(r.Importo||0));
+      if (window.Chart && ctxRip) {
+        chRip = new Chart(ctxRip, { type:'doughnut', data:{ labels: lblRip, datasets:[{ data: valRip }] }, options:{ responsive:true }});
+      }
+
+      const ob = byTipo(rows,'OBIETTIVI').filter(r=>r.Provincia && r.Provincia!=='Generale');
+      const lblOb = ob.map(r=>r.Provincia);
+      const valOb = ob.map(r=>Number(r.Percentuale_Obiettivo||0));
+      if (window.Chart && ctxOb) {
+        chOb = new Chart(ctxOb, {
+          type:'bar',
+          data:{ labels: lblOb, datasets:[{ label:'% Obiettivo', data: valOb }] },
+          options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ min:0, max:100, ticks:{ callback:v=>v+'%' }}}}
+        });
+      }
+
+      // Confronta — disegniamo 2 mini-cruscotti per agente
+      const a = document.getElementById('cmpA').value || '';
+      const b = document.getElementById('cmpB').value || '';
+      drawCompare('A', a); drawCompare('B', b);
+    }
+
+    function drawCompare(side, agenteSel){
+      const canvas = document.getElementById('chartCmp'+side);
+      if (!window.Chart || !canvas) return;
+      if (side==='A' && chCmpA) chCmpA.destroy();
+      if (side==='B' && chCmpB) chCmpB.destroy();
+
+      const rows = state.all.filter(r => (r.Agente_Codice===agenteSel) || (r.Agente_Nome===agenteSel));
+      const ob = byTipo(rows,'OBIETTIVI').filter(r=>r.Provincia && r.Provincia!=='Generale');
+      const lbl = ob.map(r=>r.Provincia);
+      const val = ob.map(r=>Number(r.Percentuale_Obiettivo||0));
+      const inst = new Chart(canvas, {
+        type:'radar',
+        data:{ labels: lbl, datasets:[{ label: agenteSel||'—', data: val }] },
+        options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ r:{ suggestedMin:0, suggestedMax:100 } } }
+      });
+      if (side==='A') chCmpA = inst; else chCmpB = inst;
+    }
+
+    // ---------- init ----------
+    async function init(){
+      const res = await fetch('/data', { cache:'no-store' });
+      if (!res.ok) throw new Error('Fetch /data failed');
+      const data = await res.json();
+      state.all = data.rows || [];
+      document.getElementById('updated').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
+
+      // popola combo agenti/province
+      const agenti = uniq(state.all.map(r => r.Agente_Nome || r.Agente_Codice || 'Sconosciuto')).sort();
+      const province = uniq(state.all.map(r => r.Provincia)).sort();
+      state.agenti = agenti; state.province = province;
+
+      const selA = document.getElementById('selAgente');
+      const selR = document.getElementById('selRegione');
+      const cmpA = document.getElementById('cmpA');
+      const cmpB = document.getElementById('cmpB');
+
+      agenti.forEach(a=>{
+        const o1=document.createElement('option'); o1.value=a; o1.textContent=a; selA.appendChild(o1);
+        const o2=document.createElement('option'); o2.value=a; o2.textContent=a; cmpA.appendChild(o2);
+        const o3=document.createElement('option'); o3.value=a; o3.textContent=a; cmpB.appendChild(o3);
+      });
+      province.forEach(p=>{
+        const o=document.createElement('option'); o.value=p; o.textContent=p; selR.appendChild(o);
+      });
+
+      // handlers
+      selA.addEventListener('change', e=>{ state.agente=e.target.value; applyFilters(); });
+      selR.addEventListener('change', e=>{ state.regione=e.target.value; applyFilters(); });
+      document.getElementById('q').addEventListener('input', e=>{ state.search=e.target.value; applyFilters(); });
+      document.getElementById('btnReset').addEventListener('click', ()=>{
+        state.search=''; state.agente=''; state.regione='';
+        selA.value=''; selR.value=''; document.getElementById('q').value='';
+        applyFilters();
+      });
+
+      // tab switch
+      document.querySelectorAll('.tab').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          const sec = btn.dataset.section;
+          document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+          document.getElementById('section-'+sec).classList.add('active');
+        });
+      });
+
+      // azioni
+      document.getElementById('btnPdf').addEventListener('click', ()=>window.print());
+      document.getElementById('btnXls').addEventListener('click', ()=>{
+        const blob = new Blob([JSON.stringify(state.filtered || state.all, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dashboard-dati.json'; a.click();
+      });
+      document.getElementById('btnShare').addEventListener('click', async ()=>{
+        const url = location.href;
+        try { await navigator.clipboard.writeText(url); alert('Link copiato negli appunti'); }
+        catch { prompt('Copia il link:', url); }
+      });
+
+      // scorciatoie
+      window.addEventListener('keydown', (e)=>{
+        if (e.ctrlKey && e.key.toLowerCase()==='d'){ e.preventDefault(); document.documentElement.classList.toggle('light'); }
+        if (e.ctrlKey && e.key.toLowerCase()==='k'){ e.preventDefault(); document.getElementById('q').focus(); }
+        if (e.key==='Escape'){ document.getElementById('btnReset').click(); }
+      });
+
+      // prima render
+      state.filtered = state.all.slice();
+      renderAll();
+    }
+
+    init().catch(err=>{
       console.error(err);
-      const el = document.getElementById('kpiMeta');
-      if (el) el.textContent = 'Errore: ' + err.message;
+      alert('Errore caricamento dati: '+err.message);
     });
   </script>
 </body>
