@@ -1,222 +1,210 @@
-// server.js — Dashboard FTP Parser & API
+// server.js — Dashboard Agenti • Cotto Cusimano
+// Node 18+ (Render/Heroku/Local). Legge CSV "flat" dall'FTP (o file locale) e lo espone in JSON.
+
+// ---------------------- Dipendenze ----------------------
 const express = require('express');
 const compression = require('compression');
-const ftp = require('basic-ftp');
-const { parse } = require('csv-parse/sync');
+const morgan = require('morgan');
 const path = require('path');
-const fs = require('fs');
-const { Writable } = require('stream');
+const { parse } = require('csv-parse/sync');
 
-// ==== VARIABILI D’AMBIENTE ====
-const {
-  FTP_HOST,
-  FTP_USER,
-  FTP_PASS,
-  FTP_FILE,
-  FTP_SECURE = 'false',
-  CORS = 'false'
-} = process.env;
+// FTP client (usiamo basic-ftp)
+const ftp = require('basic-ftp');
 
-// ==== FUNZIONI UTILI ====
-const ITnum = (s) => {
-  if (s == null) return null;
-  const v = String(s).trim();
-  if (!v) return null;
-  if (/%$/.test(v)) {
-    const n = ITnum(v.replace('%', ''));
-    if (n === 999999) return null;
-    return n;
-  }
-  const t = v.replace(/\./g, '').replace(/,/g, '.');
-  if (/^[+-]?\d+(\.\d+)?$/.test(t)) return Number(t);
-  return v;
-};
+// ---------------------- Configurazione ----------------------
+const PORT = process.env.PORT || 3000;
 
-// ==== FUNZIONE DI PARSING ====
-function parseSmart(rawText) {
-  const text = rawText.replace(/^\uFEFF/, '');
+// Sorgente dati: per default usa FTP; opzionalmente si può puntare a un file locale
+// Imposta queste variabili su Render:
+const FTP_HOST = process.env.FTP_HOST;          // es: "ftp.dominosoluzioni.com"
+const FTP_USER = process.env.FTP_USER;          // es: "cusimano"
+const FTP_PASS = process.env.FTP_PASS;          // es: "PraService25!"
+const FTP_PATH = process.env.FTP_PATH || "/generalb2b_flat.csv";  // file flat normalizzato
 
-  // 1) prendi una riga "dati" utile
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !/^#{1,2}\s/.test(l));
-  const sample = lines.find(l => /^(OBIETTIVI|CLIENTI_PROVINCIA|VENDITE_CLIENTE|CATEGORIA_RIEPILOGO|RIPARTIZIONE|TOTALE)\b/.test(l)) || lines[0] || '';
+// In alternativa (per debug locali) puoi usare un file fisico
+const LOCAL_FILE = process.env.LOCAL_FILE || "";  // es: "./generalb2b_flat.csv"
 
-  // 2) auto-detect delimitatore
-  const candidates = ['\t', ';', ','];
-  let delimiter = '\t', bestCount = -1;
-  for (const d of candidates) {
-    const cnt = (sample.match(new RegExp(`\\${d}`, 'g')) || []).length;
-    if (cnt > bestCount) { bestCount = cnt; delimiter = d; }
-  }
+// CORS: CORS=true per permettere qualsiasi origine; oppure CORS_ORIGIN con lista domini separati da virgola
+const CORS = process.env.CORS || "false";
+const CORS_ORIGIN = process.env.CORS_ORIGIN || ""; // "https://www.cottocusimano.com,https://cottocusimano.com"
 
-  // 3) parse con relax_quotes per gestire virgolette
-  const rowsArr = parse(text, {
-    delimiter,
-    relax_quotes: true,
-    relax_column_count: true,
-    skip_empty_lines: true,
-    bom: true,
-    trim: true,
-    columns: false
-  }).filter(arr => (arr.join(delimiter) || '').trim() && !/^#{1,2}\s/.test(arr[0] || ''));
+// Cache: (in-memory) semplice per stabilizzare frequenti richieste
+const CACHE_TTL_MS = Number(process.env.CACHE_TTL_MS || 60_000); // 60s
+let cache = { raw: null, data: null, t: 0 };
 
-  const isTipo = v => ['OBIETTIVI','CLIENTI_PROVINCIA','VENDITE_CLIENTE','CATEGORIA_RIEPILOGO','RIPARTIZIONE','TOTALE'].includes(String(v || '').trim());
-
-  const out = [];
-  for (let arr of rowsArr) {
-    const tipo = (arr[0] || '').trim();
-    if (!isTipo(tipo)) continue;
-
-    if (tipo === 'OBIETTIVI') {
-      out.push({
-        Tipo_Dato: 'OBIETTIVI',
-        Provincia: arr[1] ?? null,
-        Anno_Precedente: ITnum(arr[2]),
-        Anno_Corrente: ITnum(arr[3]),
-        Obiettivo: ITnum(arr[4]),
-        Percentuale_Obiettivo: ITnum(arr[5]),
-        Clienti_Anno_Precedente: ITnum(arr[6]),
-        Clienti_Anno_Corrente: ITnum(arr[7]),
-        Obiettivo_Clienti: ITnum(arr[8]),
-        Percentuale_Obiettivo_Clienti: ITnum(arr[9])
-      });
-      continue;
-    }
-
-    if (tipo === 'CLIENTI_PROVINCIA') {
-      out.push({
-        Tipo_Dato: 'CLIENTI_PROVINCIA',
-        Provincia: arr[1] ?? null,
-        Clienti_Serviti: ITnum(arr[2]),
-        Fatturato: ITnum(arr[arr.length - 1])
-      });
-      continue;
-    }
-
-    if (tipo === 'VENDITE_CLIENTE') {
-      const provincia = arr[1] ?? null;
-      const fatt = arr[arr.length - 1];
-      const nome = arr.slice(2, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
-      out.push({
-        Tipo_Dato: 'VENDITE_CLIENTE',
-        Provincia: provincia,
-        Ragione_Sociale_Cliente: nome,
-        Fatturato: ITnum(fatt)
-      });
-      continue;
-    }
-
-    if (tipo === 'CATEGORIA_RIEPILOGO') {
-      const importo = arr[arr.length - 1];
-      const categoria = arr.slice(1, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
-      out.push({
-        Tipo_Dato: 'CATEGORIA_RIEPILOGO',
-        Categoria: categoria || null,
-        Importo_Totale: ITnum(importo)
-      });
-      continue;
-    }
-
-    if (tipo === 'RIPARTIZIONE') {
-      const percent = arr[arr.length - 1];
-      const importo = arr[arr.length - 2];
-      const cat = arr.slice(1, arr.length - 2).join(' ').replace(/\s+/g, ' ').trim();
-      out.push({
-        Tipo_Dato: 'RIPARTIZIONE',
-        Categoria_Prodotto: cat || null,
-        Importo: ITnum(importo),
-        Percentuale: ITnum(percent)
-      });
-      continue;
-    }
-
-    if (tipo === 'TOTALE') {
-      const valore = arr[arr.length - 1];
-      const descr = arr.slice(1, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
-      out.push({
-        Tipo_Dato: 'TOTALE',
-        Descrizione: descr || null,
-        Valore: ITnum(valore)
-      });
-      continue;
-    }
-  }
-
-  const columns = Array.from(out.reduce((s, r) => { for (const k in r) s.add(k); return s; }, new Set()));
-  return { delimiter, columns, rowCount: out.length, rows: out };
-}
-
-// ==== DOWNLOAD FTP ====
-async function downloadFromFtpAsText() {
-  if (!FTP_HOST || !FTP_USER || !FTP_PASS || !FTP_FILE)
-    throw new Error('Mancano var. ambiente FTP_HOST/USER/PASS/FILE');
-
-  const client = new ftp.Client(15000);
-  client.ftp.verbose = false;
-
-  const chunks = [];
-  const sink = new Writable({
-    write(chunk, enc, cb) { chunks.push(Buffer.from(chunk)); cb(); }
-  });
-
-  try {
-    await client.access({
-      host: FTP_HOST,
-      user: FTP_USER,
-      password: FTP_PASS,
-      secure: /^true$/i.test(FTP_SECURE)
-    });
-    await client.downloadTo(sink, FTP_FILE);
-    return Buffer.concat(chunks).toString('utf8');
-  } finally {
-    client.close();
-  }
-}
-
-// ==== EXPRESS SERVER ====
+// ---------------------- App ----------------------
 const app = express();
 app.disable('x-powered-by');
 app.use(compression());
-if (/^true$/i.test(CORS)) app.use(require('cors')());
+app.use(morgan('tiny'));
 
-// Serve index.html da /public o root
-const publicDir = path.join(__dirname, 'public');
-if (fs.existsSync(publicDir)) app.use(express.static(publicDir));
-app.use(express.static(__dirname));
+// CORS opzionale
+if (/^true$/i.test(CORS)) {
+  const cors = require('cors');
+  if (CORS_ORIGIN) {
+    const origins = CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean);
+    app.use(cors({ origin: origins, methods: ['GET', 'HEAD', 'OPTIONS'] }));
+  } else {
+    app.use(cors()); // Access-Control-Allow-Origin: *
+  }
+}
 
-// HEALTH
-app.get('/healthz', (req, res) => res.type('text/plain').send('ok'));
+// ---------------------- Utils ----------------------
 
-// RAW
+// Scarica il CSV (raw stringa) da FTP o da file locale
+async function fetchRawCSV() {
+  // Cache semplice
+  const now = Date.now();
+  if (cache.raw && (now - cache.t) < CACHE_TTL_MS) return cache.raw;
+
+  let raw = "";
+  if (LOCAL_FILE) {
+    // Lettura da file locale
+    const fs = require('fs');
+    raw = fs.readFileSync(path.resolve(LOCAL_FILE), 'utf-8');
+  } else {
+    // Lettura da FTP
+    if (!FTP_HOST || !FTP_USER || !FTP_PASS) {
+      throw new Error("FTP env non configurato. Imposta FTP_HOST, FTP_USER, FTP_PASS.");
+    }
+    const client = new ftp.Client(30_000);
+    client.ftp.verbose = false;
+    try {
+      await client.access({ host: FTP_HOST, user: FTP_USER, password: FTP_PASS, secure: false });
+      const stream = await client.downloadTo(Buffer.alloc(0), FTP_PATH); // NOTA: downloadTo richiede writable
+      // basic-ftp non ritorna la stringa; usiamo un workaround con downloadToTemp:
+      // Facciamo un vero download su buffer manualmente:
+    } catch (e) {
+      // fallback: leggi in memoria usando downloadTo con file temporaneo
+      try {
+        const os = require('os'); const fs = require('fs');
+        const tmp = path.join(os.tmpdir(), 'generalb2b_flat.csv');
+        const client2 = new ftp.Client(30_000);
+        await client2.access({ host: FTP_HOST, user: FTP_USER, password: FTP_PASS, secure: false });
+        await client2.downloadTo(tmp, FTP_PATH);
+        raw = fs.readFileSync(tmp, 'utf-8');
+        await client2.close();
+      } catch (err2) {
+        throw new Error(`FTP download fallito: ${e.message || e} / ${err2.message || err2}`);
+      }
+      // chiudi primo client
+      try { await client.close(); } catch {}
+      // aggiorna cache e ritorna
+      cache.raw = raw; cache.t = Date.now();
+      return raw;
+    }
+
+    // Se siamo qui, abbiamo usato la prima modalità (stream) e dobbiamo rifarla correttamente:
+    // Usiamo downloadTo in memoria con un Writable custom.
+    const { Writable } = require('stream');
+    let buffers = [];
+    const sink = new Writable({
+      write(chunk, enc, cb) { buffers.push(Buffer.from(chunk)); cb(); }
+    });
+    try {
+      await client.downloadTo(sink, FTP_PATH);
+      raw = Buffer.concat(buffers).toString('utf-8');
+    } finally {
+      try { await client.close(); } catch {}
+    }
+  }
+  // salva in cache
+  cache.raw = raw; cache.t = Date.now();
+  return raw;
+}
+
+// Parser CSV flat -> JSON
+function parseFlatCSV(raw) {
+  // Usa csv-parse con prima riga come header
+  const rows = parse(raw, {
+    delimiter: ',',        // se passerai a TSV, cambia in '\t'
+    columns: true,
+    bom: true,
+    skip_empty_lines: true,
+    trim: true,
+    relax_quotes: true
+  });
+
+  // Normalizza tipi numerici principali (se sono stringhe con punto/virgola già corrette non serve)
+  // NB: se il file flat è già numerico, questa parte è innocua.
+  const numFields = new Set([
+    "Anno_Precedente","Anno_Corrente","Obiettivo","Percentuale_Obiettivo",
+    "Clienti_Anno_Precedente","Clienti_Anno_Corrente","Obiettivo_Clienti",
+    "Percentuale_Obiettivo_Clienti","Clienti_Serviti","Fatturato",
+    "Importo_Totale","Importo","Percentuale","Valore"
+  ]);
+
+  const cleanNum = v => {
+    if (v === null || v === undefined || v === "") return null;
+    if (typeof v === 'number') return v;
+    // Assumiamo già formato macchina (es. 1234.56); se avessi virgole, convertirle qui:
+    const s = String(v).trim().replace(/\s+/g, '');
+    if (!s) return null;
+    // gestisci eventuali percentuali scritte con simbolo
+    const s2 = s.replace('%','');
+    const n = Number(s2);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  for (const r of rows) {
+    for (const k of Object.keys(r)) {
+      if (numFields.has(k)) {
+        r[k] = cleanNum(r[k]);
+      }
+    }
+  }
+
+  return {
+    updatedAt: new Date().toISOString(),
+    rowCount: rows.length,
+    columns: Object.keys(rows[0] || {}),
+    rows
+  };
+}
+
+// ---------------------- Routes ----------------------
+app.get('/healthz', (req, res) => {
+  res.json({ ok: true, ts: new Date().toISOString() });
+});
+
 app.get('/raw', async (req, res) => {
   try {
-    const txt = await downloadFromFtpAsText();
-    res.type('text/plain').send(txt);
+    const raw = await fetchRawCSV();
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send(raw);
   } catch (err) {
-    res.status(500).json({ error: 'FTP error', detail: String(err?.message || err) });
+    res.status(500).json({ error: 'FTP/Read failed', detail: String(err && err.message || err) });
   }
 });
 
-// DATA
 app.get('/data', async (req, res) => {
   try {
-    const txt = await downloadFromFtpAsText();
-    const parsed = parseSmart(txt);
-    res.json({ updatedAt: new Date().toISOString(), ...parsed });
+    // Cache JSON (derivato)
+    const now = Date.now();
+    if (cache.data && (now - cache.t) < CACHE_TTL_MS) {
+      return res.json(cache.data);
+    }
+
+    const raw = await fetchRawCSV();
+    const json = parseFlatCSV(raw);
+
+    cache.data = json; // sincronizza cache con stessa t di raw
+    return res.json(json);
   } catch (err) {
-    console.error('Errore /data:', err);
-    res.status(500).json({ error: 'Parse/FTP failed', detail: String(err?.message || err) });
+    res.status(500).json({ error: 'Parse/FTP failed', detail: String(err && err.message || err) });
   }
 });
 
-// FALLBACK INDEX
-app.get('*', (req, res) => {
-  const idxPublic = path.join(publicDir, 'index.html');
-  const idxRoot = path.join(__dirname, 'index.html');
-  if (fs.existsSync(idxPublic)) return res.sendFile(idxPublic);
-  if (fs.existsSync(idxRoot)) return res.sendFile(idxRoot);
-  res.status(404).send('index.html non trovato');
+// Static: serve index.html se presente nella root del progetto
+app.use(express.static(path.join(__dirname, '/')));
+
+// Fallback 404 (dopo static)
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found', path: req.path });
 });
 
-// START
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`✅ Server avviato su http://localhost:${PORT}`));
+// ---------------------- Avvio ----------------------
+app.listen(PORT, () => {
+  console.log(`Dashboard API running on http://localhost:${PORT}`);
+  console.log(`Source: ${LOCAL_FILE ? 'LOCAL_FILE=' + LOCAL_FILE : `FTP ${FTP_HOST}${FTP_PATH}`}`);
+});
