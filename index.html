@@ -1,544 +1,455 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard B2B - Rete Commerciale • Cotto Cusimano</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cotto Cusimano • Dashboard Performance Agenti</title>
 
-  <!-- Tailwind CSS (no eval) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: "#2563eb",
-            success: "#10b981",
-            warning: "#f59e0b",
-            danger:  "#ef4444",
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- React & ReactDOM (UMD, no Babel) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Recharts UMD -->
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+  <!-- DataTables (tabella pro) -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.dataTables.min.css">
+  <script src="https://cdn.datatables.net/2.0.6/js/dataTables.min.js"></script>
+
+  <!-- SheetJS (export Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
 
   <style>
-    body { background:#ffffff; font-family: Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif; }
+    :root{
+      --terra:#D2691E;          /* terracotta */
+      --terra-2:#CD853F;        /* terracotta chiaro */
+      --text:#0b1320;
+      --muted:#6b7280;
+      --bg:#ffffff;
+      --card:#ffffff;
+      --stroke:#e7e7e9;
+      --chip:#f7efe9;
+      --good:#16a34a;
+      --bad:#dc2626;
+      --shadow: 0 6px 18px rgba(0,0,0,.06);
+      --radius:14px;
+    }
+    *{ box-sizing:border-box }
+    html,body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif }
+    .wrapper{ max-width:1280px; margin:0 auto; padding:20px }
+
+    /* Header sticky */
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      background:#fff; border-bottom:1px solid var(--stroke);
+      backdrop-filter: saturate(160%) blur(6px);
+    }
+    .topbar .inner{
+      max-width:1280px; margin:0 auto; padding:12px 20px;
+      display:grid; grid-template-columns:220px 1fr auto; gap:16px; align-items:center;
+    }
+    @media (max-width:900px){ .topbar .inner{ grid-template-columns:1fr } }
+    .brand{ display:flex; align-items:center; gap:12px }
+    .logo{
+      width:44px; height:44px; border-radius:12px;
+      background:linear-gradient(135deg,var(--terra),var(--terra-2));
+      display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;
+      box-shadow: var(--shadow);
+    }
+    .title{ text-align:center }
+    .title h1{ margin:0; font-size:22px }
+    .sub{ color:var(--muted); font-size:12px; margin-top:4px }
+    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap }
+    .btn{
+      border:1px solid var(--stroke); background:#fff; color:var(--text);
+      border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer;
+    }
+    .btn:hover{ border-color:#d9d9dd }
+
+    /* Toolbar filtri */
+    .toolbar{ margin:16px 0 8px; display:grid; grid-template-columns: 1.2fr 1fr auto auto; gap:10px }
+    @media (max-width:1000px){ .toolbar{ grid-template-columns:1fr } }
+    .select, .search, .pill{
+      width:100%; border:1px solid var(--stroke); border-radius:12px; background:#fff; color:var(--text);
+      padding:10px 12px; font-size:13px;
+    }
+    .pill{ cursor:pointer; text-align:center }
+    .pill:hover{ background:#faf8f6 }
+
+    /* Cards & sections */
+    .grid{ display:grid; gap:14px }
+    .g4{ grid-template-columns: repeat(4, 1fr) }
+    .g2{ grid-template-columns: repeat(2, 1fr) }
+    @media (max-width:1100px){ .g4{ grid-template-columns: repeat(2, 1fr) } }
+    @media (max-width:600px){ .g4, .g2{ grid-template-columns: 1fr } }
+
+    .card{
+      background:var(--card); border:1px solid var(--stroke);
+      border-radius:var(--radius); padding:14px; box-shadow: var(--shadow);
+    }
+    .muted{ color:var(--muted); font-size:12px }
+    .kpi{ display:flex; align-items:center; gap:12px; min-height:64px }
+    .kpi-ico{
+      width:36px; height:36px; border-radius:10px; background:var(--chip);
+      display:flex; align-items:center; justify-content:center; color:var(--terra); font-weight:700;
+    }
+    .kpi-val{ font-size:26px; font-weight:700 }
+    .kpi-delta{ font-size:12px; margin-top:4px }
+
+    /* Canvas */
+    canvas{ width:100%; height:340px }
+
+    /* Table */
+    table{ width:100% }
+    table.dataTable thead th{ background:#fafafa }
+    tbody tr:hover{ background:#fff7f1 }
+
+    /* Skeletons */
+    .skeleton{ position:relative; overflow:hidden; background:#f3f3f4; border-radius:10px; min-height:16px }
+    .skeleton::after{
+      content:""; position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(0,0,0,.05), transparent);
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer{ 0%{ transform: translateX(-100%) } 100%{ transform: translateX(100%) } }
+
+    /* Toast */
+    .toast{
+      position:fixed; right:20px; bottom:20px; background:#111827; color:#fff; padding:10px 12px;
+      border-radius:10px; font-size:13px; box-shadow: var(--shadow); display:none;
+    }
+
+    /* Print */
+    @media print{
+      .topbar, .toolbar, .actions{ display:none !important }
+      .wrapper{ padding:0 }
+      .card{ break-inside: avoid }
+    }
   </style>
 </head>
-<body class="min-h-screen">
-  <div id="root"></div>
+<body>
+  <!-- HEADER -->
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo" aria-label="Cotto Cusimano">CC</div>
+        <div>
+          <div style="font-weight:700">Cotto Cusimano</div>
+          <div class="muted">Materiali edilizi in terracotta</div>
+        </div>
+      </div>
+      <div class="title">
+        <h1>Dashboard Performance Agenti</h1>
+        <div class="sub">Ultimo aggiornamento: <span id="updated" class="skeleton" style="display:inline-block;min-width:120px;height:10px;"></span></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnExcel">Esporta Excel</button>
+        <button class="btn" id="btnPrint">Stampa / PDF</button>
+        <button class="btn" id="btnShare">Condividi</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrapper">
+    <!-- FILTRI -->
+    <div class="toolbar">
+      <select id="selAgente" class="select" title="Agente">
+        <option value="">Tutti gli agenti</option>
+      </select>
+      <select id="selProvincia" class="select" title="Provincia">
+        <option value="">Tutte le province</option>
+      </select>
+      <input id="q" class="select" type="search" placeholder="Cerca cliente…" title="Ricerca cliente"/>
+      <button id="btnReset" class="pill" title="Reset filtri">Reset</button>
+    </div>
+
+    <!-- KPI -->
+    <div class="grid g4">
+      <div class="card">
+        <div class="muted">Fatturato Totale</div>
+        <div class="kpi">
+          <div class="kpi-ico">€</div>
+          <div>
+            <div id="kpiFatturato" class="kpi-val skeleton" style="min-width:120px"></div>
+            <div id="kpiFattDelta" class="kpi-delta muted skeleton" style="min-width:80px"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Clienti Totali</div>
+        <div class="kpi">
+          <div class="kpi-ico">👥</div>
+          <div>
+            <div id="kpiClienti" class="kpi-val skeleton" style="min-width:80px"></div>
+            <div class="kpi-delta muted">Fonte: riepilogo TOTALE</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Target raggiunto</div>
+        <div class="kpi">
+          <div class="kpi-ico">🎯</div>
+          <div>
+            <div id="kpiTarget" class="kpi-val skeleton" style="min-width:80px"></div>
+            <div class="kpi-delta muted">OBIETTIVI (Generale)</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Info dataset</div>
+        <div class="kpi">
+          <div class="kpi-ico">ℹ</div>
+          <div>
+            <div id="kpiInfo" class="kpi-val" style="font-size:16px">Caricamento…</div>
+            <div class="kpi-delta muted">Agenti/Province disponibili</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAFICI -->
+    <div class="grid g2" style="margin-top:14px;">
+      <div class="card">
+        <div class="muted" style="margin-bottom:6px;">Fatturato per Agente</div>
+        <canvas id="chartAgenti"></canvas>
+      </div>
+      <div class="card">
+        <div class="muted" style="margin-bottom:6px;">Distribuzione per Provincia</div>
+        <canvas id="chartProvincia"></canvas>
+      </div>
+    </div>
+
+    <!-- TABELLA -->
+    <div class="card" style="margin-top:14px;">
+      <div class="muted" style="margin-bottom:6px;">Vendite per Cliente</div>
+      <table id="tbl" class="display">
+        <thead>
+          <tr>
+            <th>Agente</th>
+            <th>Provincia</th>
+            <th>Cliente</th>
+            <th>Fatturato (€)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="4" class="muted">Caricamento…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
-    // ---------- Utilities & Live Data ----------
-    const itNum = (v) => (typeof v === 'number') ? v : Number(String(v||'').replace(/\./g,'').replace(',', '.')) || 0;
-    const formatEuro = (v) => new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v||0);
-    const formatPercent = (v) => (typeof v === 'number') ? (v.toFixed(2).replace('.', ',') + '%') : '—';
-    const formatNumber = (v) => new Intl.NumberFormat('it-IT').format(v||0);
-    const getColorByPerformance = (p) => (p>=90 ? '#10b981' : p>=70 ? '#f59e0b' : '#ef4444');
+    // ------------------ Utilities ------------------
+    const fmtEUR = new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' });
+    const fmtINT = new Intl.NumberFormat('it-IT');
+    const asNum  = v => (typeof v === 'number') ? v : Number(v||0);
+    const byTipo = (rows, t) => rows.filter(r => r.Tipo_Dato === t);
+    const $ = s => document.querySelector(s);
 
-    function buildDashboardData(apiJson){
-      const rows = Array.isArray(apiJson?.rows) ? apiJson.rows : [];
-      const updatedAt = apiJson?.updatedAt || null;
+    let DT = null;             // DataTable instance
+    let CH_AG = null, CH_PR = null; // Chart instances
+    const state = { all: [], filtered: [], agente:'', provincia:'', q:'' };
 
-      const agentKey = (r) => (r.Agente_Codice || '—') + '|' + (r.Agente_Nome || '—');
-      const agentsSet = new Set(rows.map(agentKey));
-      const agentIds = Array.from(agentsSet);
+    function toast(msg){
+      const el = $('#toast'); el.textContent = msg; el.style.display='block';
+      setTimeout(()=> el.style.display='none', 2500);
+    }
 
-      const byTipo = (t) => rows.filter(r => r.Tipo_Dato === t);
-      const OBI = byTipo('OBIETTIVI');
-      const OBI_GEN = OBI.filter(r => r.Provincia === 'Generale');
-      const OBI_PROV = OBI.filter(r => r.Provincia && r.Provincia !== 'Generale');
-      const VEND = byTipo('VENDITE_CLIENTE');
-      const CLIP = byTipo('CLIENTI_PROVINCIA');
-      const TOT = byTipo('TOTALE');
+    function gradient(ctx){
+      const g = ctx.createLinearGradient(0,0,0,340);
+      g.addColorStop(0,'#D2691E'); g.addColorStop(1,'#CD853F'); return g;
+    }
 
-      let fatturatoTot = 0;
-      const totFattRows = TOT.filter(r => r.Descrizione === 'Fatturato_Totale');
-      if (totFattRows.length > 0){
-        fatturatoTot = totFattRows.reduce((s,r)=> s + itNum(r.Valore), 0);
-      } else {
-        fatturatoTot = VEND.reduce((s,r)=> s + itNum(r.Fatturato), 0);
-      }
-      let clientiTot = 0;
-      const totCliRows = TOT.filter(r => r.Descrizione === 'Clienti_Totale');
-      if (totCliRows.length > 0){
-        clientiTot = totCliRows.reduce((s,r)=> s + itNum(r.Valore), 0);
-      } else {
-        clientiTot = CLIP.reduce((s,r)=> s + itNum(r.Clienti_Serviti), 0);
-      }
+    function setUpdated(ts){
+      const el = $('#updated'); el.classList.remove('skeleton');
+      el.textContent = new Date(ts).toLocaleString('it-IT');
+    }
 
-      const agentiAttivi = agentIds.length;
-      const sommaAC = OBI_GEN.reduce((s,r)=> s + itNum(r.Anno_Corrente), 0);
-      const sommaOb = OBI_GEN.reduce((s,r)=> s + itNum(r.Obiettivo), 0);
-      const percentOb = sommaOb > 0 ? (sommaAC / sommaOb) * 100 : 0;
-      const sommaAP = OBI_GEN.reduce((s,r)=> s + itNum(r.Anno_Precedente), 0);
-      const yoy = sommaAP > 0 ? ((sommaAC - sommaAP) / sommaAP) * 100 : 0;
+    function setSkeletonOff(){
+      ['#kpiFatturato','#kpiFattDelta','#kpiClienti','#kpiTarget'].forEach(id=>{
+        const el=$(id); if(el) el.classList.remove('skeleton');
+      });
+    }
 
-      const agenti = agentIds.map(key => {
-        const [codice, nome] = key.split('|');
-        const vendAg = VEND.filter(r => agentKey(r) === key);
-        const clipAg = CLIP.filter(r => agentKey(r) === key);
-        const obiGenAg = OBI_GEN.find(r => agentKey(r) === key) || {};
-        const perProvFatt = {};
-        vendAg.forEach(r => {
-          const p = r.Provincia || '—';
-          perProvFatt[p] = (perProvFatt[p] || 0) + itNum(r.Fatturato);
-        });
-        const perProvCli = {};
-        clipAg.forEach(r => {
-          const p = r.Provincia || '—';
-          perProvCli[p] = (perProvCli[p] || 0) + itNum(r.Clienti_Serviti);
-        });
-        const clientiperprov = Object.keys(perProvFatt).map(p => ({
-          provincia: p,
-          fatturato: perProvFatt[p],
-          clienti: perProvCli[p] || 0
-        }));
+    // Deep-link filtri: sync URL <-> stato
+    function syncFromURL(){
+      const u = new URL(location.href);
+      state.agente   = u.searchParams.get('agente')   || '';
+      state.provincia= u.searchParams.get('provincia')|| '';
+      state.q        = u.searchParams.get('q')        || '';
+    }
+    function syncToURL(){
+      const u = new URL(location.href);
+      const set = (k,v)=>{ if(v) u.searchParams.set(k,v); else u.searchParams.delete(k); }
+      set('agente',state.agente); set('provincia',state.provincia); set('q',state.q);
+      history.replaceState(null,'',u.toString());
+    }
 
-        return {
-          codice,
-          ragione_sociale: nome,
-          periodo: null,
-          obiettivi: { generale: {} },
-          clienti_per_provincia: clientiperprov.sort((a,b)=> b.fatturato - a.fatturato),
-          totali: {
-            fatturato_corrente: itNum(obiGenAg.Anno_Corrente),
-            fatturato_precedente: itNum(obiGenAg.Anno_Precedente),
-            clienti_serviti: clipAg.reduce((s,r)=> s + itNum(r.Clienti_Serviti), 0),
-            obiettivo: itNum(obiGenAg.Obiettivo),
-            percentuale_obiettivo: itNum(obiGenAg.Percentuale_Obiettivo)
-          }
-        };
+    // ------------------ Load ------------------
+    init().catch(err => { console.error(err); toast('Errore: '+err.message); });
+
+    async function init(){
+      syncFromURL();
+      const res = await fetch('/data', { cache:'no-store' });
+      if(!res.ok) throw new Error('Fetch /data fallita');
+      const data = await res.json();
+
+      setUpdated(data.updatedAt);
+      const rows = data.rows || [];
+      state.all = rows.slice();
+
+      // Popola Select Agente/Provincia
+      const agenti = [...new Set(rows.map(r => r.Agente_Nome || r.Agente_Codice || '—'))].filter(Boolean).sort();
+      const provs  = [...new Set(rows.map(r => r.Provincia).filter(Boolean))].sort();
+
+      const selA = $('#selAgente'), selP = $('#selProvincia');
+      agenti.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; selA.appendChild(o); });
+      provs.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; selP.appendChild(o); });
+
+      selA.value = state.agente; selP.value = state.provincia; $('#q').value = state.q;
+
+      // Info dataset
+      $('#kpiInfo').textContent = `${fmtINT.format(agenti.length)} agenti • ${fmtINT.format(provs.length)} province • ${fmtINT.format(rows.length)} righe`;
+
+      // Handlers filtri
+      selA.addEventListener('change', ()=>{ state.agente=selA.value; apply(); });
+      selP.addEventListener('change', ()=>{ state.provincia=selP.value; apply(); });
+      $('#q').addEventListener('input',  ()=>{ state.q=$('#q').value.trim(); apply(); });
+      $('#btnReset').addEventListener('click', ()=>{
+        state.agente=''; state.provincia=''; state.q='';
+        selA.value=''; selP.value=''; $('#q').value='';
+        apply();
       });
 
-      const provKeys = new Set(rows.map(r => r.Provincia).filter(Boolean).map(String));
-      const province = Array.from(provKeys).map(p => {
-        const vendP = VEND.filter(r => r.Provincia === p);
-        const clipP = CLIP.filter(r => r.Provincia === p);
-        const obiP  = OBI_PROV.filter(r => r.Provincia === p);
+      // Actions
+      $('#btnPrint').addEventListener('click', ()=>window.print());
+      $('#btnShare').addEventListener('click', async ()=>{
+        try{ await navigator.clipboard.writeText(location.href); toast('Link copiato'); }catch{ prompt('Copia il link:', location.href); }
+      });
+      $('#btnExcel').addEventListener('click', ()=>{
+        const ws = XLSX.utils.json_to_sheet(state.filtered);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dati');
+        XLSX.writeFile(wb, 'dashboard-cotto-cusimano.xlsx');
+      });
 
-        const fatt = vendP.reduce((s,r)=> s + itNum(r.Fatturato), 0);
-        const clients = clipP.reduce((s,r)=> s + itNum(r.Clienti_Serviti), 0);
-        const agSet = new Set( vendP.concat(clipP).concat(obiP).map(agentKey) );
-
-        const somAC = obiP.reduce((s,r)=> s + itNum(r.Anno_Corrente), 0);
-        const somOb = obiP.reduce((s,r)=> s + itNum(r.Obiettivo), 0);
-        const perc = somOb > 0 ? (somAC / somOb) * 100 : 0;
-
-        return {
-          provincia: p,
-          fatturato_totale: fatt,
-          clienti_totali: clients,
-          numero_agenti: agSet.size,
-          obiettivo_totale: somOb,
-          percentuale_obiettivo: perc
-        };
-      }).sort((a,b)=> b.fatturato_totale - a.fatturato_totale);
-
-      return {
-        riepilogo_generale: {
-          fatturato_totale: fatturatoTot,
-          percentuale_obiettivo: percentOb,
-          clienti_totali: clientiTot,
-          agenti_attivi: agentiAttivi,
-          variazione_yoy: yoy,
-          aggiornato_il: updatedAt
-        },
-        agenti,
-        province
-      };
+      apply(); // primo render
     }
 
-    async function loadLiveData(){
-      try{
-        const res = await fetch('/data', { cache:'no-store' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const api = await res.json();
-        window.dashboardData = buildDashboardData(api);
-      }catch(e){
-        console.warn('Live /data non disponibile, uso dataset demo.', e);
-        window.dashboardData = window.dashboardData || {
-          riepilogo_generale: {
-            fatturato_totale: 0,
-            percentuale_obiettivo: 0,
-            clienti_totali: 0,
-            agenti_attivi: 0,
-            variazione_yoy: 0,
-            aggiornato_il: new Date().toISOString()
-          },
-          agenti: [], province: []
-        };
-      }
-    }
+    // ------------------ Filter + Render ------------------
+    function apply(){
+      let rows = state.all.slice();
 
-    // ---------- React components (no JSX) ----------
-    function Header(props){
-      return React.createElement("header", {className:"border-b border-gray-100 bg-white"},
-        React.createElement("div", {className:"max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center"},
-          React.createElement("div",{className:"flex items-center gap-3"},
-            React.createElement("div",{className:"w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-bold"},"CC"),
-            React.createElement("div",null,
-              React.createElement("div",{className:"font-semibold"},"Cotto Cusimano"),
-              React.createElement("div",{className:"text-xs text-gray-500"},"Rete commerciale B2B")
-            )
-          ),
-          React.createElement("div",{className:"text-center"},
-            React.createElement("h1",{className:"text-xl md:text-2xl font-bold"},"Dashboard Performance Agenti"),
-            React.createElement("div",{className:"text-xs text-gray-500 mt-1"},"Ultimo aggiornamento: ",
-              React.createElement("span",{className:"font-medium"}, props.updatedAt || "—")
-            )
-          ),
-          React.createElement("div",{className:"flex md:justify-end gap-2"},
-            React.createElement("button",{className:"px-3 py-2 rounded-xl border border-gray-200", onClick:()=>window.print()},"Stampa")
-          )
-        )
-      );
-    }
-
-    function KPICard(props){
-      const color = props.color || "text-primary";
-      const icon = props.icon || "●";
-      const children = [
-        React.createElement("div",{className:"flex justify-between items-start", key:"row"},
-          React.createElement("div",{className:"text-sm text-gray-500"}, props.label || ""),
-          React.createElement("div",{className:"text-xs px-2 py-0.5 rounded-full border " + color, style:{borderColor:"currentColor"}}, icon)
-        ),
-        React.createElement("div",{className:"text-2xl font-bold mt-1", key:"val"}, props.value || "—")
-      ];
-      if (typeof props.delta === "number"){
-        children.push(
-          React.createElement("div",{className:"mt-1 text-sm", key:"delta"},
-            (props.delta >= 0)
-              ? React.createElement("span",{className:"text-success"}, "▲ " + props.delta.toFixed(1) + "%")
-              : React.createElement("span",{className:"text-danger"}, "▼ " + Math.abs(props.delta).toFixed(1) + "%"),
-            React.createElement("span",{className:"text-gray-400 ml-1"},"vs prec.")
-          )
+      if (state.agente) {
+        rows = rows.filter(r =>
+          (r.Agente_Nome===state.agente) ||
+          (r.Agente_Codice===state.agente) ||
+          (!r.Agente_Nome && !r.Agente_Codice && state.agente==='—')
         );
       }
-      if (props.hint){
-        children.push(React.createElement("div",{className:"mt-1 text-xs text-gray-500", key:"hint"}, props.hint));
+      if (state.provincia) rows = rows.filter(r => r.Provincia===state.provincia);
+      if (state.q) {
+        const q = state.q.toLowerCase();
+        rows = rows.filter(r => String(r.Ragione_Sociale_Cliente||'').toLowerCase().includes(q));
       }
-      return React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"}, children);
+
+      state.filtered = rows;
+      syncToURL();
+      renderAll();
     }
 
-    function Gauge(props){
-      const percent = Math.max(0, Math.min(100, props.percent||0));
-      const color = getColorByPerformance(percent);
-      const rest = 100 - percent;
-      const R = Recharts;
-      return React.createElement(R.ResponsiveContainer,{width:"100%", height:220},
-        React.createElement(R.PieChart,null,
-          React.createElement(R.Pie,{
-            data:[{value:percent},{value:rest}], startAngle:180, endAngle:0,
-            innerRadius:70, outerRadius:100, dataKey:"value"
-          },
-            React.createElement(R.Cell,{fill:color}),
-            React.createElement(R.Cell,{fill:"#eee"})
-          ),
-          React.createElement("text",{x:"50%", y:"60%", textAnchor:"middle", dominantBaseline:"middle", className:"fill-gray-700", style:{fontSize:24, fontWeight:700}}, formatPercent(percent)),
-          React.createElement("text",{x:"50%", y:"78%", textAnchor:"middle", dominantBaseline:"middle", className:"fill-gray-500", style:{fontSize:12}},"Raggiungimento obiettivo")
-        )
-      );
+    function renderAll(){
+      setSkeletonOff();
+      renderKPIs(state.filtered);
+      renderCharts(state.filtered);
+      renderTable(state.filtered);
     }
 
-    function App(){
-      const R = Recharts;
-      const ReactHooks = React;
-      const useState = ReactHooks.useState;
-      const useMemo = ReactHooks.useMemo;
+    // ------------------ KPIs ------------------
+    function renderKPIs(rows){
+      // TOTALE
+      const tot = byTipo(rows,'TOTALE');
+      const fatt = tot.find(r => r.Descrizione==='Fatturato_Totale');
+      const cli  = tot.find(r => r.Descrizione==='Clienti_Totale');
 
-      const data = window.dashboardData || { riepilogo_generale:{}, agenti:[], province:[] };
-      const _kpi = data.riepilogo_generale || {};
+      $('#kpiFatturato').textContent = fatt ? fmtEUR.format(asNum(fatt.Valore||0)) : '—';
+      $('#kpiClienti').textContent   = cli  ? fmtINT.format(asNum(cli.Valore||0))   : '—';
 
-      const [tab, setTab] = useState('panoramica');
-      const [provSel, setProvSel] = useState('');
-      const [agSel, setAgSel] = useState('');
+      // OBIETTIVI (Generale): delta & target
+      const obGen = byTipo(rows,'OBIETTIVI').find(r => r.Provincia==='Generale');
+      const prec = asNum(obGen?.Anno_Precedente||0), corr = asNum(obGen?.Anno_Corrente||0);
+      const delta = (prec>0) ? ((corr-prec)/prec)*100 : null;
+      $('#kpiFattDelta').innerHTML = (delta==null) ? '—'
+        : (delta>=0 ? `<span style="color:var(--good)">▲ ${delta.toFixed(1)}%</span>`
+                    : `<span style="color:var(--bad)">▼ ${delta.toFixed(1)}%</span>`);
 
-      const updatedAt = useMemo(function(){
-        const d = _kpi.aggiornato_il;
-        try { return new Date(d).toLocaleString('it-IT'); } catch(e){ return '—'; }
-      }, [data]);
-
-      const agenti = useMemo(function(){
-        return (data.agenti||[]).map(function(a){
-          return {
-            codice:a.codice, nome:a.ragione_sociale,
-            fatturato:a?.totali?.fatturato_corrente||0,
-            clienti:a?.totali?.clienti_serviti||0,
-            obiettivo:a?.totali?.obiettivo||0,
-            perc:a?.totali?.percentuale_obiettivo||0,
-            perProvincia:a?.clienti_per_provincia||[],
-            precedente:a?.totali?.fatturato_precedente||0
-          };
-        });
-      }, [data]);
-
-      const province = useMemo(function(){ return data.province||[]; }, [data]);
-
-      const topAgenti = useMemo(function(){
-        return agenti.slice().sort(function(a,b){ return (b.fatturato||0)-(a.fatturato||0); }).slice(0,10);
-      }, [agenti]);
-
-      const topProv = useMemo(function(){
-        return province.slice().sort(function(a,b){ return (b.fatturato_totale||0)-(a.fatturato_totale||0); }).slice(0,10)
-          .map(function(p){ return { provincia:p.provincia, fatturato:p.fatturato_totale }; });
-      }, [province]);
-
-      const filteredAgentiInProv = useMemo(function(){
-        if (!provSel) return agenti;
-        return agenti.filter(function(a){ return (a.perProvincia||[]).some(function(pp){ return pp.provincia===provSel; }); });
-      }, [agenti, provSel]);
-
-      const agenteCorrente = useMemo(function(){
-        if (!agSel) return agenti[0];
-        return agenti.find(function(a){ return a.codice===agSel || a.nome===agSel; }) || agenti[0];
-      }, [agenti, agSel]);
-
-      // ---------- UI Sections (no JSX) ----------
-      function Tabs(){
-        return React.createElement("div",{className:"flex gap-2 mb-6"},
-          React.createElement("button",{className:"px-4 py-2 rounded-full border " + (tab==='panoramica'?'bg-primary text-white border-primary':'border-gray-200'), onClick:function(){ setTab('panoramica'); }},"Panoramica Generale"),
-          React.createElement("button",{className:"px-4 py-2 rounded-full border " + (tab==='regioni'?'bg-primary text-white border-primary':'border-gray-200'), onClick:function(){ setTab('regioni'); }},"Regioni"),
-          React.createElement("button",{className:"px-4 py-2 rounded-full border " + (tab==='agenti'?'bg-primary text-white border-primary':'border-gray-200'), onClick:function(){ setTab('agenti'); }},"Agenti")
-        );
-      }
-
-      function Panoramica(){
-        return React.createElement("section",{className:"space-y-6"},
-          // KPI row
-          React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-5 gap-6"},
-            React.createElement(KPICard,{label:"Fatturato Totale Rete", value:formatEuro(_kpi.fatturato_totale||0), icon:"€"}),
-            React.createElement(KPICard,{label:"% Raggiungimento Obiettivo", value:formatPercent(_kpi.percentuale_obiettivo||0), icon:"🎯", color:"text-success"}),
-            React.createElement(KPICard,{label:"Clienti Totali", value:formatNumber(_kpi.clienti_totali||0), icon:"👥", color:"text-primary"}),
-            React.createElement(KPICard,{label:"Agenti Attivi", value:formatNumber(_kpi.agenti_attivi||0), icon:"🧑‍💼", color:"text-primary"}),
-            React.createElement(KPICard,{label:"Variazione YoY", value:formatPercent(Math.abs(_kpi.variazione_yoy||0)), icon:"↕", color:(_kpi.variazione_yoy||0)>=0?'text-success':'text-danger', delta:_kpi.variazione_yoy||0})
-          ),
-          // Charts row
-          React.createElement("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6"},
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"font-semibold mb-2"},"Top 10 Agenti per Fatturato"),
-              React.createElement("div",{className:"h-72"},
-                React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                  React.createElement(R.BarChart,{data:topAgenti},
-                    React.createElement(R.CartesianGrid,{stroke:"#eee"}),
-                    React.createElement(R.XAxis,{type:"number", tickFormatter:formatEuro}),
-                    React.createElement(R.YAxis,{type:"category", dataKey:"nome", width:120}),
-                    React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
-                    React.createElement(R.Bar,{dataKey:"fatturato"},
-                      topAgenti.map(function(a,i){
-                        return React.createElement(R.Cell,{key:i, fill:"hsl(" + (20 + i*6) + ",70%,50%)"});
-                      })
-                    )
-                  )
-                )
-              )
-            ),
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"font-semibold mb-2"},"Raggiungimento Obiettivo Generale"),
-              React.createElement(Gauge,{percent:_kpi.percentuale_obiettivo||0})
-            )
-          ),
-          // Province top 10
-          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-            React.createElement("div",{className:"font-semibold mb-2"},"Fatturato per Provincia (Top 10)"),
-            React.createElement("div",{className:"h-80"},
-              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                React.createElement(R.BarChart,{data:topProv},
-                  React.createElement(R.CartesianGrid,{stroke:"#eee"}),
-                  React.createElement(R.XAxis,{dataKey:"provincia"}),
-                  React.createElement(R.YAxis,{tickFormatter:formatEuro}),
-                  React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
-                  React.createElement(R.Bar,{dataKey:"fatturato", fill:"#2563eb"})
-                )
-              )
-            )
-          ),
-          // Metriche medie
-          React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-6"},
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"text-sm text-gray-500"},"Fatturato medio per agente"),
-              React.createElement("div",{className:"text-2xl font-bold mt-1"}, formatEuro((_kpi.fatturato_totale||0)/Math.max(1,(_kpi.agenti_attivi||1))))
-            ),
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"text-sm text-gray-500"},"Clienti medi per agente"),
-              React.createElement("div",{className:"text-2xl font-bold mt-1"}, formatNumber((_kpi.clienti_totali||0)/Math.max(1,(_kpi.agenti_attivi||1))))
-            ),
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"text-sm text-gray-500"},"Fatturato medio per cliente"),
-              React.createElement("div",{className:"text-2xl font-bold mt-1"}, formatEuro((_kpi.fatturato_totale||0)/Math.max(1,(_kpi.clienti_totali||1))))
-            )
-          )
-        );
-      }
-
-      function Regioni(){
-        const [dummy, setDummy] = React.useState(0); // force update for select
-        return React.createElement("section",{className:"space-y-6"},
-          React.createElement("div",{className:"flex flex-col md:flex-row gap-3"},
-            React.createElement("select",{className:"px-3 py-2 rounded-xl border border-gray-200", value:provSel, onChange:function(e){ setProvSel(e.target.value); setDummy(dummy+1);} },
-              React.createElement("option",{value:""},"Tutte le Province"),
-              province.map(function(p){ return React.createElement("option",{key:p.provincia, value:p.provincia}, p.provincia); })
-            ),
-            React.createElement("button",{className:"px-3 py-2 rounded-xl border border-gray-200", onClick:function(){ setProvSel(""); setDummy(dummy+1);} },"Reset")
-          ),
-          (function(){
-            if (!provSel) return null;
-            const P = province.find(function(p){ return p.provincia===provSel; });
-            if (!P) return null;
-            return React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-4 gap-6"},
-              React.createElement(KPICard,{label:"Fatturato Provincia", value:formatEuro(P.fatturato_totale||0), icon:"€"}),
-              React.createElement(KPICard,{label:"Agenti operanti", value:formatNumber(P.numero_agenti||0), icon:"🧑‍💼"}),
-              React.createElement(KPICard,{label:"Clienti totali", value:formatNumber(P.clienti_totali||0), icon:"👥"}),
-              React.createElement(KPICard,{label:"% Obiettivo", value:formatPercent(P.percentuale_obiettivo||0), icon:"🎯", color:"text-success"})
-            );
-          })(),
-          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-            React.createElement("div",{className:"font-semibold mb-2"},"Fatturato per Provincia (tutte)"),
-            React.createElement("div",{className:"h-96"},
-              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                React.createElement(R.BarChart,{data: province.slice().sort(function(a,b){return (b.fatturato_totale||0)-(a.fatturato_totale||0);})},
-                  React.createElement(R.CartesianGrid,{stroke:"#eee"}),
-                  React.createElement(R.XAxis,{dataKey:"provincia", interval:0, angle:-45, textAnchor:"end", height:80}),
-                  React.createElement(R.YAxis,{tickFormatter:formatEuro}),
-                  React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
-                  React.createElement(R.Bar,{dataKey:"fatturato_totale"},
-                    province.slice().sort(function(a,b){return (b.fatturato_totale||0)-(a.fatturato_totale||0);}).map(function(p,i){
-                      return React.createElement(R.Cell,{key:i, fill:getColorByPerformance(p.percentuale_obiettivo||0)});
-                    })
-                  )
-                )
-              )
-            )
-          ),
-          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-            React.createElement("div",{className:"font-semibold mb-2"},"Clienti vs Fatturato (per Provincia)"),
-            React.createElement("div",{className:"h-96"},
-              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                React.createElement(R.ScatterChart,null,
-                  React.createElement(R.CartesianGrid,{stroke:"#eee"}),
-                  React.createElement(R.XAxis,{type:"number", dataKey:"x", name:"Clienti"}),
-                  React.createElement(R.YAxis,{type:"number", dataKey:"y", name:"Fatturato", tickFormatter:formatEuro}),
-                  React.createElement(R.Tooltip,{formatter:function(v,name){ return name==='y'?formatEuro(v):formatNumber(v); }, labelFormatter:function(_,i){ return (province[i]||{}).provincia; }}),
-                  React.createElement(R.Scatter,{data: province.map(function(p){ return {x:p.clienti_totali||0, y:p.fatturato_totale||0}; }), fill:"#2563eb"})
-                )
-              )
-            )
-          )
-        );
-      }
-
-      function Agenti(){
-        const [dummy, setDummy] = React.useState(0);
-        return React.createElement("section",{className:"space-y-6"},
-          React.createElement("div",{className:"flex flex-col md:flex-row gap-3"},
-            React.createElement("select",{className:"px-3 py-2 rounded-xl border border-gray-200", value:agSel, onChange:function(e){ setAgSel(e.target.value); setDummy(dummy+1);} },
-              agenti.map(function(a){ return React.createElement("option",{key:a.codice, value:a.codice}, a.codice + " — " + a.nome); })
-            )
-          ),
-          (function(){
-            const a = agenteCorrente;
-            if (!a) return null;
-            return React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-6 gap-6"},
-              React.createElement(KPICard,{label:"Fatturato A.C.", value:formatEuro(a.fatturato||0), icon:"€"}),
-              React.createElement(KPICard,{label:"Obiettivo", value:formatEuro(a.obiettivo||0), icon:"🎯"}),
-              React.createElement(KPICard,{label:"% Raggiungimento", value:formatPercent(a.perc||0), icon:"✓", color:"text-success"}),
-              React.createElement(KPICard,{label:"Clienti Serviti", value:formatNumber(a.clienti||0), icon:"👥"}),
-              React.createElement(KPICard,{label:"Variazione YoY", value:formatPercent(((a.fatturato||0)-(a.precedente||0))/Math.max(1,(a.precedente||0))*100 || 0), icon:"↕", color:((a.fatturato||0)-(a.precedente||0))>=0?'text-success':'text-danger'}),
-              React.createElement(KPICard,{label:"Province coperte", value:formatNumber((a.perProvincia||[]).length), icon:"🗺️"})
-            );
-          })(),
-          React.createElement("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6"},
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"font-semibold mb-2"},"Fatturato per Provincia (Agente)"),
-              React.createElement("div",{className:"h-80"},
-                React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                  React.createElement(R.BarChart,{data: (agenteCorrente?.perProvincia||[]).slice().sort(function(a,b){ return (b.fatturato||0)-(a.fatturato||0); })},
-                    React.createElement(R.CartesianGrid,{stroke:"#eee"}),
-                    React.createElement(R.XAxis,{dataKey:"provincia"}),
-                    React.createElement(R.YAxis,{tickFormatter:formatEuro}),
-                    React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
-                    React.createElement(R.Bar,{dataKey:"fatturato", fill:"#2563eb"})
-                  )
-                )
-              )
-            ),
-            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-              React.createElement("div",{className:"font-semibold mb-2"},"Performance vs Obiettivo"),
-              React.createElement("div",{className:"h-60"},
-                React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                  React.createElement(R.PieChart,null,
-                    React.createElement(R.Pie,{data:[{value:(agenteCorrente?.perc||0)},{value:100-(agenteCorrente?.perc||0)}], startAngle:180, endAngle:0, innerRadius:70, outerRadius:100, dataKey:"value"},
-                      React.createElement(R.Cell,{fill:getColorByPerformance(agenteCorrente?.perc||0)}),
-                      React.createElement(R.Cell,{fill:"#eee"})
-                    ),
-                    React.createElement("text",{x:"50%", y:"60%", textAnchor:"middle", dominantBaseline:"middle", className:"fill-gray-700", style:{fontSize:24, fontWeight:700}}, formatPercent(agenteCorrente?.perc||0))
-                  )
-                )
-              )
-            )
-          ),
-          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
-            React.createElement("div",{className:"font-semibold mb-2"},"Top Province (Distribuzione Fatturato)"),
-            React.createElement("div",{className:"h-80"},
-              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
-                React.createElement(R.PieChart,null,
-                  React.createElement(R.Pie,{
-                      data:(agenteCorrente?.perProvincia||[]).slice().sort(function(a,b){return b.fatturato-a.fatturato;}).slice(0,5),
-                      dataKey:"fatturato", nameKey:"provincia", cx:"50%", cy:"50%", outerRadius:120, label:true
-                    },
-                    (agenteCorrente?.perProvincia||[]).slice(0,5).map(function(_,i){
-                      return React.createElement(R.Cell,{key:i, fill:"hsl("+ (200 + i*25) +",70%,50%)"});
-                    })
-                  ),
-                  React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }})
-                )
-              )
-            )
-          )
-        );
-      }
-
-      const container = React.createElement("div", null,
-        React.createElement(Header,{updatedAt: updatedAt}),
-        React.createElement("main",{className:"max-w-7xl mx-auto px-4 py-8"},
-          React.createElement(Tabs,null),
-          (function(){
-            if (tab==='panoramica') return React.createElement(Panoramica,null);
-            if (tab==='regioni') return React.createElement(Regioni,null);
-            return React.createElement(Agenti,null);
-          })()
-        )
-      );
-
-      return container;
+      const target = (typeof obGen?.Percentuale_Obiettivo==='number') ? obGen.Percentuale_Obiettivo : null;
+      $('#kpiTarget').textContent = (target!=null) ? `${target.toFixed(2)}%` : '—';
     }
 
-    async function bootstrap(){
-      await loadLiveData();
-      function mountWhenReady(){
-        if (typeof Recharts === 'undefined') {
-          setTimeout(mountWhenReady, 50);
-          return;
+    // ------------------ Charts ------------------
+    function renderCharts(rows){
+      // Fatturato per agente (da VENDITE_CLIENTE)
+      const byAgent = {};
+      rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
+        const a = r.Agente_Nome || r.Agente_Codice || '—';
+        byAgent[a] = (byAgent[a]||0) + asNum(r.Fatturato||0);
+      });
+      const ag = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]);
+      const lblA = ag.map(x=>x[0]), valA = ag.map(x=>x[1]);
+
+      const ctxA = document.getElementById('chartAgenti').getContext('2d');
+      if (CH_AG) CH_AG.destroy();
+      CH_AG = new Chart(ctxA, {
+        type:'bar',
+        data:{ labels: lblA, datasets:[{ label:'Fatturato', data: valA, backgroundColor: gradient(ctxA) }] },
+        options:{
+          indexAxis:'y', responsive:true,
+          plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>fmtEUR.format(c.parsed.x||0) } } },
+          scales:{ x:{ ticks:{ callback:v=>fmtEUR.format(v) }, grid:{ color:'#f0f0f0' } }, y:{ grid:{ display:false } } }
         }
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
-      }
-      mountWhenReady();
+      });
+
+      // Distribuzione per provincia (da VENDITE_CLIENTE)
+      const byProv = {};
+      rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
+        const p=r.Provincia||'—'; byProv[p]=(byProv[p]||0)+asNum(r.Fatturato||0);
+      });
+      const pv = Object.entries(byProv).sort((a,b)=>b[1]-a[1]);
+      const lblP = pv.map(x=>x[0]), valP = pv.map(x=>x[1]);
+
+      const ctxP = document.getElementById('chartProvincia').getContext('2d');
+      if (CH_PR) CH_PR.destroy();
+      CH_PR = new Chart(ctxP, {
+        type:'doughnut',
+        data:{ labels: lblP, datasets:[{ data: valP }] },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label:c=> `${c.label}: ${fmtEUR.format(c.parsed)}` } } } }
+      });
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootstrap);
-    } else {
-      bootstrap();
+    // ------------------ Table ------------------
+    function renderTable(rows){
+      const body = rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE')
+        .sort((a,b)=>asNum(b.Fatturato||0)-asNum(a.Fatturato||0))
+        .map(r=>[
+          r.Agente_Nome || r.Agente_Codice || '—',
+          r.Provincia || '—',
+          r.Ragione_Sociale_Cliente || '',
+          fmtEUR.format(asNum(r.Fatturato||0))
+        ]);
+
+      if (DT){ DT.destroy(); document.querySelector('#tbl tbody').innerHTML=''; }
+
+      DT = new DataTable('#tbl', {
+        data: body,
+        columns: [
+          { title:'Agente' }, { title:'Provincia' },
+          { title:'Cliente' }, { title:'Fatturato (€)', className:'dt-right' }
+        ],
+        order: [[3,'desc']],
+        paging: true, pageLength: 10, searchable: true, info: false
+      });
     }
   </script>
 </body>
