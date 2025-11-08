@@ -3,88 +3,181 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard B2B • Demo</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>Dashboard B2B • Agenti</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Font + stile leggero -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root { color-scheme: light dark; }
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; }
-    .wrap { max-width: 1100px; margin: 0 auto; }
-    .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; background: white; }
-    .muted { color: #6b7280; font-size: 12px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b1320; color: #e5e7eb; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .muted { color: #94a3b8; font-size: 12px; }
+    .grid { display: grid; gap: 16px; }
+    .g3 { grid-template-columns: repeat(3, 1fr); }
+    .g2 { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 900px){ .g3, .g2 { grid-template-columns: 1fr; } }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 16px; }
+    .kpi { font-size: 28px; font-weight: 700; margin-top: 6px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
-    h1 { font-size: 22px; margin: 0 0 8px; }
-    h2 { font-size: 16px; margin: 12px 0; }
-    .kpi { font-size: 28px; font-weight: 700; }
-    @media (prefers-color-scheme: dark) {
-      body { background: #0b1320; color: #e5e7eb; }
-      .card { background: #0f172a; border-color: #1e293b; }
-      table th, table td { border-color: #1e293b; }
-      .muted { color: #94a3b8; }
-    }
+    th, td { padding: 10px 8px; border-bottom: 1px solid #1e293b; text-align: left; }
+    th { color: #cbd5e1; font-weight: 600; }
+    .right { text-align: right; }
+    canvas { width: 100%; height: 340px; }
+    .spacer { height: 8px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Dashboard B2B • Demo</h1>
-    <div class="muted" id="meta">Caricamento…</div>
+    <h1>Dashboard B2B • Agenti</h1>
+    <div class="muted">Origine dati: <code>/data</code>. Aggiornamento: <span id="kpiUpdated">—</span></div>
 
-    <div class="row">
-      <div class="card"><div class="muted">Fatturato Totale</div><div class="kpi" id="fatturato">—</div></div>
-      <div class="card"><div class="muted">Clienti Totali</div><div class="kpi" id="clienti">—</div></div>
-      <div class="card"><div class="muted">Ultimo aggiornamento</div><div class="kpi" id="updatedAt">—</div></div>
+    <!-- KPI -->
+    <div class="grid g3" style="margin-top:16px;">
+      <div class="card">
+        <div class="muted">Fatturato Totale</div>
+        <div class="kpi" id="kpiFatturato">—</div>
+      </div>
+      <div class="card">
+        <div class="muted">Clienti Totali</div>
+        <div class="kpi" id="kpiClienti">—</div>
+      </div>
+      <div class="card">
+        <div class="muted">Note</div>
+        <div id="kpiMeta" class="kpi" style="font-size:16px; font-weight:600">Caricamento…</div>
+      </div>
     </div>
 
+    <div class="spacer"></div>
+
+    <!-- Charts -->
+    <div class="grid g2">
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px;">Clienti serviti per provincia</div>
+        <canvas id="chartClientiProvincia"></canvas>
+      </div>
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px;">Ripartizione fatturato</div>
+        <canvas id="chartRipartizione"></canvas>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Obiettivi -->
     <div class="card">
-      <h2>Vendite per Cliente (top 15)</h2>
-      <table id="tbl">
-        <thead><tr><th>Provincia</th><th>Cliente</th><th>Fatturato</th></tr></thead>
-        <tbody></tbody>
+      <div class="muted" style="margin-bottom:8px;">% Obiettivo per provincia</div>
+      <canvas id="chartObiettivi"></canvas>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Tabella -->
+    <div class="card">
+      <div class="muted" style="margin-bottom:8px;">Top 25 clienti per fatturato</div>
+      <table>
+        <thead>
+          <tr><th>Provincia</th><th>Ragione Sociale</th><th class="right">Fatturato</th></tr>
+        </thead>
+        <tbody id="tblVendite"><tr><td colspan="3" class="muted">Caricamento…</td></tr></tbody>
       </table>
     </div>
   </div>
 
   <script>
-    const nfmt = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+    // --- formatter ---
+    const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+    const fmtINT = new Intl.NumberFormat('it-IT');
 
-    async function load() {
-      const res = await fetch('/data');
+    // util: filtra per tipo
+    const groupRows = (rows, tipo) => rows.filter(r => r.Tipo_Dato === tipo);
+
+    async function loadData() {
+      const res = await fetch('/data', { cache: 'no-store' });
       if (!res.ok) throw new Error('Fetch /data failed');
       const data = await res.json();
+      const rows = data.rows || [];
+      const info = `${data.rowCount} righe • delim: ${JSON.stringify(data.delimiter)}`;
+      document.getElementById('kpiMeta').textContent = info;
+      document.getElementById('kpiUpdated').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
 
-      document.getElementById('meta').textContent =
-        `Delimitatore: ${data.delimiter} • Righe: ${data.rowCount}`;
+      // === KPI FINALI ===
+      const totali = groupRows(rows, 'TOTALE');
+      const fatt = totali.find(r => r.Descrizione === 'Fatturato_Totale');
+      const cli  = totali.find(r => r.Descrizione === 'Clienti_Totale');
+      document.getElementById('kpiFatturato').textContent = fatt ? fmtEUR.format(fatt.Valore || 0) : '—';
+      document.getElementById('kpiClienti').textContent   = cli  ? fmtINT.format(cli.Valore || 0)   : '—';
 
-      // KPI finali (TOTALE)
-      const tot = data.rows.filter(r => r.Tipo_Dato === 'TOTALE');
-      const fatt = tot.find(r => r.Descrizione === 'Fatturato_Totale');
-      const cli  = tot.find(r => r.Descrizione === 'Clienti_Totale');
-      document.getElementById('fatturato').textContent = fatt ? nfmt.format(fatt.Valore || 0) : '—';
-      document.getElementById('clienti').textContent   = cli ? (cli.Valore ?? '—') : '—';
-      document.getElementById('updatedAt').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
+      // === TABELLA: VENDITE PER CLIENTE ===
+      const vendite = groupRows(rows, 'VENDITE_CLIENTE')
+        .sort((a, b) => (b.Fatturato || 0) - (a.Fatturato || 0))
+        .slice(0, 25);
 
-      // Tabella vendite per cliente
-      const vendite = data.rows
-        .filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE')
-        .sort((a,b) => (b.Fatturato||0) - (a.Fatturato||0))
-        .slice(0, 15);
-
-      const tbody = document.querySelector('#tbl tbody');
+      const tbody = document.getElementById('tblVendite');
       tbody.innerHTML = '';
       vendite.forEach(r => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.Provincia ?? ''}</td>
-                        <td>${r.Ragione_Sociale_Cliente ?? ''}</td>
-                        <td style="text-align:right">${r.Fatturato != null ? nfmt.format(r.Fatturato) : ''}</td>`;
+        tr.innerHTML = `
+          <td>${r.Provincia ?? ''}</td>
+          <td>${r.Ragione_Sociale_Cliente ?? ''}</td>
+          <td class="right">${r.Fatturato != null ? fmtEUR.format(r.Fatturato) : ''}</td>`;
         tbody.appendChild(tr);
       });
+
+      // === CHART: CLIENTI SERVITI PER PROVINCIA ===
+      const perProv = groupRows(rows, 'CLIENTI_PROVINCIA');
+      const lblProv = perProv.map(r => r.Provincia ?? '—');
+      const valProv = perProv.map(r => Number(r.Clienti_Serviti || 0));
+      if (window.Chart && document.getElementById('chartClientiProvincia')) {
+        new Chart(document.getElementById('chartClientiProvincia'), {
+          type: 'bar',
+          data: { labels: lblProv, datasets: [{ label: 'Clienti serviti', data: valProv }] },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          }
+        });
+      }
+
+      // === CHART: RIPARTIZIONE FATTURATO ===
+      const rip = groupRows(rows, 'RIPARTIZIONE')
+        .filter(r => String(r.Categoria_Prodotto || '').toLowerCase() !== 'totale');
+      const lblRip = rip.map(r => r.Categoria_Prodotto ?? '—');
+      const valRip = rip.map(r => Number(r.Importo || 0));
+      if (window.Chart && document.getElementById('chartRipartizione')) {
+        new Chart(document.getElementById('chartRipartizione'), {
+          type: 'doughnut',
+          data: { labels: lblRip, datasets: [{ data: valRip }] },
+          options: { responsive: true }
+        });
+      }
+
+      // === CHART: % OBIETTIVO PER PROVINCIA (esclude "Generale") ===
+      const ob = groupRows(rows, 'OBIETTIVI').filter(r => r.Provincia && r.Provincia !== 'Generale');
+      const lblOb = ob.map(r => r.Provincia);
+      const valOb = ob.map(r => Number(r.Percentuale_Obiettivo ?? 0)); // 0..100
+      if (window.Chart && document.getElementById('chartObiettivi')) {
+        new Chart(document.getElementById('chartObiettivi'), {
+          type: 'bar',
+          data: { labels: lblOb, datasets: [{ label: '% Obiettivo', data: valOb }] },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+          }
+        });
+      }
     }
 
-    load().catch(err => {
-      document.getElementById('meta').textContent = 'Errore: ' + err.message;
+    loadData().catch(err => {
       console.error(err);
+      const el = document.getElementById('kpiMeta');
+      if (el) el.textContent = 'Errore: ' + err.message;
     });
   </script>
 </body>
