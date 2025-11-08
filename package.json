@@ -1,12 +1,8 @@
 {
   "name": "ftp-dashboard",
   "version": "1.0.0",
-  "description": "Scarica un file (TSV/CSV) da FTP e serve una dashboard + API /data",
   "type": "commonjs",
-  "scripts": {
-    "start": "node server.cjs",
-    "dev": "nodemon server.cjs"
-  },
+  "scripts": { "start": "node server.js" },
   "dependencies": {
     "basic-ftp": "^5.0.5",
     "compression": "^1.7.4",
