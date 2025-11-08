@@ -1,548 +1,466 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Dashboard Performance Agenti • Cotto Cusimano</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard B2B - Rete Commerciale</title>
 
-  <!-- Font -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger:  '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- React & ReactDOM (UMD) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- DataTables -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.dataTables.min.css">
-  <script src="https://cdn.datatables.net/2.0.6/js/dataTables.min.js"></script>
+  <!-- Babel Standalone (permette JSX inline) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- SheetJS (opzionale: export Excel) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
+  <!-- Recharts (UMD) -->
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
 
   <style>
-    :root{
-      --terracotta:#D2691E;     /* chocolate */
-      --terracotta-2:#CD853F;   /* peru */
-      --accent:#b85c1a;
-      --light:#ffffff;
-      --muted:#6b7280;
-      --stroke:#e6e6e6;
-      --bg:#ffffff;
-      --text:#0b1320;
-      --good:#16a34a;
-      --bad:#dc2626;
-      --chip:#f7efe9;
-    }
-    *{ box-sizing: border-box }
-    html,body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif }
-    .wrap{ max-width:1280px; margin:0 auto; padding:20px }
-
-    /* Header */
-    header{ display:grid; grid-template-columns: 220px 1fr auto; gap:16px; align-items:center; }
-    @media (max-width: 900px){ header{ grid-template-columns: 1fr } }
-    .brand{ display:flex; align-items:center; gap:12px }
-    .brand .logo{
-      width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,var(--terracotta),var(--terracotta-2));
-      display:flex; align-items:center; justify-content:center; color:white; font-weight:700;
-    }
-    .title{ text-align:center }
-    .title h1{ margin:0; font-size:22px; }
-    .title .sub{ color:var(--muted); font-size:12px; margin-top:4px }
-    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap }
-    .btn{ border:1px solid var(--stroke); background:#fff; color:var(--text); border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer }
-    .btn:hover{ border-color:#d8d8d8 }
-
-    /* Filters bar */
-    .bar{ margin-top:16px; display:grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap:10px; }
-    @media (max-width: 900px){ .bar{ grid-template-columns: 1fr } }
-    select, input[type="month"]{
-      width:100%; border:1px solid var(--stroke); background:#fff; color:var(--text); border-radius:10px; padding:8px 12px; font-size:13px;
-    }
-
-    /* Cards */
-    .grid{ display:grid; gap:12px }
-    .g4{ grid-template-columns: repeat(4, 1fr) }
-    .g2{ grid-template-columns: repeat(2, 1fr) }
-    @media (max-width: 1100px){ .g4{ grid-template-columns: repeat(2, 1fr) } }
-    @media (max-width: 600px){ .g4, .g2{ grid-template-columns: 1fr } }
-
-    .card{
-      background:#fff; border:1px solid var(--stroke); border-radius:14px; padding:14px;
-      box-shadow: 0 6px 16px rgba(0,0,0,.04);
-    }
-    .kpi{ display:flex; align-items:center; gap:12px }
-    .kpi .ico{
-      width:36px; height:36px; border-radius:10px; background:var(--chip); display:flex; align-items:center; justify-content:center;
-      color:var(--terracotta); font-weight:700;
-    }
-    .kpi .val{ font-size:26px; font-weight:700 }
-    .kpi .delta{ font-size:12px; display:flex; align-items:center; gap:6px }
-    .muted{ color:var(--muted); font-size:12px }
-
-    /* Charts layout */
-    canvas{ width:100%; height:340px }
-    .section-title{ font-weight:600; margin-bottom:8px }
-
-    /* DataTable */
-    table{ width:100% }
-    table.dataTable thead th{ background:#fafafa }
-    .right{ text-align:right }
-    tbody tr:hover{ background:#fff7f1 }
-
-    /* Terracotta gradient helper for charts */
+    body { background: #ffffff; color: #0b1320; font-family: Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif; }
+    .card { background:#fff; border:1px solid #f0f0f0; border-radius:16px; padding:24px; box-shadow: 0 6px 16px rgba(0,0,0,.05); }
+    .kpi-label { font-size: .875rem; color:#6b7280 }
+    .kpi-value { font-size: 1.5rem; font-weight: 700 }
+    .chip { font-size:.75rem; padding:.25rem .5rem; border-radius:999px; border:1px solid #e5e7eb }
+    .tab-btn { padding:.5rem 1rem; border-radius:999px; border:1px solid #e5e7eb; font-size:.875rem }
+    .tab-btn-active { background:#2563eb; color:#fff; border-color:#2563eb }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- HEADER -->
-    <header>
-      <div class="brand">
-        <div class="logo">CC</div>
-        <div>
-          <div style="font-weight:700">Cotto Cusimano</div>
-          <div class="muted">Materiali edilizi in terracotta</div>
-        </div>
-      </div>
-      <div class="title">
-        <h1>Dashboard Performance Agenti</h1>
-        <div class="sub">Ultimo aggiornamento: <span id="updated">—</span></div>
-      </div>
-      <div class="actions">
-        <button class="btn" id="btnExportXlsx">Esporta Excel</button>
-        <button class="btn" id="btnPrint">Stampa / PDF</button>
-        <button class="btn" id="btnShare">Condividi</button>
-      </div>
-    </header>
+  <div id="root"></div>
 
-    <!-- FILTERS -->
-    <div class="bar">
-      <select id="selAgente">
-        <option value="">Tutti gli agenti</option>
-      </select>
-      <select id="selProvincia">
-        <option value="">Tutte le province</option>
-      </select>
-      <input id="selPeriodo" type="month" />
-      <button class="btn" id="btnReset">Reset filtri</button>
-    </div>
+  <script type="text/babel">
+    const { useMemo, useState } = React;
+    const {
+      ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+      LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis
+    } = Recharts;
 
-    <!-- KPI CARDS -->
-    <div class="grid g4" style="margin-top:16px;">
-      <div class="card">
-        <div class="muted">Fatturato totale</div>
-        <div class="kpi">
-          <div class="ico">€</div>
-          <div>
-            <div class="val" id="kpiFatturato">—</div>
-            <div class="delta" id="kpiFattDelta"><span class="muted">vs prec.</span></div>
+    /* ================= Data (demo fallback) ================= */
+    const demoData = {
+      riepilogo_generale: {
+        fatturato_totale: 4649230.79,
+        percentuale_obiettivo: 73.56,
+        clienti_totali: 777,
+        agenti_attivi: 36,
+        variazione_yoy: -13.04
+      },
+      province: [
+        { provincia: 'RG', fatturato_totale: 310000, clienti_totali: 92, numero_agenti: 2, obiettivo_totale: 380000, percentuale_obiettivo: 81.6 },
+        { provincia: 'ME', fatturato_totale: 210000, clienti_totali: 41, numero_agenti: 1, obiettivo_totale: 250000, percentuale_obiettivo: 84.0 },
+        { provincia: 'NA', fatturato_totale: 480000, clienti_totali: 120, numero_agenti: 3, obiettivo_totale: 600000, percentuale_obiettivo: 80.0 },
+        { provincia: 'SA', fatturato_totale: 95000, clienti_totali: 22, numero_agenti: 1, obiettivo_totale: 140000, percentuale_obiettivo: 67.8 },
+        { provincia: 'CT', fatturato_totale: 365000, clienti_totali: 75, numero_agenti: 2, obiettivo_totale: 420000, percentuale_obiettivo: 86.9 },
+        { provincia: 'PA', fatturato_totale: 150000, clienti_totali: 45, numero_agenti: 1, obiettivo_totale: 220000, percentuale_obiettivo: 68.2 },
+      ],
+      agenti: Array.from({length: 12}).map((_,i)=>({
+        codice: "631."+String(10000+i),
+        ragione_sociale: ["BILOTTI ANDREA","SPL SERVICE SNC","DG&G GRANATA","ARENA SNC","GAROFALO SRL","CAGGIA & BELLASSAI","EDIL FORNITURE","ARCA SRL","POLIS SRL","LEADER CEMENTI","ESAGONO SAS","TUTTO EDILE"][i],
+        periodo: "01/01/2025 - 02/10/2025",
+        obiettivi: { generale: { anno_precedente: 200000 + i*5000, anno_corrente: 160000 + i*4000, obiettivo: 235000 + i*3000, percentuale_obiettivo: 60 + i*2.1 } },
+        clienti_per_provincia: [
+          { provincia: 'RG', clienti: 18, fatturato: 165244.16 },
+          { provincia: 'ME', clienti: 1, fatturato: 803.24 },
+          { provincia: 'NA', clienti: 33, fatturato: 211381.33 }
+        ],
+        totali: { fatturato: 166047.40 + i*10000, clienti: 19 + i, ordini: 25 + i*2, yoy: i%2 ? -5.2 : 3.1 }
+      }))
+    };
+    const dataSrc = window.dashboardData || demoData;
+
+    /* ============== Helpers ============== */
+    const formatEuro = (v) => new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v||0);
+    const formatPercent = (v) => (isFinite(v) ? (v.toFixed(2).replace('.',',')) : '0,00') + '%';
+    const formatNumber = (v) => new Intl.NumberFormat('it-IT').format(v||0);
+    const getColorByPerformance = (p) => p>=90 ? '#10b981' : (p>=70 ? '#f59e0b' : '#ef4444');
+
+    const KPI = ({ label, value, delta, icon, color }) => {
+      const isPos = (delta ?? 0) >= 0;
+      return (
+        <div className="card">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="kpi-label">{label}</div>
+              <div className="kpi-value mt-1">{value}</div>
+            </div>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{backgroundColor:'#f3f6ff', color: color || '#2563eb'}}>
+              <span className="text-base">{icon || '●'}</span>
+            </div>
           </div>
+          {typeof delta === 'number' && (
+            <div className="mt-3 text-sm">
+              <span className={isPos ? 'text-success' : 'text-danger'}>
+                {isPos ? '↑' : '↓'} {Math.abs(delta).toFixed(2).replace('.', ',')}%
+              </span>
+              <span className="text-gray-500"> vs prec.</span>
+            </div>
+          )}
         </div>
-      </div>
-      <div class="card">
-        <div class="muted">Clienti attivi</div>
-        <div class="kpi">
-          <div class="ico">👥</div>
-          <div>
-            <div class="val" id="kpiClienti">—</div>
-            <div class="delta muted" id="kpiClientiDelta">—</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="muted">Ordini totali</div>
-        <div class="kpi">
-          <div class="ico">📦</div>
-          <div>
-            <div class="val" id="kpiOrdini">—</div>
-            <div class="delta muted">Proxy: vendite cliente</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="muted">Valore medio ordine</div>
-        <div class="kpi">
-          <div class="ico">Ø</div>
-          <div>
-            <div class="val" id="kpiAOV">—</div>
-            <div class="delta muted">Fatt/Ordini</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="muted">Tasso di crescita</div>
-        <div class="kpi">
-          <div class="ico">↗</div>
-          <div>
-            <div class="val" id="kpiGrowth">—</div>
-            <div class="delta" id="kpiGrowthIcon"></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="muted">Target raggiunto</div>
-        <div class="kpi">
-          <div class="ico">🎯</div>
-          <div>
-            <div class="val" id="kpiTarget">—</div>
-            <div class="delta muted">Provincia “Generale”</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CHARTS -->
-    <div class="grid g2" style="margin-top:16px;">
-      <div class="card">
-        <div class="section-title">Performance agenti per fatturato</div>
-        <canvas id="chartBarAgenti"></canvas>
-      </div>
-      <div class="card">
-        <div class="section-title">Trend fatturato (mensile/trimestrale)</div>
-        <div class="muted" id="trendNote" style="margin-bottom:6px;"></div>
-        <canvas id="chartLineTrend"></canvas>
-      </div>
-    </div>
-
-    <!-- ANALISI PER PROVINCIA -->
-    <div class="grid g2" style="margin-top:16px;">
-      <div class="card">
-        <div class="section-title">Distribuzione fatturato per provincia</div>
-        <canvas id="chartDonutProv"></canvas>
-      </div>
-      <div class="card">
-        <div class="section-title">Top 3 province per fatturato</div>
-        <div id="top3Prov" class="muted">—</div>
-      </div>
-    </div>
-
-    <!-- TABELLA DETTAGLIATA -->
-    <div class="card" style="margin-top:16px;">
-      <div class="section-title">Dettaglio performance</div>
-      <table id="tbl" class="display">
-        <thead>
-          <tr>
-            <th>Nome Agente</th>
-            <th>Provincia</th>
-            <th class="right">N° Clienti</th>
-            <th class="right">N° Ordini</th>
-            <th class="right">Fatturato (€)</th>
-            <th class="right">Val. medio ordine</th>
-            <th class="right">% Target</th>
-            <th>Trend</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div class="muted" style="margin-top:8px;">Ordinamento, ricerca e evidenziazione sono attivi (DataTables).</div>
-    </div>
-  </div>
-
-  <script>
-    // ---------------------- Helpers ----------------------
-    const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
-    const fmtINT = new Intl.NumberFormat('it-IT');
-    const asNum = v => (typeof v === 'number') ? v : Number(v||0);
-
-    const state = {
-      raw: [],
-      rows: [],
-      agenti: [],
-      province: [],
-      filtroAgente: '',
-      filtroProv: '',
-      filtroPeriodo: '' // non presente nei dati: usato solo come metadato UI
+      );
     };
 
-    const byTipo = (rows,t) => rows.filter(r => r.Tipo_Dato === t);
+    const Gauge = ({ value }) => {
+      const cl = getColorByPerformance(value||0);
+      const pct = Math.max(0, Math.min(100, value||0));
+      const angle = Math.PI * pct/100;
+      const r = 80; const cx = 100, cy = 100;
+      const x = cx + r*Math.cos(Math.PI - angle);
+      const y = cy + r*Math.sin(Math.PI - angle);
+      const largeArc = pct>50 ? 1 : 0;
+      return (
+        <div className="card">
+          <div className="kpi-label mb-2">Raggiungimento Obiettivo</div>
+          <svg width="100%" viewBox="0 0 200 120">
+            <path d={`M ${cx-r},${cy} A ${r},${r} 0 1 1 ${cx+r},${cy}`} stroke="#e5e7eb" strokeWidth="16" fill="none" />
+            <path d={`M ${cx-r},${cy} A ${r},${r} 0 ${largeArc} 1 ${x},${y}`} stroke={cl} strokeWidth="16" fill="none" />
+            <text x="100" y="85" textAnchor="middle" className="text-xl font-bold" fill="#0b1320">{formatPercent(pct)}</text>
+          </svg>
+        </div>
+      );
+    };
 
-    // Chart refs
-    let chBarAg=null, chTrend=null, chDonut=null;
+    const SectionTitle = ({children}) => <div className="font-semibold text-lg mb-2">{children}</div>;
 
-    function destroyChart(c){ if(c && c.destroy) c.destroy(); }
+    function TabPanoramica({ data }){
+      const topAgenti = React.useMemo(()=>{
+        const items = data.agenti.map(a => ({ nome: a.ragione_sociale, fatturato: a.totali?.fatturato || 0 }));
+        return items.sort((a,b)=>b.fatturato-a.fatturato).slice(0,10);
+      }, [data]);
 
-    // Terracotta gradient
-    function terracottaGradient(ctx){
-      const g = ctx.createLinearGradient(0,0,0,340);
-      g.addColorStop(0,'#D2691E'); // terracotta
-      g.addColorStop(1,'#CD853F');
-      return g;
-    }
+      const fattPerProv = React.useMemo(()=>{
+        const items = (data.province||[]).map(p=>({ provincia: p.provincia, fatturato: p.fatturato_totale||0 }));
+        return items.sort((a,b)=>b.fatturato-a.fatturato).slice(0,10);
+      }, [data]);
 
-    // ---------------------- Data Loading ----------------------
-    async function load(){
-      const res = await fetch('/data', { cache:'no-store' });
-      if (!res.ok) throw new Error('Fetch /data failed');
-      const data = await res.json();
-      state.raw = data.rows || [];
-      state.rows = state.raw.slice();
-
-      // meta
-      document.getElementById('updated').textContent =
-        new Date(data.updatedAt).toLocaleString('it-IT');
-
-      // combo
-      const agenti = [...new Set(state.rows.map(r => r.Agente_Nome || r.Agente_Codice).filter(Boolean))].sort();
-      const province = [...new Set(state.rows.map(r => r.Provincia).filter(Boolean))].sort();
-      state.agenti = agenti; state.province = province;
-
-      const selA = document.getElementById('selAgente');
-      const selP = document.getElementById('selProvincia');
-      agenti.forEach(a => { const o=document.createElement('option'); o.value=a; o.textContent=a; selA.appendChild(o); });
-      province.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; selP.appendChild(o); });
-
-      // handlers
-      selA.addEventListener('change', e=>{ state.filtroAgente=e.target.value; applyFilters(); });
-      selP.addEventListener('change', e=>{ state.filtroProv=e.target.value; applyFilters(); });
-      document.getElementById('selPeriodo').addEventListener('change', e=>{ state.filtroPeriodo=e.target.value; applyFilters(); });
-      document.getElementById('btnReset').addEventListener('click', ()=>{
-        state.filtroAgente=''; state.filtroProv=''; state.filtroPeriodo='';
-        selA.value=''; selP.value=''; document.getElementById('selPeriodo').value='';
-        applyFilters();
-      });
-
-      document.getElementById('btnPrint').addEventListener('click', ()=>window.print());
-      document.getElementById('btnShare').addEventListener('click', async ()=>{
-        try{ await navigator.clipboard.writeText(location.href); alert('Link copiato negli appunti'); }
-        catch{ prompt('Copia il link:', location.href); }
-      });
-      document.getElementById('btnExportXlsx').addEventListener('click', exportXlsx);
-
-      // first render
-      applyFilters();
-    }
-
-    function applyFilters(){
-      const { filtroAgente, filtroProv } = state;
-      let rows = state.raw.slice();
-      if (filtroAgente) rows = rows.filter(r => (r.Agente_Nome === filtroAgente) || (r.Agente_Codice === filtroAgente));
-      if (filtroProv)   rows = rows.filter(r => r.Provincia === filtroProv);
-      state.rows = rows;
-      render();
-    }
-
-    // ---------------------- KPIs ----------------------
-    function computeKPIs(rows){
-      const tot = byTipo(rows,'TOTALE');
-      const fatt = tot.find(r => r.Descrizione === 'Fatturato_Totale');
-      const cli  = tot.find(r => r.Descrizione === 'Clienti_Totale');
-
-      const fattVal = asNum(fatt?.Valore||0);
-      const cliVal  = asNum(cli?.Valore||0);
-
-      // ordini proxy = numero VENDITE_CLIENTE
-      const ordini = byTipo(rows,'VENDITE_CLIENTE').length;
-      const aov = ordini ? (fattVal / ordini) : 0;
-
-      // crescita = (Anno_Corrente - Anno_Precedente)/Anno_Precedente
-      const obGen = byTipo(rows,'OBIETTIVI').find(r => (r.Provincia === 'Generale'));
-      const prec = asNum(obGen?.Anno_Precedente||0);
-      const curr = asNum(obGen?.Anno_Corrente||0);
-      const growth = (prec > 0) ? ((curr - prec) / prec) : null;
-
-      // target raggiunto (%)
-      const target = (typeof obGen?.Percentuale_Obiettivo === 'number') ? obGen.Percentuale_Obiettivo : null;
-
-      return { fattVal, cliVal, ordini, aov, growth, target };
-    }
-
-    function renderKPIs(rows){
-      const { fattVal, cliVal, ordini, aov, growth, target } = computeKPIs(rows);
-      document.getElementById('kpiFatturato').textContent = fmtEUR.format(fattVal);
-      document.getElementById('kpiClienti').textContent   = fmtINT.format(cliVal);
-      document.getElementById('kpiOrdini').textContent    = fmtINT.format(ordini);
-      document.getElementById('kpiAOV').textContent       = (ordini?fmtEUR.format(aov):'—');
-
-      const gEl = document.getElementById('kpiGrowth');
-      const gi  = document.getElementById('kpiGrowthIcon');
-      if (growth==null){ gEl.textContent='—'; gi.textContent=''; }
-      else{
-        const perc = (growth*100);
-        gEl.textContent = perc.toFixed(1)+'%';
-        gi.innerHTML = perc>=0
-          ? `<span style="color:var(--good)">▲ in crescita</span>`
-          : `<span style="color:var(--bad)">▼ in calo</span>`;
-      }
-
-      document.getElementById('kpiTarget').textContent =
-        (typeof target==='number') ? target.toFixed(2)+'%' : '—';
-
-      // delta fatturato vs precedente (se disponibile)
-      const obGen = byTipo(rows,'OBIETTIVI').find(r => (r.Provincia === 'Generale'));
-      const prec = asNum(obGen?.Anno_Precedente||0);
-      const deltaEl = document.getElementById('kpiFattDelta');
-      if (prec>0){
-        const d = ((asNum(obGen?.Anno_Corrente||0) - prec)/prec)*100;
-        deltaEl.innerHTML = (d>=0)
-          ? `<span style="color:var(--good)">▲ ${d.toFixed(1)}%</span>`
-          : `<span style="color:var(--bad)">▼ ${d.toFixed(1)}%</span>`;
-      } else deltaEl.textContent = '—';
-    }
-
-    // ---------------------- Charts ----------------------
-    function renderBarAgenti(rows){
-      const byAgent = {};
-      rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
-        const a = r.Agente_Nome || r.Agente_Codice || '—';
-        byAgent[a] = (byAgent[a]||0) + asNum(r.Fatturato||0);
-      });
-      const pairs = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]);
-      const labels = pairs.map(p=>p[0]);
-      const values = pairs.map(p=>p[1]);
-
-      const ctx = document.getElementById('chartBarAgenti').getContext('2d');
-      destroyChart(chBarAg);
-      const grad = terracottaGradient(ctx);
-      chBarAg = new Chart(ctx, {
-        type:'bar',
-        data:{ labels, datasets:[{ label:'Fatturato', data: values, backgroundColor: grad }] },
-        options:{
-          indexAxis:'y',
-          responsive:true,
-          plugins:{
-            legend:{ display:false },
-            tooltip:{ callbacks:{ label:(c)=> fmtEUR.format(c.parsed.x||0) } }
-          },
-          scales:{
-            x:{ ticks:{ callback:(v)=> fmtEUR.format(v) }, grid:{ color:'#eee' } },
-            y:{ grid:{ display:false } }
-          }
-        }
-      });
-    }
-
-    function renderTrend(rows){
-      const note = document.getElementById('trendNote');
-      // Non ci sono date nel dataset: mostro nota e sintetizzo 2 barre (prec/corrente)
-      const obGen = byTipo(rows,'OBIETTIVI').find(r => r.Provincia==='Generale');
-      const prec = asNum(obGen?.Anno_Precedente||0);
-      const corr = asNum(obGen?.Anno_Corrente||0);
-      note.textContent = 'Nota: dati temporali non presenti nel dataset. Visualizzazione sintetica anno precedente vs corrente.';
-
-      const ctx = document.getElementById('chartLineTrend').getContext('2d');
-      destroyChart(chTrend);
-      const grad = terracottaGradient(ctx);
-      chTrend = new Chart(ctx, {
-        type:'line',
-        data:{
-          labels:['Anno precedente','Anno corrente'],
-          datasets:[{ label:'Fatturato', data:[prec,corr], borderColor: grad, backgroundColor: grad, tension:.3, fill:false }]
-        },
-        options:{
-          responsive:true,
-          plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=>fmtEUR.format(c.parsed.y||0) } } },
-          scales:{ y:{ ticks:{ callback:(v)=>fmtEUR.format(v) }, grid:{ color:'#f1f1f1' } } }
-        }
-      });
-    }
-
-    function renderDonutProvincia(rows){
-      const perProv = {};
-      rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
-        const k=r.Provincia||'—';
-        perProv[k]=(perProv[k]||0)+asNum(r.Fatturato||0);
-      });
-      const ordered = Object.entries(perProv).sort((a,b)=>b[1]-a[1]);
-      const labels = ordered.map(e=>e[0]);
-      const values = ordered.map(e=>e[1]);
-
-      const top3 = ordered.slice(0,3).map(([k,v],i)=>`${i+1}. <b>${k}</b> — ${fmtEUR.format(v)}`).join('<br>');
-      document.getElementById('top3Prov').innerHTML = top3 || '—';
-
-      const ctx = document.getElementById('chartDonutProv').getContext('2d');
-      destroyChart(chDonut);
-      chDonut = new Chart(ctx, {
-        type:'doughnut',
-        data:{ labels, datasets:[{ data: values }] },
-        options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
-      });
-    }
-
-    // ---------------------- Table ----------------------
-    let dt=null;
-    function renderTable(rows){
-      // Aggregazione per agente+provincia
-      const key = r => (r.Agente_Nome||r.Agente_Codice||'—')+'|'+(r.Provincia||'—');
-      const agg = {};
-      rows.forEach(r=>{
-        if (r.Tipo_Dato==='CLIENTI_PROVINCIA'){
-          const k = (r.Agente_Nome||r.Agente_Codice||'—')+'|'+(r.Provincia||'—');
-          if(!agg[k]) agg[k]={ agente:r.Agente_Nome||r.Agente_Codice||'—', prov:r.Provincia||'—', clienti:0, ordini:0, fatt:0, target:null, prec:0, corr:0 };
-          agg[k].clienti += asNum(r.Clienti_Serviti||0);
-          agg[k].fatt    += asNum(r.Fatturato||0);
-        }
-        if (r.Tipo_Dato==='VENDITE_CLIENTE'){
-          const k = key(r);
-          if(!agg[k]) agg[k]={ agente:r.Agente_Nome||r.Agente_Codice||'—', prov:r.Provincia||'—', clienti:0, ordini:0, fatt:0, target:null, prec:0, corr:0 };
-          agg[k].ordini += 1;
-          agg[k].fatt   += asNum(r.Fatturato||0);
-        }
-        if (r.Tipo_Dato==='OBIETTIVI' && r.Provincia!=='Generale'){
-          const k = (r.Agente_Nome||r.Agente_Codice||'—')+'|'+(r.Provincia||'—');
-          if(!agg[k]) agg[k]={ agente:r.Agente_Nome||r.Agente_Codice||'—', prov:r.Provincia||'—', clienti:0, ordini:0, fatt:0, target:null, prec:0, corr:0 };
-          agg[k].target = (typeof r.Percentuale_Obiettivo==='number') ? r.Percentuale_Obiettivo : agg[k].target;
-          agg[k].prec   = asNum(r.Anno_Precedente||agg[k].prec);
-          agg[k].corr   = asNum(r.Anno_Corrente||agg[k].corr);
-        }
-      });
-
-      const rowsOut = Object.values(agg).map(o=>{
-        const aov = (o.ordini>0) ? (o.fatt/o.ordini) : 0;
-        const trendUp = (o.corr>=o.prec);
+      const metricheAgg = React.useMemo(()=>{
+        const fattTot = data.riepilogo_generale?.fatturato_totale || 0;
+        const nAg = data.riepilogo_generale?.agenti_attivi || data.agenti.length || 1;
+        const nCli = data.riepilogo_generale?.clienti_totali || 0;
         return [
-          o.agente,
-          o.prov,
-          fmtINT.format(o.clienti),
-          fmtINT.format(o.ordini),
-          fmtEUR.format(o.fatt),
-          fmtEUR.format(aov),
-          (o.target!=null ? o.target.toFixed(2)+'%' : '—'),
-          trendUp ? '▲' : '▼'
+          { label:'Fatturato medio per agente', val: formatEuro(fattTot / nAg) },
+          { label:'Clienti medi per agente', val: formatNumber(nCli / nAg) },
+          { label:'Fatturato medio per cliente', val: formatEuro(nCli ? (fattTot / nCli) : 0) },
         ];
-      });
+      }, [data]);
 
-      if (dt){ dt.destroy(); document.querySelector('#tbl tbody').innerHTML=''; }
-      dt = new DataTable('#tbl', {
-        data: rowsOut,
-        columns: [
-          { title:'Nome Agente' },
-          { title:'Provincia' },
-          { title:'N° Clienti' },
-          { title:'N° Ordini' },
-          { title:'Fatturato (€)' },
-          { title:'Val. medio ordine' },
-          { title:'% Target' },
-          { title:'Trend' }
-        ],
-        order: [[4,'desc']],
-        paging: true,
-        pageLength: 10,
-        searchable: true
-      });
+      const pctObj = data.riepilogo_generale?.percentuale_obiettivo ?? 0;
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
+            <KPI label="Fatturato Totale Rete" value={formatEuro(data.riepilogo_generale?.fatturato_totale||0)} delta={data.riepilogo_generale?.variazione_yoy} icon="€" color="#2563eb" />
+            <KPI label="% Raggiungimento" value={formatPercent(pctObj)} icon="🎯" color="#10b981" />
+            <KPI label="Clienti Totali" value={formatNumber(data.riepilogo_generale?.clienti_totali||0)} icon="👥" color="#2563eb" />
+            <KPI label="Agenti Attivi" value={formatNumber(data.riepilogo_generale?.agenti_attivi||0)} icon="🧑‍💼" color="#2563eb" />
+            <KPI label="Variazione YoY" value={formatPercent(Math.abs(data.riepilogo_generale?.variazione_yoy||0))} delta={data.riepilogo_generale?.variazione_yoy} icon="↕" color="#ef4444" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="card">
+              <SectionTitle>Top 10 Agenti per Fatturato</SectionTitle>
+              <div style={{height: 360}}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topAgenti} layout="vertical" margin={{left: 16, right: 16, top: 8, bottom: 8}}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" tickFormatter={formatEuro} />
+                    <YAxis type="category" dataKey="nome" width={140} />
+                    <Tooltip formatter={(v)=>formatEuro(v)} />
+                    <Bar dataKey="fatturato">
+                      {topAgenti.map((_,i)=> <Cell key={i} fill={i<3 ? '#2563eb' : (i<6 ? '#60a5fa' : '#93c5fd')} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <Gauge value={pctObj} />
+          </div>
+
+          <div className="card">
+            <SectionTitle>Fatturato per Provincia (Top 10)</SectionTitle>
+            <div style={{height: 360}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fattPerProv} margin={{left: 8, right: 16, top: 8, bottom: 8}}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="provincia" />
+                  <YAxis tickFormatter={formatEuro} />
+                  <Tooltip formatter={(v)=>formatEuro(v)} />
+                  <Bar dataKey="fatturato" fill="#34d399" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {metricheAgg.map((m, idx)=>(
+              <div className="card" key={idx}>
+                <div className="kpi-label">{m.label}</div>
+                <div className="kpi-value mt-1">{m.val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
     }
 
-    // ---------------------- Export ----------------------
-    function exportXlsx(){
-      const ws = XLSX.utils.json_to_sheet(state.rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'DatiDashboard');
-      XLSX.writeFile(wb, 'dashboard-cotto-cusimano.xlsx');
+    function TabRegioni({ data }){
+      const [provSel, setProvSel] = React.useState('');
+      const listProv = React.useMemo(()=> (data.province||[]).map(p=>p.provincia).sort(), [data]);
+
+      const kpi = React.useMemo(()=>{
+        const p = (data.province||[]).find(x=>x.provincia===provSel);
+        return p ? {
+          fatt: p.fatturato_totale,
+          nAg: p.numero_agenti,
+          nCli: p.clienti_totali,
+          pct: p.percentuale_obiettivo
+        } : null;
+      }, [provSel, data]);
+
+      const allProvSorted = React.useMemo(()=>{
+        return (data.province||[]).slice().sort((a,b)=>b.fatturato_totale-a.fatturato_totale);
+      }, [data]);
+
+      const scatter = React.useMemo(()=>{
+        return (data.province||[]).map(p=>({ x: p.clienti_totali, y: p.fatturato_totale, name: p.provincia }));
+      }, [data]);
+
+      const listAgentiProv = React.useMemo(()=>{
+        if (!provSel) return [];
+        const res = [];
+        (data.agenti||[]).forEach(a=>{
+          const voce = (a.clienti_per_provincia||[]).find(v=>v.provincia===provSel);
+          if (voce) res.push({
+            nome: a.ragione_sociale,
+            fatt: voce.fatturato||0,
+            clienti: voce.clienti||0,
+            pct: a.obiettivi?.generale?.percentuale_obiettivo ?? null
+          });
+        });
+        return res.sort((a,b)=>b.fatt-a.fatt);
+      }, [provSel, data]);
+
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm text-gray-600">Provincia:</label>
+            <select className="border rounded-lg px-3 py-2" value={provSel} onChange={e=>setProvSel(e.target.value)}>
+              <option value="">Tutte le Province</option>
+              {listProv.map(p=><option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          {kpi && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              <KPI label="Fatturato Provincia" value={formatEuro(kpi.fatt)} icon="€" />
+              <KPI label="N° Agenti operanti" value={formatNumber(kpi.nAg)} icon="🧑‍💼" />
+              <KPI label="N° Clienti" value={formatNumber(kpi.nCli)} icon="👥" />
+              <KPI label="% Raggiungimento" value={formatPercent(kpi.pct||0)} icon="🎯" />
+            </div>
+          )}
+
+          <div className="card">
+            <SectionTitle>Fatturato per Provincia (tutte)</SectionTitle>
+            <div style={{height: 360}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={allProvSorted}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="provincia" />
+                  <YAxis tickFormatter={formatEuro} />
+                  <Tooltip formatter={(v)=>formatEuro(v)} />
+                  <Bar dataKey="fatturato_totale">
+                    {allProvSorted.map((p,i)=> <Cell key={i} fill={getColorByPerformance(p.percentuale_obiettivo||0)} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card">
+            <SectionTitle>Clienti vs Fatturato (per provincia)</SectionTitle>
+            <div style={{height: 360}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart>
+                  <CartesianGrid />
+                  <XAxis type="number" dataKey="x" name="Clienti" tickFormatter={formatNumber} />
+                  <YAxis type="number" dataKey="y" name="Fatturato" tickFormatter={formatEuro} />
+                  <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(v, n)=> n==='x' ? formatNumber(v) : formatEuro(v)} />
+                  <Scatter data={scatter} fill="#2563eb" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {provSel && (
+            <div className="card">
+              <SectionTitle>Agenti operanti in {provSel}</SectionTitle>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="text-left px-3 py-2">Nome</th>
+                      <th className="text-right px-3 py-2">Fatturato</th>
+                      <th className="text-right px-3 py-2">Clienti</th>
+                      <th className="text-right px-3 py-2">% Obiettivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {listAgentiProv.map((r,idx)=>(
+                      <tr key={idx} className="border-t">
+                        <td className="px-3 py-2">{r.nome}</td>
+                        <td className="px-3 py-2 text-right">{formatEuro(r.fatt)}</td>
+                        <td className="px-3 py-2 text-right">{formatNumber(r.clienti)}</td>
+                        <td className="px-3 py-2 text-right">
+                          <span className="chip" style={{borderColor:getColorByPerformance(r.pct||0), color:getColorByPerformance(r.pct||0)}}>
+                            {r.pct!=null ? formatPercent(r.pct) : '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      );
     }
 
-    // ---------------------- Render orchestrator ----------------------
-    function render(){
-      const rows = state.rows;
-      renderKPIs(rows);
-      renderBarAgenti(rows);
-      renderTrend(rows);
-      renderDonutProvincia(rows);
-      renderTable(rows);
+    function TabAgenti({ data }){
+      const [agSel, setAgSel] = React.useState(data.agenti?.[0]?.codice || '');
+      const agente = React.useMemo(()=> (data.agenti||[]).find(a=>a.codice===agSel) || data.agenti?.[0], [agSel, data]);
+
+      const fattProv = React.useMemo(()=>{
+        const arr = (agente?.clienti_per_provincia||[]).map(v=>({ provincia:v.provincia, fatturato:v.fatturato||0 }));
+        return arr.sort((a,b)=>b.fatturato-a.fatturato);
+      }, [agente]);
+
+      const top5Pie = React.useMemo(()=> fattProv.slice(0,5).map(v=>({ name:v.provincia, value:v.fatturato })), [fattProv]);
+
+      const pct = agente?.obiettivi?.generale?.percentuale_obiettivo ?? null;
+
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm text-gray-600">Agente:</label>
+            <select className="border rounded-lg px-3 py-2" value={agSel} onChange={e=>setAgSel(e.target.value)}>
+              {(data.agenti||[]).map(a=> <option key={a.codice} value={a.codice}>{a.codice} — {a.ragione_sociale}</option>)}
+            </select>
+          </div>
+
+          <div className="card">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div><div className="kpi-label">Codice Agente</div><div className="kpi-value mt-1">{agente?.codice||'—'}</div></div>
+              <div><div className="kpi-label">Ragione Sociale</div><div className="kpi-value mt-1">{agente?.ragione_sociale||'—'}</div></div>
+              <div><div className="kpi-label">Periodo di riferimento</div><div className="kpi-value mt-1">{agente?.periodo||'—'}</div></div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-5">
+            <KPI label="Fatturato Corrente" value={formatEuro(agente?.totali?.fatturato||0)} icon="€" />
+            <KPI label="Obiettivo Assegnato" value={formatEuro(agente?.obiettivi?.generale?.obiettivo||0)} icon="🎯" />
+            <KPI label="% Ragg. Fatturato" value={pct!=null ? formatPercent(pct) : '—'} icon="✔" />
+            <KPI label="Clienti Serviti" value={formatNumber(agente?.totali?.clienti||0)} icon="👥" />
+            <KPI label="Obiettivo Clienti" value={formatNumber(agente?.obiettivi?.generale?.obiettivo_clienti||0)} icon="📌" />
+            <KPI label="Variazione YoY" value={formatPercent(Math.abs(agente?.totali?.yoy||0))} delta={agente?.totali?.yoy||0} icon="↕" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="card">
+              <SectionTitle>Fatturato per Provincia</SectionTitle>
+              <div style={{height: 360}}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={fattProv} margin={{left: 8, right: 16, top: 8, bottom: 8}}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="provincia" />
+                    <YAxis tickFormatter={formatEuro} />
+                    <Tooltip formatter={(v)=>formatEuro(v)} />
+                    <Bar dataKey="fatturato" fill="#2563eb" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card">
+              <SectionTitle>Performance vs Obiettivo</SectionTitle>
+              <Gauge value={pct || 0} />
+            </div>
+          </div>
+
+          <div className="card">
+            <SectionTitle>Top Province (distribuzione)</SectionTitle>
+            <div style={{height: 320}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={top5Pie} dataKey="value" nameKey="name" outerRadius={110} label>
+                    {top5Pie.map((_, i)=> <Cell key={i} fill={['#2563eb','#10b981','#f59e0b','#ef4444','#60a5fa'][i%5]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v)=>formatEuro(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="card"><div className="kpi-label">Migliore Provincia</div><div className="kpi-value mt-1">{fattProv[0]?.provincia || '—'}</div></div>
+            <div className="card"><div className="kpi-label">Province Coperte</div><div className="kpi-value mt-1">{fattProv.length}</div></div>
+            <div className="card"><div className="kpi-label">Media Fatt./Cliente</div><div className="kpi-value mt-1">
+              {formatEuro((agente?.totali?.clienti||0) ? (agente?.totali?.fatturato||0)/(agente?.totali?.clienti||1) : 0)}
+            </div></div>
+          </div>
+        </div>
+      );
     }
 
-    // init
-    load().catch(err=>{
-      console.error(err);
-      alert('Errore nel caricamento dati: '+err.message);
-    });
+    function App(){
+      const [tab, setTab] = React.useState('panoramica');
+      const data = dataSrc;
+      return (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary text-white font-bold flex items-center justify-center">CC</div>
+              <div>
+                <div className="font-bold text-xl">Cotto Cusimano</div>
+                <div className="text-gray-500 text-sm">Dashboard B2B — Rete Commerciale</div>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">Ultimo aggiornamento: <span id="updated">oggi</span></div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button className={\`tab-btn \${tab==='panoramica'?'tab-btn-active':''}\`} onClick={()=>setTab('panoramica')}>Panoramica Generale</button>
+            <button className={\`tab-btn \${tab==='regioni'?'tab-btn-active':''}\`} onClick={()=>setTab('regioni')}>Regioni</button>
+            <button className={\`tab-btn \${tab==='agenti'?'tab-btn-active':''}\`} onClick={()=>setTab('agenti')}>Agenti</button>
+          </div>
+
+          <div className="mt-6">
+            {tab==='panoramica' && <TabPanoramica data={data} />}
+            {tab==='regioni'    && <TabRegioni data={data} />}
+            {tab==='agenti'     && <TabAgenti data={data} />}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
