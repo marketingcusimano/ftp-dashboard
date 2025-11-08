@@ -3,1098 +3,545 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Dashboard Commerciale — Rete Agenti</title>
+  <title>Dashboard Performance Agenti • Cotto Cusimano</title>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.dataTables.min.css">
+  <script src="https://cdn.datatables.net/2.0.6/js/dataTables.min.js"></script>
+
+  <!-- SheetJS (opzionale: export Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
 
   <style>
-    :root { 
-      color-scheme: light dark;
-      /* Light theme colors */
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --primary-light: #8b5cf6;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --surface: #ffffff;
-      --surface-2: #f8fafc;
-      --surface-3: #f1f5f9;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-      --radius: 12px;
-      --radius-lg: 16px;
+    :root{
+      --terracotta:#D2691E;     /* chocolate */
+      --terracotta-2:#CD853F;   /* peru */
+      --accent:#b85c1a;
+      --light:#ffffff;
+      --muted:#6b7280;
+      --stroke:#e6e6e6;
+      --bg:#ffffff;
+      --text:#0b1320;
+      --good:#16a34a;
+      --bad:#dc2626;
+      --chip:#f7efe9;
     }
-    
-    [data-theme="dark"] {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --primary-light: #8b5cf6;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --surface: #1e293b;
-      --surface-2: #334155;
-      --surface-3: #475569;
-      --border: #475569;
-      --text: #f1f5f9;
-      --text-muted: #cbd5e1;
-      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
-      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+    *{ box-sizing: border-box }
+    html,body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif }
+    .wrap{ max-width:1280px; margin:0 auto; padding:20px }
+
+    /* Header */
+    header{ display:grid; grid-template-columns: 220px 1fr auto; gap:16px; align-items:center; }
+    @media (max-width: 900px){ header{ grid-template-columns: 1fr } }
+    .brand{ display:flex; align-items:center; gap:12px }
+    .brand .logo{
+      width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,var(--terracotta),var(--terracotta-2));
+      display:flex; align-items:center; justify-content:center; color:white; font-weight:700;
     }
-    
-    * { box-sizing: border-box; }
-    
-    body { 
-      margin: 0; 
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
-      background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%);
-      color: var(--text);
-      transition: background 0.3s ease;
+    .title{ text-align:center }
+    .title h1{ margin:0; font-size:22px; }
+    .title .sub{ color:var(--muted); font-size:12px; margin-top:4px }
+    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap }
+    .btn{ border:1px solid var(--stroke); background:#fff; color:var(--text); border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer }
+    .btn:hover{ border-color:#d8d8d8 }
+
+    /* Filters bar */
+    .bar{ margin-top:16px; display:grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap:10px; }
+    @media (max-width: 900px){ .bar{ grid-template-columns: 1fr } }
+    select, input[type="month"]{
+      width:100%; border:1px solid var(--stroke); background:#fff; color:var(--text); border-radius:10px; padding:8px 12px; font-size:13px;
     }
-    
-    a { color: inherit; text-decoration: none; }
-    
-    .wrap { 
-      max-width: 1280px; 
-      margin: 0 auto; 
-      padding: 20px; 
+
+    /* Cards */
+    .grid{ display:grid; gap:12px }
+    .g4{ grid-template-columns: repeat(4, 1fr) }
+    .g2{ grid-template-columns: repeat(2, 1fr) }
+    @media (max-width: 1100px){ .g4{ grid-template-columns: repeat(2, 1fr) } }
+    @media (max-width: 600px){ .g4, .g2{ grid-template-columns: 1fr } }
+
+    .card{
+      background:#fff; border:1px solid var(--stroke); border-radius:14px; padding:14px;
+      box-shadow: 0 6px 16px rgba(0,0,0,.04);
     }
-    
-    header { 
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow);
-      transition: all 0.3s ease;
-      margin-bottom: 20px;
+    .kpi{ display:flex; align-items:center; gap:12px }
+    .kpi .ico{
+      width:36px; height:36px; border-radius:10px; background:var(--chip); display:flex; align-items:center; justify-content:center;
+      color:var(--terracotta); font-weight:700;
     }
-    
-    [data-theme="dark"] header {
-      background: rgba(30, 41, 59, 0.95);
-    }
-    
-    .header-inner {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between; 
-      gap: 12px; 
-      flex-wrap: wrap;
-    }
-    
-    .title { 
-      font-size: 22px; 
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
-      border-radius: var(--radius);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      box-shadow: var(--shadow);
-    }
-    
-    .muted { 
-      color: var(--text-muted); 
-      font-size: 12px; 
-    }
-    
-    .actions { 
-      display: flex; 
-      gap: 8px; 
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    
-    .btn { 
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px; 
-      padding: 8px 12px; 
-      font-size: 13px; 
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .btn:hover { 
-      background: var(--primary);
-      color: white;
-      transform: translateY(-1px);
-      box-shadow: var(--shadow);
-    }
-    
-    .theme-toggle {
-      position: relative;
-      width: 50px;
-      height: 26px;
-      background: var(--surface-3);
-      border-radius: 13px;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      transition: all 0.3s ease;
-    }
-    
-    .theme-toggle::before {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 20px;
-      height: 20px;
-      background: var(--surface);
-      border-radius: 50%;
-      transition: all 0.3s ease;
-      box-shadow: var(--shadow);
-    }
-    
-    [data-theme="dark"] .theme-toggle {
-      background: var(--primary);
-    }
-    
-    [data-theme="dark"] .theme-toggle::before {
-      transform: translateX(24px);
-      background: white;
-    }
-    
-    nav { 
-      margin-top: 14px; 
-      display: flex; 
-      gap: 4px; 
-      flex-wrap: wrap;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(20px);
-      border-radius: var(--radius-lg);
-      padding: 4px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      width: fit-content;
-    }
-    
-    [data-theme="dark"] nav {
-      background: rgba(30, 41, 59, 0.8);
-    }
-    
-    .tab { 
-      padding: 10px 18px; 
-      border-radius: 10px; 
-      border: none;
-      background: transparent;
-      cursor: pointer; 
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-muted);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .tab:hover {
-      color: var(--text);
-      transform: translateY(-1px);
-    }
-    
-    .tab.active { 
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
-      color: white;
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-2px);
-    }
-    
-    .bar { 
-      margin-top: 14px; 
-      display: grid; 
-      gap: 8px; 
-      grid-template-columns: 1fr 1fr 1fr auto; 
-    }
-    
-    @media (max-width: 1000px){ 
-      .bar { grid-template-columns: 1fr; } 
-    }
-    
-    select, input[type="search"] { 
-      width: 100%; 
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 10px; 
-      padding: 8px 10px; 
-      font-size: 13px;
-      transition: all 0.3s ease;
-    }
-    
-    select:focus, input[type="search"]:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-    
-    .grid { 
-      display: grid; 
-      gap: 12px; 
-    }
-    
-    .g3 { 
-      grid-template-columns: repeat(3, 1fr); 
-    }
-    
-    .g2 { 
-      grid-template-columns: repeat(2, 1fr); 
-    }
-    
-    @media (max-width: 1000px){ 
-      .g3, .g2 { grid-template-columns: 1fr; } 
-    }
-    
-    .card { 
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(226, 232, 240, 0.6);
-      border-radius: var(--radius-lg);
-      padding: 14px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-    }
-    
-    [data-theme="dark"] .card {
-      background: rgba(30, 41, 59, 0.9);
-      border-color: rgba(71, 85, 105, 0.6);
-    }
-    
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--primary-light));
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--primary);
-    }
-    
-    .card:hover::before {
-      opacity: 1;
-    }
-    
-    .kpi { 
-      font-size: 28px; 
-      font-weight: 700; 
-      margin-top: 6px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .metric-change {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      margin-top: 0.5rem;
-    }
-    
-    .metric-change.positive { color: var(--success); }
-    .metric-change.negative { color: var(--danger); }
-    
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      font-size: 14px; 
-    }
-    
-    th, td { 
-      padding: 12px 8px; 
-      border-bottom: 1px solid var(--border);
-      text-align: left; 
-    }
-    
-    th { 
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: var(--surface-2);
-    }
-    
-    tr:hover {
-      background: var(--surface-2);
-      transform: scale(1.01);
-      transition: all 0.2s ease;
-    }
-    
-    .right { 
-      text-align: right; 
-    }
-    
-    .section { 
-      display: none; 
-    }
-    
-    .section.active { 
-      display: block; 
-    }
-    
-    canvas { 
-      width: 100%; 
-      height: 320px; 
-    }
-    
-    footer { 
-      margin-top: 20px; 
-      font-size: 12px; 
-      color: var(--text-muted);
-      display: flex; 
-      gap: 10px; 
-      align-items: center; 
-    }
-    
-    .shortcut { 
-      opacity: .8; 
-    }
-    
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.375rem 0.875rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      backdrop-filter: blur(10px);
-      transition: all 0.2s ease;
-    }
-    
-    .badge:hover {
-      transform: scale(1.05);
-    }
-    
-    .badge.success { 
-      background: rgba(16, 185, 129, 0.1); 
-      color: #059669; 
-      border: 1px solid rgba(16, 185, 129, 0.2);
-    }
-    
-    .badge.warning { 
-      background: rgba(245, 158, 11, 0.1); 
-      color: #d97706; 
-      border: 1px solid rgba(245, 158, 11, 0.2);
-    }
-    
-    .badge.danger { 
-      background: rgba(239, 68, 68, 0.1); 
-      color: #dc2626; 
-      border: 1px solid rgba(239, 68, 68, 0.2);
-    }
-    
-    .status-live {
-      width: 8px;
-      height: 8px;
-      background: var(--success);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-      display: inline-block;
-      margin-right: 6px;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
-    }
-    
-    .loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem;
-      color: var(--text-muted);
-    }
-    
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--surface-3);
-      border-top: 3px solid var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 1.5rem;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    .kpi .val{ font-size:26px; font-weight:700 }
+    .kpi .delta{ font-size:12px; display:flex; align-items:center; gap:6px }
+    .muted{ color:var(--muted); font-size:12px }
+
+    /* Charts layout */
+    canvas{ width:100%; height:340px }
+    .section-title{ font-weight:600; margin-bottom:8px }
+
+    /* DataTable */
+    table{ width:100% }
+    table.dataTable thead th{ background:#fafafa }
+    .right{ text-align:right }
+    tbody tr:hover{ background:#fff7f1 }
+
+    /* Terracotta gradient helper for charts */
   </style>
 </head>
-<body data-theme="light">
-  <header>
-    <div class="header-inner">
-      <div>
-        <div class="title">
-          <div class="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 3v18h18"/>
-              <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
-            </svg>
-          </div>
-          Dashboard Commerciale
+<body>
+  <div class="wrap">
+    <!-- HEADER -->
+    <header>
+      <div class="brand">
+        <div class="logo">CC</div>
+        <div>
+          <div style="font-weight:700">Cotto Cusimano</div>
+          <div class="muted">Materiali edilizi in terracotta</div>
         </div>
-        <div class="muted">
-          <span class="status-live"></span>
-          Origine: <code>/data</code> • Aggiornato: <span id="updated">—</span>
-        </div>
+      </div>
+      <div class="title">
+        <h1>Dashboard Performance Agenti</h1>
+        <div class="sub">Ultimo aggiornamento: <span id="updated">—</span></div>
       </div>
       <div class="actions">
-        <div class="theme-toggle" id="themeToggle"></div>
-        <button class="btn" id="btnPdf">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14,2 14,8 20,8"/>
-          </svg>
-          PDF
-        </button>
-        <button class="btn" id="btnXls">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14,2 14,8 20,8"/>
-            <line x1="16" y1="13" x2="8" y2="17"/>
-            <line x1="8" y1="13" x2="16" y2="17"/>
-          </svg>
-          Excel
-        </button>
-        <button class="btn" id="btnShare">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-            <polyline points="16,6 12,2 8,6"/>
-            <line x1="12" y1="2" x2="12" y2="15"/>
-          </svg>
-          Condividi
-        </button>
+        <button class="btn" id="btnExportXlsx">Esporta Excel</button>
+        <button class="btn" id="btnPrint">Stampa / PDF</button>
+        <button class="btn" id="btnShare">Condividi</button>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <div class="wrap">
-    <nav>
-      <button class="tab active" data-section="panoramica">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-        </svg>
-        Panoramica
-      </button>
-      <button class="tab" data-section="agenti">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-        </svg>
-        Agenti
-      </button>
-      <button class="tab" data-section="regioni">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
-        </svg>
-        Regioni
-      </button>
-      <button class="tab" data-section="confronta">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 3h6l6 18h6"/>
-        </svg>
-        Confronta
-      </button>
-    </nav>
-
+    <!-- FILTERS -->
     <div class="bar">
       <select id="selAgente">
-        <option value="">Filtra Agenti — Tutti</option>
+        <option value="">Tutti gli agenti</option>
       </select>
-      <select id="selRegione">
-        <option value="">Filtra Regioni — Tutte</option>
+      <select id="selProvincia">
+        <option value="">Tutte le province</option>
       </select>
-      <input id="q" type="search" placeholder="Cerca cliente / ragione sociale…" />
-      <button class="btn" id="btnReset">Reset</button>
+      <input id="selPeriodo" type="month" />
+      <button class="btn" id="btnReset">Reset filtri</button>
     </div>
 
-    <!-- PANORAMICA -->
-    <section id="section-panoramica" class="section active">
-      <div class="grid g3" style="margin-top:14px;">
-        <div class="card">
-          <div class="muted">Fatturato Totale</div>
-          <div class="kpi" id="kpiFatturato">—</div>
-          <div class="metric-change positive" id="kpiFatturatoChange" style="display:none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-            </svg>
-            <span>—</span>
+    <!-- KPI CARDS -->
+    <div class="grid g4" style="margin-top:16px;">
+      <div class="card">
+        <div class="muted">Fatturato totale</div>
+        <div class="kpi">
+          <div class="ico">€</div>
+          <div>
+            <div class="val" id="kpiFatturato">—</div>
+            <div class="delta" id="kpiFattDelta"><span class="muted">vs prec.</span></div>
           </div>
         </div>
-        <div class="card">
-          <div class="muted">Clienti Totali</div>
-          <div class="kpi" id="kpiClienti">—</div>
-        </div>
-        <div class="card">
-          <div class="muted">Agenti Attivi</div>
-          <div class="kpi" id="kpiInfo" style="font-size:28px;font-weight:700">—</div>
-        </div>
       </div>
-
-      <div class="grid g2" style="margin-top:12px;">
-        <div class="card">
-          <div class="muted" style="margin-bottom:8px;">Performance Agenti - Top 8</div>
-          <canvas id="chartClientiProvincia"></canvas>
-        </div>
-        <div class="card">
-          <div class="muted" style="margin-bottom:8px;">Distribuzione Clienti per Regione</div>
-          <canvas id="chartRipartizione"></canvas>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px;">
-        <div class="muted" style="margin-bottom:8px;">% Obiettivo per provincia</div>
-        <canvas id="chartObiettivi"></canvas>
-      </div>
-    </section>
-
-    <!-- AGENTI -->
-    <section id="section-agenti" class="section">
       <div class="card">
-        <div class="muted" style="margin-bottom:8px;">Classifica Performance — Top 25 Clienti</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Agente</th>
-              <th>Provincia</th>
-              <th>Cliente</th>
-              <th class="right">Fatturato</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tblAgenti">
-            <tr><td colspan="5" class="muted">Caricamento…</td></tr>
-          </tbody>
-        </table>
+        <div class="muted">Clienti attivi</div>
+        <div class="kpi">
+          <div class="ico">👥</div>
+          <div>
+            <div class="val" id="kpiClienti">—</div>
+            <div class="delta muted" id="kpiClientiDelta">—</div>
+          </div>
+        </div>
       </div>
-    </section>
-
-    <!-- REGIONI -->
-    <section id="section-regioni" class="section">
       <div class="card">
-        <div class="muted" style="margin-bottom:8px;">Distribuzione per provincia (clienti e fatturato)</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Provincia</th>
-              <th class="right">Clienti</th>
-              <th class="right">Fatturato</th>
-              <th>Performance</th>
-            </tr>
-          </thead>
-          <tbody id="tblRegioni">
-            <tr><td colspan="4" class="muted">Caricamento…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- CONFRONTA -->
-    <section id="section-confronta" class="section">
-      <div class="grid g2">
-        <div class="card">
-          <div class="muted">Agente 1</div>
-          <select id="cmpA"></select>
-          <canvas id="chartCmpA" style="margin-top:8px;"></canvas>
-        </div>
-        <div class="card">
-          <div class="muted">Agente 2</div>
-          <select id="cmpB"></select>
-          <canvas id="chartCmpB" style="margin-top:8px;"></canvas>
+        <div class="muted">Ordini totali</div>
+        <div class="kpi">
+          <div class="ico">📦</div>
+          <div>
+            <div class="val" id="kpiOrdini">—</div>
+            <div class="delta muted">Proxy: vendite cliente</div>
+          </div>
         </div>
       </div>
-    </section>
+      <div class="card">
+        <div class="muted">Valore medio ordine</div>
+        <div class="kpi">
+          <div class="ico">Ø</div>
+          <div>
+            <div class="val" id="kpiAOV">—</div>
+            <div class="delta muted">Fatt/Ordini</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Tasso di crescita</div>
+        <div class="kpi">
+          <div class="ico">↗</div>
+          <div>
+            <div class="val" id="kpiGrowth">—</div>
+            <div class="delta" id="kpiGrowthIcon"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Target raggiunto</div>
+        <div class="kpi">
+          <div class="ico">🎯</div>
+          <div>
+            <div class="val" id="kpiTarget">—</div>
+            <div class="delta muted">Provincia “Generale”</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <footer>
-      <span class="shortcut">Scorciatoie: <b>Ctrl+D</b> (Dark Mode) • <b>Ctrl+K</b> (Search) • <b>Esc</b> (Reset)</span>
-    </footer>
+    <!-- CHARTS -->
+    <div class="grid g2" style="margin-top:16px;">
+      <div class="card">
+        <div class="section-title">Performance agenti per fatturato</div>
+        <canvas id="chartBarAgenti"></canvas>
+      </div>
+      <div class="card">
+        <div class="section-title">Trend fatturato (mensile/trimestrale)</div>
+        <div class="muted" id="trendNote" style="margin-bottom:6px;"></div>
+        <canvas id="chartLineTrend"></canvas>
+      </div>
+    </div>
+
+    <!-- ANALISI PER PROVINCIA -->
+    <div class="grid g2" style="margin-top:16px;">
+      <div class="card">
+        <div class="section-title">Distribuzione fatturato per provincia</div>
+        <canvas id="chartDonutProv"></canvas>
+      </div>
+      <div class="card">
+        <div class="section-title">Top 3 province per fatturato</div>
+        <div id="top3Prov" class="muted">—</div>
+      </div>
+    </div>
+
+    <!-- TABELLA DETTAGLIATA -->
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title">Dettaglio performance</div>
+      <table id="tbl" class="display">
+        <thead>
+          <tr>
+            <th>Nome Agente</th>
+            <th>Provincia</th>
+            <th class="right">N° Clienti</th>
+            <th class="right">N° Ordini</th>
+            <th class="right">Fatturato (€)</th>
+            <th class="right">Val. medio ordine</th>
+            <th class="right">% Target</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="muted" style="margin-top:8px;">Ordinamento, ricerca e evidenziazione sono attivi (DataTables).</div>
+    </div>
   </div>
 
   <script>
-    // ========== UTILITIES ==========
+    // ---------------------- Helpers ----------------------
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
     const fmtINT = new Intl.NumberFormat('it-IT');
-    const byTipo = (rows, t) => rows.filter(r => r.Tipo_Dato === t);
+    const asNum = v => (typeof v === 'number') ? v : Number(v||0);
 
     const state = {
-      all: [],
-      filtered: [],
+      raw: [],
+      rows: [],
       agenti: [],
       province: [],
-      search: '',
-      agente: '',
-      regione: ''
+      filtroAgente: '',
+      filtroProv: '',
+      filtroPeriodo: '' // non presente nei dati: usato solo come metadato UI
     };
 
-    function uniq(arr) { return [...new Set(arr.filter(Boolean))]; }
-    function textIncludes(a,b){ return String(a||'').toLowerCase().includes(String(b||'').toLowerCase()); }
+    const byTipo = (rows,t) => rows.filter(r => r.Tipo_Dato === t);
 
-    function applyFilters(){
-      const { all, agente, regione, search } = state;
-      let rows = all.slice();
+    // Chart refs
+    let chBarAg=null, chTrend=null, chDonut=null;
 
-      if (agente) rows = rows.filter(r => (r.Agente_Codice||'') === agente || (r.Agente_Nome||'') === agente);
-      if (regione) rows = rows.filter(r => (r.Provincia||'') === regione);
-      if (search)  rows = rows.filter(r => textIncludes(r.Ragione_Sociale_Cliente, search));
+    function destroyChart(c){ if(c && c.destroy) c.destroy(); }
 
-      state.filtered = rows;
-      renderAll();
+    // Terracotta gradient
+    function terracottaGradient(ctx){
+      const g = ctx.createLinearGradient(0,0,0,340);
+      g.addColorStop(0,'#D2691E'); // terracotta
+      g.addColorStop(1,'#CD853F');
+      return g;
     }
 
-    // ========== CHARTS REFS ==========
-    let chProv=null, chRip=null, chOb=null, chCmpA=null, chCmpB=null;
-    function destroy(c){ if(c && c.destroy) c.destroy(); }
-
-    // ========== THEME TOGGLE ==========
-    function initTheme() {
-      const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
-      document.body.setAttribute('data-theme', savedTheme);
-      
-      const toggle = document.getElementById('themeToggle');
-      if (toggle) {
-        toggle.addEventListener('click', () => {
-          const current = document.body.getAttribute('data-theme');
-          const newTheme = current === 'light' ? 'dark' : 'light';
-          document.body.setAttribute('data-theme', newTheme);
-          localStorage.setItem('dashboard-theme', newTheme);
-        });
-      }
-    }
-
-    // ========== RENDERING ==========
-    function renderAll(){
-      const rows = state.filtered;
-
-      // KPI
-      const tot = byTipo(rows,'TOTALE');
-      const fatt = tot.find(r => r.Descrizione==='Fatturato_Totale');
-      const cli  = tot.find(r => r.Descrizione==='Clienti_Totale');
-      
-      const fattVal = fatt ? (fatt.Valore||0) : 0;
-      document.getElementById('kpiFatturato').textContent = fatt ? fmtEUR.format(fattVal) : '—';
-      document.getElementById('kpiClienti').textContent   = cli  ? fmtINT.format(cli.Valore||0)   : '—';
-      
-      // Calcola crescita media
-      let totalCurrent = 0, totalPrevious = 0, agentCount = 0;
-      const agentsByName = {};
-      
-      rows.forEach(r => {
-        if (r.Tipo_Dato === 'OBIETTIVI' && r.Provincia === 'Generale') {
-          const key = r.Agente_Nome || r.Agente_Codice;
-          if (!agentsByName[key]) {
-            agentsByName[key] = true;
-            totalCurrent += r.Anno_Corrente || 0;
-            totalPrevious += r.Anno_Precedente || 0;
-            agentCount++;
-          }
-        }
-      });
-      
-      const avgGrowth = totalPrevious > 0 ? ((totalCurrent - totalPrevious) / totalPrevious * 100) : 0;
-      
-      document.getElementById('kpiInfo').textContent = agentCount || '—';
-      
-      const changeEl = document.getElementById('kpiFatturatoChange');
-      if (avgGrowth !== 0) {
-        changeEl.style.display = 'flex';
-        changeEl.className = avgGrowth >= 0 ? 'metric-change positive' : 'metric-change negative';
-        changeEl.querySelector('span').textContent = `${avgGrowth >= 0 ? '+' : ''}${avgGrowth.toFixed(1)}% vs 2024`;
-      }
-
-      // Tab "Agenti" — top 25 clienti
-      const vend = byTipo(rows,'VENDITE_CLIENTE')
-        .sort((a,b)=>(b.Fatturato||0)-(a.Fatturato||0))
-        .slice(0,25);
-      const tbA = document.getElementById('tblAgenti');
-      tbA.innerHTML='';
-      vend.forEach(r=>{
-        const fatt = r.Fatturato || 0;
-        const status = fatt >= 100000 ? 'success' : fatt >= 50000 ? 'warning' : 'danger';
-        const statusText = fatt >= 100000 ? 'Top' : fatt >= 50000 ? 'Buono' : 'Basso';
-        
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td><strong>${r.Agente_Nome||r.Agente_Codice||'—'}</strong></td>
-                      <td>${r.Provincia||''}</td>
-                      <td>${r.Ragione_Sociale_Cliente||''}</td>
-                      <td class="right"><strong>${r.Fatturato!=null?fmtEUR.format(r.Fatturato):''}</strong></td>
-                      <td><span class="badge ${status}">${statusText}</span></td>`;
-        tbA.appendChild(tr);
-      });
-
-      // Tab "Regioni" — sintesi per provincia
-      const perProv = byTipo(rows,'CLIENTI_PROVINCIA');
-      const provAgg = {};
-      perProv.forEach(r=>{
-        const k = r.Provincia||'—';
-        if(!provAgg[k]) provAgg[k]={ clienti:0, fatt:0 };
-        provAgg[k].clienti += Number(r.Clienti_Serviti||0);
-        provAgg[k].fatt    += Number(r.Fatturato||0);
-      });
-      const tbR = document.getElementById('tblRegioni');
-      tbR.innerHTML='';
-      Object.entries(provAgg).sort((a,b)=>b[1].fatt-a[1].fatt).forEach(([k,v])=>{
-        const performance = v.fatt >= 500000 ? 'success' : v.fatt >= 200000 ? 'warning' : 'danger';
-        const perfText = v.fatt >= 500000 ? 'Eccellente' : v.fatt >= 200000 ? 'Buono' : 'Da migliorare';
-        
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td><strong>${k}</strong></td>
-                      <td class="right">${fmtINT.format(v.clienti)}</td>
-                      <td class="right"><strong>${fmtEUR.format(v.fatt)}</strong></td>
-                      <td><span class="badge ${performance}">${perfText}</span></td>`;
-        tbR.appendChild(tr);
-      });
-
-      // Charts
-      const ctxProv = document.getElementById('chartClientiProvincia');
-      const ctxRip  = document.getElementById('chartRipartizione');
-      const ctxOb   = document.getElementById('chartObiettivi');
-      destroy(chProv); destroy(chRip); destroy(chOb);
-
-      // Chart 1: Top 8 Agenti Performance
-      const agentsPerf = {};
-      rows.forEach(r => {
-        if (r.Tipo_Dato === 'OBIETTIVI' && r.Provincia === 'Generale') {
-          const key = r.Agente_Nome || r.Agente_Codice;
-          if (!agentsPerf[key]) {
-            agentsPerf[key] = {
-              current: r.Anno_Corrente || 0,
-              previous: r.Anno_Precedente || 0
-            };
-          }
-        }
-      });
-      
-      const topAgents = Object.entries(agentsPerf)
-        .sort((a, b) => b[1].current - a[1].current)
-        .slice(0, 8);
-      
-      const labelsAgent = topAgents.map(([name]) => name.split(' ')[0]);
-      const dataCurrentAgent = topAgents.map(([, data]) => data.current);
-      const dataPreviousAgent = topAgents.map(([, data]) => data.previous);
-      
-      if (window.Chart && ctxProv) {
-        chProv = new Chart(ctxProv, {
-          type:'bar',
-          data:{ 
-            labels: labelsAgent, 
-            datasets:[
-              { 
-                label:'2024', 
-                data: dataPreviousAgent,
-                backgroundColor: 'rgba(148, 163, 184, 0.6)',
-                borderRadius: 4
-              },
-              { 
-                label:'2025', 
-                data: dataCurrentAgent,
-                backgroundColor: '#6366f1',
-                borderRadius: 4
-              }
-            ] 
-          },
-          options:{ 
-            responsive:true, 
-            maintainAspectRatio: false,
-            plugins:{ 
-              legend:{ position: 'top' }
-            }, 
-            scales:{ 
-              y:{ 
-                beginAtZero:true, 
-                ticks:{ 
-                  callback: value => {
-                    if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
-                    if (value >= 1000) return `€${(value / 1000).toFixed(0)}k`;
-                    return `€${value}`;
-                  }
-                }
-              }
-            }
-          }
-        });
-      }
-
-      // Chart 2: Distribuzione Clienti per Regione
-      const regionMap = {
-        'LT': 'Lazio', 'RM': 'Lazio', 'FR': 'Lazio', 
-        'AN': 'Marche', 'PU': 'Marche', 
-        'CA': 'Sardegna', 'SS': 'Sardegna',
-        'RN': 'Emilia-Romagna', 'BO': 'Emilia-Romagna',
-        'CR': 'Lombardia', 'MI': 'Lombardia',
-        'ALB': 'Estero'
-      };
-      
-      const clientsByRegion = {};
-      perProv.forEach(p => {
-        const region = regionMap[p.Provincia] || 'Altro';
-        clientsByRegion[region] = (clientsByRegion[region] || 0) + (p.Clienti_Serviti || 0);
-      });
-      
-      const regionColors = {
-        'Lazio': '#3B82F6',
-        'Sardegna': '#10B981',
-        'Marche': '#F59E0B',
-        'Estero': '#EF4444',
-        'Lombardia': '#06B6D4',
-        'Emilia-Romagna': '#8B5CF6',
-        'Altro': '#94A3B8'
-      };
-      
-      const lblRip = Object.keys(clientsByRegion);
-      const valRip = Object.values(clientsByRegion);
-      const colRip = lblRip.map(l => regionColors[l] || '#94A3B8');
-      
-      if (window.Chart && ctxRip) {
-        chRip = new Chart(ctxRip, { 
-          type:'doughnut', 
-          data:{ 
-            labels: lblRip, 
-            datasets:[{ 
-              data: valRip,
-              backgroundColor: colRip,
-              borderWidth: 0
-            }] 
-          }, 
-          options:{ 
-            responsive:true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom' }
-            }
-          }
-        });
-      }
-
-      // Chart 3: % Obiettivo
-      const ob = byTipo(rows,'OBIETTIVI').filter(r=>r.Provincia && r.Provincia!=='Generale');
-      const lblOb = ob.map(r=>r.Provincia);
-      const valOb = ob.map(r=>Number(r.Percentuale_Obiettivo||0));
-      if (window.Chart && ctxOb) {
-        chOb = new Chart(ctxOb, {
-          type:'bar',
-          data:{ 
-            labels: lblOb, 
-            datasets:[{ 
-              label:'% Obiettivo', 
-              data: valOb,
-              backgroundColor: '#6366f1',
-              borderRadius: 4
-            }] 
-          },
-          options:{ 
-            responsive:true,
-            maintainAspectRatio: false,
-            plugins:{ 
-              legend:{ display:false }
-            }, 
-            scales:{ 
-              y:{ 
-                min:0, 
-                max:100, 
-                ticks:{ callback:v=>v+'%' }
-              }
-            }
-          }
-        });
-      }
-
-      // Confronta
-      const a = document.getElementById('cmpA').value || '';
-      const b = document.getElementById('cmpB').value || '';
-      drawCompare('A', a); 
-      drawCompare('B', b);
-    }
-
-    function drawCompare(side, agenteSel){
-      const canvas = document.getElementById('chartCmp'+side);
-      if (!window.Chart || !canvas) return;
-      if (side==='A' && chCmpA) chCmpA.destroy();
-      if (side==='B' && chCmpB) chCmpB.destroy();
-
-      const rows = state.all.filter(r => (r.Agente_Codice===agenteSel) || (r.Agente_Nome===agenteSel));
-      const ob = byTipo(rows,'OBIETTIVI').filter(r=>r.Provincia && r.Provincia!=='Generale');
-      const lbl = ob.map(r=>r.Provincia);
-      const val = ob.map(r=>Number(r.Percentuale_Obiettivo||0));
-      const inst = new Chart(canvas, {
-        type:'radar',
-        data:{ 
-          labels: lbl, 
-          datasets:[{ 
-            label: agenteSel||'—', 
-            data: val,
-            backgroundColor: 'rgba(99, 102, 241, 0.2)',
-            borderColor: '#6366f1',
-            borderWidth: 2
-          }] 
-        },
-        options:{ 
-          responsive:true,
-          maintainAspectRatio: false,
-          plugins:{ 
-            legend:{ display:false }
-          }, 
-          scales:{ 
-            r:{ 
-              suggestedMin:0, 
-              suggestedMax:100 
-            } 
-          } 
-        }
-      });
-      if (side==='A') chCmpA = inst; 
-      else chCmpB = inst;
-    }
-
-    // ========== INIT ==========
-    async function init(){
-      // 🔥 CONNESSIONE CRITICA A RENDER - NON MODIFICARE MAI! 🔥
+    // ---------------------- Data Loading ----------------------
+    async function load(){
       const res = await fetch('/data', { cache:'no-store' });
-      // =========================================================
-      
       if (!res.ok) throw new Error('Fetch /data failed');
       const data = await res.json();
-      state.all = data.rows || [];
-      document.getElementById('updated').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
+      state.raw = data.rows || [];
+      state.rows = state.raw.slice();
 
-      // popola combo agenti/province
-      const agenti = uniq(state.all.map(r => r.Agente_Nome || r.Agente_Codice || 'Sconosciuto')).sort();
-      const province = uniq(state.all.map(r => r.Provincia)).sort();
-      state.agenti = agenti; 
-      state.province = province;
+      // meta
+      document.getElementById('updated').textContent =
+        new Date(data.updatedAt).toLocaleString('it-IT');
+
+      // combo
+      const agenti = [...new Set(state.rows.map(r => r.Agente_Nome || r.Agente_Codice).filter(Boolean))].sort();
+      const province = [...new Set(state.rows.map(r => r.Provincia).filter(Boolean))].sort();
+      state.agenti = agenti; state.province = province;
 
       const selA = document.getElementById('selAgente');
-      const selR = document.getElementById('selRegione');
-      const cmpA = document.getElementById('cmpA');
-      const cmpB = document.getElementById('cmpB');
-
-      agenti.forEach(a=>{
-        const o1=document.createElement('option'); o1.value=a; o1.textContent=a; selA.appendChild(o1);
-        const o2=document.createElement('option'); o2.value=a; o2.textContent=a; cmpA.appendChild(o2);
-        const o3=document.createElement('option'); o3.value=a; o3.textContent=a; cmpB.appendChild(o3);
-      });
-      province.forEach(p=>{
-        const o=document.createElement('option'); o.value=p; o.textContent=p; selR.appendChild(o);
-      });
+      const selP = document.getElementById('selProvincia');
+      agenti.forEach(a => { const o=document.createElement('option'); o.value=a; o.textContent=a; selA.appendChild(o); });
+      province.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; selP.appendChild(o); });
 
       // handlers
-      selA.addEventListener('change', e=>{ state.agente=e.target.value; applyFilters(); });
-      selR.addEventListener('change', e=>{ state.regione=e.target.value; applyFilters(); });
-      document.getElementById('q').addEventListener('input', e=>{ state.search=e.target.value; applyFilters(); });
+      selA.addEventListener('change', e=>{ state.filtroAgente=e.target.value; applyFilters(); });
+      selP.addEventListener('change', e=>{ state.filtroProv=e.target.value; applyFilters(); });
+      document.getElementById('selPeriodo').addEventListener('change', e=>{ state.filtroPeriodo=e.target.value; applyFilters(); });
       document.getElementById('btnReset').addEventListener('click', ()=>{
-        state.search=''; state.agente=''; state.regione='';
-        selA.value=''; selR.value=''; document.getElementById('q').value='';
+        state.filtroAgente=''; state.filtroProv=''; state.filtroPeriodo='';
+        selA.value=''; selP.value=''; document.getElementById('selPeriodo').value='';
         applyFilters();
       });
 
-      // tab switch
-      document.querySelectorAll('.tab').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-          btn.classList.add('active');
-          const sec = btn.dataset.section;
-          document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-          document.getElementById('section-'+sec).classList.add('active');
-        });
-      });
-
-      // azioni
-      document.getElementById('btnPdf').addEventListener('click', ()=>window.print());
-      document.getElementById('btnXls').addEventListener('click', ()=>{
-        const blob = new Blob([JSON.stringify(state.filtered || state.all, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a'); 
-        a.href=URL.createObjectURL(blob); 
-        a.download='dashboard-dati.json'; 
-        a.click();
-      });
+      document.getElementById('btnPrint').addEventListener('click', ()=>window.print());
       document.getElementById('btnShare').addEventListener('click', async ()=>{
-        const url = location.href;
-        try { 
-          await navigator.clipboard.writeText(url); 
-          alert('Link copiato negli appunti'); 
-        } catch { 
-          prompt('Copia il link:', url); 
-        }
+        try{ await navigator.clipboard.writeText(location.href); alert('Link copiato negli appunti'); }
+        catch{ prompt('Copia il link:', location.href); }
       });
+      document.getElementById('btnExportXlsx').addEventListener('click', exportXlsx);
 
-      // scorciatoie
-      window.addEventListener('keydown', (e)=>{
-        if (e.ctrlKey && e.key.toLowerCase()==='d'){ 
-          e.preventDefault(); 
-          const current = document.body.getAttribute('data-theme');
-          const newTheme = current === 'light' ? 'dark' : 'light';
-          document.body.setAttribute('data-theme', newTheme);
-          localStorage.setItem('dashboard-theme', newTheme);
-        }
-        if (e.ctrlKey && e.key.toLowerCase()==='k'){ 
-          e.preventDefault(); 
-          document.getElementById('q').focus(); 
-        }
-        if (e.key==='Escape'){ 
-          document.getElementById('btnReset').click(); 
-        }
-      });
-
-      // prima render
-      state.filtered = state.all.slice();
-      renderAll();
+      // first render
+      applyFilters();
     }
 
-    // ========== START ==========
-    document.addEventListener('DOMContentLoaded', () => {
-      initTheme();
-      init().catch(err=>{
-        console.error(err);
-        alert('Errore caricamento dati: '+err.message);
+    function applyFilters(){
+      const { filtroAgente, filtroProv } = state;
+      let rows = state.raw.slice();
+      if (filtroAgente) rows = rows.filter(r => (r.Agente_Nome === filtroAgente) || (r.Agente_Codice === filtroAgente));
+      if (filtroProv)   rows = rows.filter(r => r.Provincia === filtroProv);
+      state.rows = rows;
+      render();
+    }
+
+    // ---------------------- KPIs ----------------------
+    function computeKPIs(rows){
+      const tot = byTipo(rows,'TOTALE');
+      const fatt = tot.find(r => r.Descrizione === 'Fatturato_Totale');
+      const cli  = tot.find(r => r.Descrizione === 'Clienti_Totale');
+
+      const fattVal = asNum(fatt?.Valore||0);
+      const cliVal  = asNum(cli?.Valore||0);
+
+      // ordini proxy = numero VENDITE_CLIENTE
+      const ordini = byTipo(rows,'VENDITE_CLIENTE').length;
+      const aov = ordini ? (fattVal / ordini) : 0;
+
+      // crescita = (Anno_Corrente - Anno_Precedente)/Anno_Precedente
+      const obGen = byTipo(rows,'OBIETTIVI').find(r => (r.Provincia === 'Generale'));
+      const prec = asNum(obGen?.Anno_Precedente||0);
+      const curr = asNum(obGen?.Anno_Corrente||0);
+      const growth = (prec > 0) ? ((curr - prec) / prec) : null;
+
+      // target raggiunto (%)
+      const target = (typeof obGen?.Percentuale_Obiettivo === 'number') ? obGen.Percentuale_Obiettivo : null;
+
+      return { fattVal, cliVal, ordini, aov, growth, target };
+    }
+
+    function renderKPIs(rows){
+      const { fattVal, cliVal, ordini, aov, growth, target } = computeKPIs(rows);
+      document.getElementById('kpiFatturato').textContent = fmtEUR.format(fattVal);
+      document.getElementById('kpiClienti').textContent   = fmtINT.format(cliVal);
+      document.getElementById('kpiOrdini').textContent    = fmtINT.format(ordini);
+      document.getElementById('kpiAOV').textContent       = (ordini?fmtEUR.format(aov):'—');
+
+      const gEl = document.getElementById('kpiGrowth');
+      const gi  = document.getElementById('kpiGrowthIcon');
+      if (growth==null){ gEl.textContent='—'; gi.textContent=''; }
+      else{
+        const perc = (growth*100);
+        gEl.textContent = perc.toFixed(1)+'%';
+        gi.innerHTML = perc>=0
+          ? `<span style="color:var(--good)">▲ in crescita</span>`
+          : `<span style="color:var(--bad)">▼ in calo</span>`;
+      }
+
+      document.getElementById('kpiTarget').textContent =
+        (typeof target==='number') ? target.toFixed(2)+'%' : '—';
+
+      // delta fatturato vs precedente (se disponibile)
+      const obGen = byTipo(rows,'OBIETTIVI').find(r => (r.Provincia === 'Generale'));
+      const prec = asNum(obGen?.Anno_Precedente||0);
+      const deltaEl = document.getElementById('kpiFattDelta');
+      if (prec>0){
+        const d = ((asNum(obGen?.Anno_Corrente||0) - prec)/prec)*100;
+        deltaEl.innerHTML = (d>=0)
+          ? `<span style="color:var(--good)">▲ ${d.toFixed(1)}%</span>`
+          : `<span style="color:var(--bad)">▼ ${d.toFixed(1)}%</span>`;
+      } else deltaEl.textContent = '—';
+    }
+
+    // ---------------------- Charts ----------------------
+    function renderBarAgenti(rows){
+      const byAgent = {};
+      rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
+        const a = r.Agente_Nome || r.Agente_Codice || '—';
+        byAgent[a] = (byAgent[a]||0) + asNum(r.Fatturato||0);
       });
+      const pairs = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]);
+      const labels = pairs.map(p=>p[0]);
+      const values = pairs.map(p=>p[1]);
+
+      const ctx = document.getElementById('chartBarAgenti').getContext('2d');
+      destroyChart(chBarAg);
+      const grad = terracottaGradient(ctx);
+      chBarAg = new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Fatturato', data: values, backgroundColor: grad }] },
+        options:{
+          indexAxis:'y',
+          responsive:true,
+          plugins:{
+            legend:{ display:false },
+            tooltip:{ callbacks:{ label:(c)=> fmtEUR.format(c.parsed.x||0) } }
+          },
+          scales:{
+            x:{ ticks:{ callback:(v)=> fmtEUR.format(v) }, grid:{ color:'#eee' } },
+            y:{ grid:{ display:false } }
+          }
+        }
+      });
+    }
+
+    function renderTrend(rows){
+      const note = document.getElementById('trendNote');
+      // Non ci sono date nel dataset: mostro nota e sintetizzo 2 barre (prec/corrente)
+      const obGen = byTipo(rows,'OBIETTIVI').find(r => r.Provincia==='Generale');
+      const prec = asNum(obGen?.Anno_Precedente||0);
+      const corr = asNum(obGen?.Anno_Corrente||0);
+      note.textContent = 'Nota: dati temporali non presenti nel dataset. Visualizzazione sintetica anno precedente vs corrente.';
+
+      const ctx = document.getElementById('chartLineTrend').getContext('2d');
+      destroyChart(chTrend);
+      const grad = terracottaGradient(ctx);
+      chTrend = new Chart(ctx, {
+        type:'line',
+        data:{
+          labels:['Anno precedente','Anno corrente'],
+          datasets:[{ label:'Fatturato', data:[prec,corr], borderColor: grad, backgroundColor: grad, tension:.3, fill:false }]
+        },
+        options:{
+          responsive:true,
+          plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=>fmtEUR.format(c.parsed.y||0) } } },
+          scales:{ y:{ ticks:{ callback:(v)=>fmtEUR.format(v) }, grid:{ color:'#f1f1f1' } } }
+        }
+      });
+    }
+
+    function renderDonutProvincia(rows){
+      const perProv = {};
+      rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
+        const k=r.Provincia||'—';
+        perProv[k]=(perProv[k]||0)+asNum(r.Fatturato||0);
+      });
+      const ordered = Object.entries(perProv).sort((a,b)=>b[1]-a[1]);
+      const labels = ordered.map(e=>e[0]);
+      const values = ordered.map(e=>e[1]);
+
+      const top3 = ordered.slice(0,3).map(([k,v],i)=>`${i+1}. <b>${k}</b> — ${fmtEUR.format(v)}`).join('<br>');
+      document.getElementById('top3Prov').innerHTML = top3 || '—';
+
+      const ctx = document.getElementById('chartDonutProv').getContext('2d');
+      destroyChart(chDonut);
+      chDonut = new Chart(ctx, {
+        type:'doughnut',
+        data:{ labels, datasets:[{ data: values }] },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
+      });
+    }
+
+    // ---------------------- Table ----------------------
+    let dt=null;
+    function renderTable(rows){
+      // Aggregazione per agente+provincia
+      const key = r => (r.Agente_Nome||r.Agente_Codice||'—')+'|'+(r.Provincia||'—');
+      const agg = {};
+      rows.forEach(r=>{
+        if (r.Tipo_Dato==='CLIENTI_PROVINCIA'){
+          const k = (r.Agente_Nome||r.Agente_Codice||'—')+'|'+(r.Provincia||'—');
+          if(!agg[k]) agg[k]={ agente:r.Agente_Nome||r.Agente_Codice||'—', prov:r.Provincia||'—', clienti:0, ordini:0, fatt:0, target:null, prec:0, corr:0 };
+          agg[k].clienti += asNum(r.Clienti_Serviti||0);
+          agg[k].fatt    += asNum(r.Fatturato||0);
+        }
+        if (r.Tipo_Dato==='VENDITE_CLIENTE'){
+          const k = key(r);
+          if(!agg[k]) agg[k]={ agente:r.Agente_Nome||r.Agente_Codice||'—', prov:r.Provincia||'—', clienti:0, ordini:0, fatt:0, target:null, prec:0, corr:0 };
+          agg[k].ordini += 1;
+          agg[k].fatt   += asNum(r.Fatturato||0);
+        }
+        if (r.Tipo_Dato==='OBIETTIVI' && r.Provincia!=='Generale'){
+          const k = (r.Agente_Nome||r.Agente_Codice||'—')+'|'+(r.Provincia||'—');
+          if(!agg[k]) agg[k]={ agente:r.Agente_Nome||r.Agente_Codice||'—', prov:r.Provincia||'—', clienti:0, ordini:0, fatt:0, target:null, prec:0, corr:0 };
+          agg[k].target = (typeof r.Percentuale_Obiettivo==='number') ? r.Percentuale_Obiettivo : agg[k].target;
+          agg[k].prec   = asNum(r.Anno_Precedente||agg[k].prec);
+          agg[k].corr   = asNum(r.Anno_Corrente||agg[k].corr);
+        }
+      });
+
+      const rowsOut = Object.values(agg).map(o=>{
+        const aov = (o.ordini>0) ? (o.fatt/o.ordini) : 0;
+        const trendUp = (o.corr>=o.prec);
+        return [
+          o.agente,
+          o.prov,
+          fmtINT.format(o.clienti),
+          fmtINT.format(o.ordini),
+          fmtEUR.format(o.fatt),
+          fmtEUR.format(aov),
+          (o.target!=null ? o.target.toFixed(2)+'%' : '—'),
+          trendUp ? '▲' : '▼'
+        ];
+      });
+
+      if (dt){ dt.destroy(); document.querySelector('#tbl tbody').innerHTML=''; }
+      dt = new DataTable('#tbl', {
+        data: rowsOut,
+        columns: [
+          { title:'Nome Agente' },
+          { title:'Provincia' },
+          { title:'N° Clienti' },
+          { title:'N° Ordini' },
+          { title:'Fatturato (€)' },
+          { title:'Val. medio ordine' },
+          { title:'% Target' },
+          { title:'Trend' }
+        ],
+        order: [[4,'desc']],
+        paging: true,
+        pageLength: 10,
+        searchable: true
+      });
+    }
+
+    // ---------------------- Export ----------------------
+    function exportXlsx(){
+      const ws = XLSX.utils.json_to_sheet(state.rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'DatiDashboard');
+      XLSX.writeFile(wb, 'dashboard-cotto-cusimano.xlsx');
+    }
+
+    // ---------------------- Render orchestrator ----------------------
+    function render(){
+      const rows = state.rows;
+      renderKPIs(rows);
+      renderBarAgenti(rows);
+      renderTrend(rows);
+      renderDonutProvincia(rows);
+      renderTable(rows);
+    }
+
+    // init
+    load().catch(err=>{
+      console.error(err);
+      alert('Errore nel caricamento dati: '+err.message);
     });
   </script>
 </body>
