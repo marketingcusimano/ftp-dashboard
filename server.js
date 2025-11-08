@@ -1,183 +1,190 @@
-// server.cjs — versione CommonJS, resta in ascolto su PORT
-require('dotenv').config();
+// server.js
 const express = require('express');
-const fs = require('fs');
-const os = require('os');
+const compression = require('compression');
+const ftp = require('basic-ftp');
+const { parse } = require('csv-parse/sync');
 const path = require('path');
+const fs = require('fs');
+const { Writable } = require('stream');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const {
+  FTP_HOST,
+  FTP_USER,
+  FTP_PASS,
+  FTP_FILE,
+  FTP_SECURE = 'false',
+  CORS = 'false'
+} = process.env;
 
-/* ---------- static ---------- */
-const staticDir = fs.existsSync('public') ? 'public' : '.';
-app.use(express.static(staticDir, { maxAge: 0 }));
-app.get('/', (req, res) => {
-  const file = path.join(process.cwd(), staticDir, 'index.html');
-  if (fs.existsSync(file)) return res.sendFile(file);
-  res.status(404).send('index.html non trovato');
-});
-app.get('/healthz', (_, res) => res.send('ok'));
+/* ---------- parsing utils ---------- */
+const ITnum = (s) => {
+  if (s == null) return null;
+  const v = String(s).trim();
+  if (!v) return null;
+  if (/%$/.test(v)) {
+    const n = ITnum(v.replace('%',''));
+    if (n === 999999) return null; // sentinella
+    return n; // 0..100
+  }
+  const t = v.replace(/\./g,'').replace(/,/g,'.');
+  if (/^[+-]?\d+(\.\d+)?$/.test(t)) return Number(t);
+  return v;
+};
 
-/* ---------- parsing robusto (NO virgola come separatore) ---------- */
-const U_NBSP = /\u00A0/g;
-const normalizeLine = s =>
-  String(s ?? '')
+function cleanLines(text) {
+  return text
     .replace(/^\uFEFF/, '')
-    .replace(U_NBSP, ' ')
-    .replace(/\t+/g, '\t')
-    .replace(/\s+$/,'')
-    .trim();
-
-function pickDelimiterFromHeader(line) {
-  const candidates = [/\t+/, / {2,}/, /;/, /\|/]; // mai la virgola
-  const norm = line.replace(U_NBSP, ' ');
-  let best = { rx: null, cols: 1 };
-  for (const rx of candidates) {
-    const arr = norm.split(rx).map(s => s.trim()).filter(Boolean);
-    if (arr.length > best.cols) best = { rx, cols: arr.length };
-  }
-  return best.rx || /\t+| {2,}/;
+    .split(/\r?\n/)
+    .filter(line => line.trim() !== '' && !/^#{1,2}\s/.test(line));
 }
-const trimQuotes = s => s.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
 
-function parseTextToRows(text) {
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').map(normalizeLine);
-  const rows = [];
-  let section = null, agenteCodice = null, agenteNome = null, periodo = null;
+const schemas = {
+  'Tipo_Dato\tProvincia\tAnno_Precedente\tAnno_Corrente\tObiettivo\tPercentuale_Obiettivo\tClienti_Anno_Precedente\tClienti_Anno_Corrente\tObiettivo_Clienti\tPercentuale_Obiettivo_Clienti':
+    { cols: ['Tipo_Dato','Provincia','Anno_Precedente','Anno_Corrente','Obiettivo','Percentuale_Obiettivo','Clienti_Anno_Precedente','Clienti_Anno_Corrente','Obiettivo_Clienti','Percentuale_Obiettivo_Clienti'] },
+  'Tipo_Dato\tProvincia\tClienti_Serviti\tFatturato':
+    { cols: ['Tipo_Dato','Provincia','Clienti_Serviti','Fatturato'] },
+  'Tipo_Dato\tProvincia\tRagione_Sociale_Cliente\tFatturato':
+    { cols: ['Tipo_Dato','Provincia','Ragione_Sociale_Cliente','Fatturato'] },
+  'Tipo_Dato\tCategoria\tImporto_Totale':
+    { cols: ['Tipo_Dato','Categoria','Importo_Totale'] },
+  'Tipo_Dato\tCategoria_Prodotto\tImporto\tPercentuale':
+    { cols: ['Tipo_Dato','Categoria_Prodotto','Importo','Percentuale'] },
+  'Tipo_Dato\tDescrizione\tValore':
+    { cols: ['Tipo_Dato','Descrizione','Valore'] },
+};
 
-  // trova tutti gli header (righe con "Tipo_Dato")
-  const headerIdx = [];
-  for (let i=0;i<lines.length;i++){
-    const L = lines[i];
-    if (!L) continue;
+function parseSmart(rawText) {
+  const lines = cleanLines(rawText);
+  const hasTSVHeaders = lines.some(l => schemas[l]);
 
-    const mCod = L.match(/^#\s*Codice\s+Agente:\s*(.+)$/i);
-    if (mCod){ agenteCodice = trimQuotes(mCod[1]); continue; }
-    const mNom = L.match(/^#\s*Ragione\s+Sociale:\s*(.+)$/i);
-    if (mNom){ agenteNome = trimQuotes(mNom[1]); continue; }
-    const mPer = L.match(/^#\s*Periodo:\s*(.+)$/i);
-    if (mPer){ periodo = trimQuotes(mPer[1]); continue; }
-
-    const sec = L.match(/^##\s*(.+)$/);
-    if (sec){ section = sec[1].trim(); continue; }
-
-    if (/^#/.test(L)) continue;
-    if (/tipo[_ ]?dato/i.test(L)) headerIdx.push({ i, sectionAt: section ?? null });
+  if (!hasTSVHeaders) {
+    const first = (rawText.replace(/^\uFEFF/, '').split(/\r?\n/).find(x => x.trim() && !/^#{1,2}\s/.test(x))) || '';
+    const candidates = [',',';','\t','|'];
+    let best = ',', bestCount = 0;
+    for (const d of candidates) {
+      const count = (first.match(new RegExp(`\\${d}(?=(?:[^"]*"[^"]*")*[^"]*$)`, 'g')) || []).length;
+      if (count > bestCount) { best = d; bestCount = count; }
+    }
+    const records = parse(rawText, {
+      delimiter: best,
+      relax_quotes: true,
+      relax_column_count: true,
+      skip_empty_lines: true,
+      bom: true,
+      columns: true,
+      trim: true
+    }).map(obj => Object.fromEntries(Object.entries(obj).map(([k,v]) => [k, ITnum(v)])));
+    const columns = Object.keys(records[0] || []);
+    return { columns, rows: records, rowCount: records.length, delimiter: best };
   }
 
-  for (let h=0; h<headerIdx.length; h++){
-    const start = headerIdx[h].i;
-    const end   = (h+1<headerIdx.length ? headerIdx[h+1].i : lines.length);
-    const sectionHere = headerIdx[h].sectionAt;
+  const blocks = [];
+  let i = 0;
+  while (i < lines.length) {
+    const header = lines[i++];
+    if (!schemas[header]) continue;
+    const { cols } = schemas[header];
 
-    const headerLine = lines[start];
-    const delim = pickDelimiterFromHeader(headerLine);
-    const header = headerLine.split(delim).map(s=>s.trim());
-    if (!header.length || !/tipo[_ ]?dato/i.test(header[0])) continue;
+    const rows = [];
+    while (i < lines.length && !schemas[lines[i]]) rows.push(lines[i++]);
 
-    for (let r=start+1; r<end; r++){
-      let L = lines[r];
-      if (!L) continue;
-      if (/^#/.test(L)) continue;
-      if (/^##\s+/.test(L)) break;
-
-      let cells = L.split(delim).map(s=>s.trim());
-      if (cells.length < header.length) while (cells.length < header.length) cells.push('');
-      else if (cells.length > header.length) cells = cells.slice(0, header.length);
-
-      const obj = {};
-      for (let c=0;c<header.length;c++){
-        const key = (header[c]||'').trim(); if (!key) continue;
-        let val = (cells[c] ?? '').replace(/^["']|["']$/g,'').trim();
-
-        const isPercentKey = key.toLowerCase().includes('percentuale');
-
-        if (/%\s*$/.test(val)){
-          let n = val.replace('%','').replace(/\./g,'').replace(',', '.').trim();
-          let num = Number(n);
-          if (!Number.isFinite(num) || num>1000) num = null;
-          obj[key] = num;
-        } else if (/^[0-9.\s,]+$/.test(val)){
-          let n = val.replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
-          let num = Number(n);
-          if (!Number.isFinite(num)) num = null;
-          if (num===999999 || num===99999900) num = null;
-          if (isPercentKey && num>1000) num = null;
-          obj[key] = num;
-        } else {
-          obj[key] = val || null;
+    const parsed = parse(rows.join('\n'), {
+      delimiter: '\t',
+      relax_column_count: true,
+      skip_empty_lines: true
+    }).map(arr => {
+      if (arr.length > cols.length) {
+        if (cols.includes('Ragione_Sociale_Cliente')) {
+          arr = [arr[0], arr[1], arr.slice(2, arr.length - 1).join(' '), arr[arr.length - 1]];
+        } else if (cols.includes('Categoria')) {
+          arr = [arr[0], arr.slice(1, arr.length - 1).join(' '), arr[arr.length - 1]];
         }
       }
-
-      if (Object.keys(obj).length){
-        if (sectionHere) obj['__Sezione'] = sectionHere;
-        if (agenteCodice) obj['Agente_Codice'] = agenteCodice;
-        if (agenteNome)   obj['Agente_Nome']   = agenteNome;
-        if (periodo)      obj['Periodo']       = periodo;
-        rows.push(obj);
-      }
-    }
+      const o = {};
+      cols.forEach((k, idx) => { o[k] = ITnum(arr[idx]); });
+      return o;
+    });
+    blocks.push({ cols, rows: parsed });
   }
-  return rows;
+
+  const allRows = blocks.flatMap(b => b.rows);
+  const columns = [...new Set(blocks.flatMap(b => b.cols))];
+  return { columns, rows: allRows, rowCount: allRows.length, delimiter: '\\t' };
 }
 
-/* ---------- FTP ---------- */
-async function fetchTextFromFtp() {
-  const {
-    FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE,
-    FTP_SECURE, FTP_TIMEOUT, FTP_TLS_INSECURE, FTP_TLS_SERVERNAME
-  } = process.env;
+/* ---------- FTP: usa un vero Writable stream ---------- */
+async function downloadFromFtpAsText() {
   if (!FTP_HOST || !FTP_USER || !FTP_PASS || !FTP_FILE) {
-    throw new Error('Mancano FTP_HOST, FTP_USER, FTP_PASS o FTP_FILE.');
+    throw new Error('Mancano var. ambiente: FTP_HOST, FTP_USER, FTP_PASS, FTP_FILE');
   }
-
-  const { Client } = require('basic-ftp');
-  const client = new Client(Number(FTP_TIMEOUT || 25000));
+  const client = new ftp.Client(15000);
   client.ftp.verbose = false;
 
-  const tmp = path.join(os.tmpdir(), `generalb2b_${Date.now()}.txt`);
+  const chunks = [];
+  const sink = new Writable({
+    write(chunk, enc, cb) { chunks.push(Buffer.from(chunk)); cb(); }
+  });
+
   try {
     await client.access({
       host: FTP_HOST,
       user: FTP_USER,
       password: FTP_PASS,
-      secure: String(FTP_SECURE).toLowerCase() === 'true',
-      secureOptions: {
-        rejectUnauthorized: String(FTP_TLS_INSECURE).toLowerCase() === 'true' ? false : true,
-        servername: FTP_TLS_SERVERNAME || FTP_HOST
-      }
+      secure: /^true$/i.test(FTP_SECURE)
     });
-    await client.downloadTo(tmp, FTP_FILE);
-    return fs.readFileSync(tmp, 'utf8');
+    await client.downloadTo(sink, FTP_FILE); // <— ora è uno stream valido
+    return Buffer.concat(chunks).toString('utf8');
   } finally {
-    try { client.close(); } catch {}
-    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch {}
+    client.close();
   }
 }
 
-/* ---------- API ---------- */
-app.get('/data', async (_req, res) => {
+/* ---------- App ---------- */
+const app = express();
+app.disable('x-powered-by');
+app.use(compression());
+if (/^true$/i.test(CORS)) {
+  const cors = require('cors');
+  app.use(cors());
+}
+
+// serve statico: prima ./public, poi root repo
+const publicDir = path.join(__dirname, 'public');
+if (fs.existsSync(publicDir)) app.use(express.static(publicDir));
+app.use(express.static(__dirname)); // copre il caso di index.html in root
+
+app.get('/healthz', (req, res) => res.type('text/plain').send('ok'));
+
+app.get('/raw', async (_req, res) => {
   try {
-    const txt  = await fetchTextFromFtp();
-    const rows = parseTextToRows(txt);
-    res.set('Cache-Control','no-store');
-    res.json({
-      updatedAt: new Date().toISOString(),
-      rowCount: rows.length,
-      columns: rows.length ? Object.keys(rows[0]) : [],
-      rows
-    });
-  } catch (e) {
-    console.error('Errore /data:', e);
-    res.status(500).json({ error:'Lettura/parse fallita', details:String(e?.message||e) });
+    const txt = await downloadFromFtpAsText();
+    res.type('text/plain').send(txt);
+  } catch (err) {
+    res.status(500).json({ error: 'FTP error', detail: String(err?.message || err) });
   }
 });
 
-app.get('/raw', async (_req,res)=>{
-  try { res.type('text/plain').send(await fetchTextFromFtp()); }
-  catch(e){ res.status(500).send(String(e?.message||e)); }
+app.get('/data', async (_req, res) => {
+  try {
+    const txt = await downloadFromFtpAsText();
+    const parsed = parseSmart(txt);
+    res.json({ updatedAt: new Date().toISOString(), ...parsed });
+  } catch (err) {
+    console.error('Errore /data:', err);
+    res.status(500).json({ error: 'Parse/FTP failed', detail: String(err?.message || err) });
+  }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server su http://0.0.0.0:${PORT}`);
+// fallback a index.html (public o root)
+app.get('*', (req, res) => {
+  const idxPublic = path.join(publicDir, 'index.html');
+  const idxRoot = path.join(__dirname, 'index.html');
+  if (fs.existsSync(idxPublic)) return res.sendFile(idxPublic);
+  if (fs.existsSync(idxRoot)) return res.sendFile(idxRoot);
+  res.status(404).send('index.html non trovato');
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`Server avviato su http://localhost:${PORT}`);
 });
