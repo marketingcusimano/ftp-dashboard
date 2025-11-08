@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -5,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard B2B - Rete Commerciale • Cotto Cusimano</title>
 
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS (no eval) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -22,12 +23,9 @@
     }
   </script>
 
-  <!-- React & ReactDOM -->
+  <!-- React & ReactDOM (UMD, no Babel) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel Standalone for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- Recharts UMD -->
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
@@ -39,9 +37,13 @@
 <body class="min-h-screen">
   <div id="root"></div>
 
-  <!-- ===== Helpers & Live Data Transform from /data ===== -->
   <script>
+    // ---------- Utilities & Live Data ----------
     const itNum = (v) => (typeof v === 'number') ? v : Number(String(v||'').replace(/\./g,'').replace(',', '.')) || 0;
+    const formatEuro = (v) => new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v||0);
+    const formatPercent = (v) => (typeof v === 'number') ? (v.toFixed(2).replace('.', ',') + '%') : '—';
+    const formatNumber = (v) => new Intl.NumberFormat('it-IT').format(v||0);
+    const getColorByPerformance = (p) => (p>=90 ? '#10b981' : p>=70 ? '#f59e0b' : '#ef4444');
 
     function buildDashboardData(apiJson){
       const rows = Array.isArray(apiJson?.rows) ? apiJson.rows : [];
@@ -49,9 +51,9 @@
 
       const agentKey = (r) => (r.Agente_Codice || '—') + '|' + (r.Agente_Nome || '—');
       const agentsSet = new Set(rows.map(agentKey));
-      const agentIds = [...agentsSet];
-      const byTipo = (t) => rows.filter(r => r.Tipo_Dato === t);
+      const agentIds = Array.from(agentsSet);
 
+      const byTipo = (t) => rows.filter(r => r.Tipo_Dato === t);
       const OBI = byTipo('OBIETTIVI');
       const OBI_GEN = OBI.filter(r => r.Provincia === 'Generale');
       const OBI_PROV = OBI.filter(r => r.Provincia && r.Provincia !== 'Generale');
@@ -119,7 +121,7 @@
       });
 
       const provKeys = new Set(rows.map(r => r.Provincia).filter(Boolean).map(String));
-      const province = [...provKeys].map(p => {
+      const province = Array.from(provKeys).map(p => {
         const vendP = VEND.filter(r => r.Provincia === p);
         const clipP = CLIP.filter(r => r.Provincia === p);
         const obiP  = OBI_PROV.filter(r => r.Provincia === p);
@@ -177,363 +179,362 @@
         };
       }
     }
-  </script>
 
-  <!-- ======================= APP REACT ======================= -->
-  <script type="text/babel" data-presets="react" defer>
-    // Utility visuali
-    const formatEuro = (v) => new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v||0);
-    const formatPercent = (v) => (typeof v === 'number') ? (v.toFixed(2).replace('.', ',') + '%') : '—';
-    const formatNumber = (v) => new Intl.NumberFormat('it-IT').format(v||0);
-    const getColorByPerformance = (p) => (p>=90 ? '#10b981' : p>=70 ? '#f59e0b' : '#ef4444');
-
-    function mount(){
-      // Safe destructuring AFTER Recharts is loaded
-      const {
-        ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-        PieChart, Pie, Cell, ScatterChart, Scatter
-      } = Recharts;
-
-      const Header = ({ updatedAt }) => (
-        <header className="border-b border-gray-100 bg-white">
-          <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-bold">CC</div>
-              <div>
-                <div className="font-semibold">Cotto Cusimano</div>
-                <div className="text-xs text-gray-500">Rete commerciale B2B</div>
-              </div>
-            </div>
-            <div className="text-center">
-              <h1 className="text-xl md:text-2xl font-bold">Dashboard Performance Agenti</h1>
-              <div className="text-xs text-gray-500 mt-1">Ultimo aggiornamento: <span className="font-medium">{updatedAt}</span></div>
-            </div>
-            <div className="flex md:justify-end gap-2">
-              <button className="px-3 py-2 rounded-xl border border-gray-200" onClick={()=>window.print()}>Stampa</button>
-            </div>
-          </div>
-        </header>
+    // ---------- React components (no JSX) ----------
+    function Header(props){
+      return React.createElement("header", {className:"border-b border-gray-100 bg-white"},
+        React.createElement("div", {className:"max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center"},
+          React.createElement("div",{className:"flex items-center gap-3"},
+            React.createElement("div",{className:"w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-bold"},"CC"),
+            React.createElement("div",null,
+              React.createElement("div",{className:"font-semibold"},"Cotto Cusimano"),
+              React.createElement("div",{className:"text-xs text-gray-500"},"Rete commerciale B2B")
+            )
+          ),
+          React.createElement("div",{className:"text-center"},
+            React.createElement("h1",{className:"text-xl md:text-2xl font-bold"},"Dashboard Performance Agenti"),
+            React.createElement("div",{className:"text-xs text-gray-500 mt-1"},"Ultimo aggiornamento: ",
+              React.createElement("span",{className:"font-medium"}, props.updatedAt || "—")
+            )
+          ),
+          React.createElement("div",{className:"flex md:justify-end gap-2"},
+            React.createElement("button",{className:"px-3 py-2 rounded-xl border border-gray-200", onClick:()=>window.print()},"Stampa")
+          )
+        )
       );
+    }
 
-      const KPICard = ({ label, value, color='text-primary', icon='●', delta, hint }) => (
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-          <div className="flex justify-between items-start">
-            <div className="text-sm text-gray-500">{label}</div>
-            <div className={"text-xs px-2 py-0.5 rounded-full border " + color} style={{borderColor:"currentColor"}}>{icon}</div>
-          </div>
-          <div className="text-2xl font-bold mt-1">{value}</div>
-          {typeof delta === 'number' && (
-            <div className="mt-1 text-sm">
-              {delta >= 0 ? <span className="text-success">▲ {delta.toFixed(1)}%</span> : <span className="text-danger">▼ {Math.abs(delta).toFixed(1)}%</span>}
-              <span className="text-gray-400 ml-1">vs prec.</span>
-            </div>
-          )}
-          {hint && <div className="mt-1 text-xs text-gray-500">{hint}</div>}
-        </div>
-      );
-
-      const Gauge = ({ percent=0 }) => {
-        const clamped = Math.max(0, Math.min(100, percent));
-        const color = getColorByPerformance(clamped);
-        const rest = 100 - clamped;
-        return (
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={[{value:clamped},{value:rest}]} startAngle={180} endAngle={0}
-                   innerRadius={70} outerRadius={100} dataKey="value">
-                <Cell fill={color} /><Cell fill="#eee" />
-              </Pie>
-              <text x="50%" y="60%" textAnchor="middle" dominantBaseline="middle" className="fill-gray-700" style={{fontSize:24,fontWeight:700}}>
-                {formatPercent(clamped)}
-              </text>
-              <text x="50%" y="78%" textAnchor="middle" dominantBaseline="middle" className="fill-gray-500" style={{fontSize:12}}>
-                Raggiungimento obiettivo
-              </text>
-            </PieChart>
-          </ResponsiveContainer>
+    function KPICard(props){
+      const color = props.color || "text-primary";
+      const icon = props.icon || "●";
+      const children = [
+        React.createElement("div",{className:"flex justify-between items-start", key:"row"},
+          React.createElement("div",{className:"text-sm text-gray-500"}, props.label || ""),
+          React.createElement("div",{className:"text-xs px-2 py-0.5 rounded-full border " + color, style:{borderColor:"currentColor"}}, icon)
+        ),
+        React.createElement("div",{className:"text-2xl font-bold mt-1", key:"val"}, props.value || "—")
+      ];
+      if (typeof props.delta === "number"){
+        children.push(
+          React.createElement("div",{className:"mt-1 text-sm", key:"delta"},
+            (props.delta >= 0)
+              ? React.createElement("span",{className:"text-success"}, "▲ " + props.delta.toFixed(1) + "%")
+              : React.createElement("span",{className:"text-danger"}, "▼ " + Math.abs(props.delta).toFixed(1) + "%"),
+            React.createElement("span",{className:"text-gray-400 ml-1"},"vs prec.")
+          )
         );
-      };
+      }
+      if (props.hint){
+        children.push(React.createElement("div",{className:"mt-1 text-xs text-gray-500", key:"hint"}, props.hint));
+      }
+      return React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"}, children);
+    }
 
-      function App(){
-        const { useState, useMemo } = React;
-        const data = window.dashboardData;
-        const [tab, setTab] = useState('panoramica');
-        const [provSel, setProvSel] = useState('');
-        const [agSel, setAgSel] = useState('');
+    function Gauge(props){
+      const percent = Math.max(0, Math.min(100, props.percent||0));
+      const color = getColorByPerformance(percent);
+      const rest = 100 - percent;
+      const R = Recharts;
+      return React.createElement(R.ResponsiveContainer,{width:"100%", height:220},
+        React.createElement(R.PieChart,null,
+          React.createElement(R.Pie,{
+            data:[{value:percent},{value:rest}], startAngle:180, endAngle:0,
+            innerRadius:70, outerRadius:100, dataKey:"value"
+          },
+            React.createElement(R.Cell,{fill:color}),
+            React.createElement(R.Cell,{fill:"#eee"})
+          ),
+          React.createElement("text",{x:"50%", y:"60%", textAnchor:"middle", dominantBaseline:"middle", className:"fill-gray-700", style:{fontSize:24, fontWeight:700}}, formatPercent(percent)),
+          React.createElement("text",{x:"50%", y:"78%", textAnchor:"middle", dominantBaseline:"middle", className:"fill-gray-500", style:{fontSize:12}},"Raggiungimento obiettivo")
+        )
+      );
+    }
 
-        const updatedAt = useMemo(()=>{
-          const d = data?.riepilogo_generale?.aggiornato_il;
-          try { return new Date(d).toLocaleString('it-IT'); } catch { return '—'; }
-        }, [data]);
+    function App(){
+      const R = Recharts;
+      const ReactHooks = React;
+      const useState = ReactHooks.useState;
+      const useMemo = ReactHooks.useMemo;
 
-        const agenti = useMemo(()=> (data.agenti||[]).map(a=>({
-          codice:a.codice, nome:a.ragione_sociale,
-          fatturato:a?.totali?.fatturato_corrente||0,
-          clienti:a?.totali?.clienti_serviti||0,
-          obiettivo:a?.totali?.obiettivo||0,
-          perc:a?.totali?.percentuale_obiettivo||0,
-          perProvincia:a?.clienti_per_provincia||[],
-          precedente:a?.totali?.fatturato_precedente||0
-        })), [data]);
+      const data = window.dashboardData || { riepilogo_generale:{}, agenti:[], province:[] };
+      const _kpi = data.riepilogo_generale || {};
 
-        const province = useMemo(()=> data.province||[], [data]);
-        const kpi = data?.riepilogo_generale||{};
-        const topAgenti = useMemo(()=> [...agenti].sort((a,b)=>b.fatturato-a.fatturato).slice(0,10), [agenti]);
-        const topProv = useMemo(()=> [...province].sort((a,b)=>b.fatturato_totale-a.fatturato_totale).slice(0,10), [province]);
+      const [tab, setTab] = useState('panoramica');
+      const [provSel, setProvSel] = useState('');
+      const [agSel, setAgSel] = useState('');
 
-        const filteredAgentiInProv = useMemo(()=>{
-          if (!provSel) return agenti;
-          return agenti.filter(a => (a.perProvincia||[]).some(pp => pp.provincia === provSel));
-        }, [agenti, provSel]);
+      const updatedAt = useMemo(function(){
+        const d = _kpi.aggiornato_il;
+        try { return new Date(d).toLocaleString('it-IT'); } catch(e){ return '—'; }
+      }, [data]);
 
-        const agenteCorrente = useMemo(()=>{
-          if (!agSel) return agenti[0];
-          return agenti.find(a=> a.codice===agSel || a.nome===agSel) || agenti[0];
-        }, [agenti, agSel]);
+      const agenti = useMemo(function(){
+        return (data.agenti||[]).map(function(a){
+          return {
+            codice:a.codice, nome:a.ragione_sociale,
+            fatturato:a?.totali?.fatturato_corrente||0,
+            clienti:a?.totali?.clienti_serviti||0,
+            obiettivo:a?.totali?.obiettivo||0,
+            perc:a?.totali?.percentuale_obiettivo||0,
+            perProvincia:a?.clienti_per_provincia||[],
+            precedente:a?.totali?.fatturato_precedente||0
+          };
+        });
+      }, [data]);
 
-        return (
-          <div>
-            <Header updatedAt={updatedAt} />
-            <main className="max-w-7xl mx-auto px-4 py-8">
-              <div className="flex gap-2 mb-6">
-                <button className={"px-4 py-2 rounded-full border " + (tab==='panoramica'?'bg-primary text-white border-primary':'border-gray-200')} onClick={()=>setTab('panoramica')}>Panoramica Generale</button>
-                <button className={"px-4 py-2 rounded-full border " + (tab==='regioni'?'bg-primary text-white border-primary':'border-gray-200')} onClick={()=>setTab('regioni')}>Regioni</button>
-                <button className={"px-4 py-2 rounded-full border " + (tab==='agenti'?'bg-primary text-white border-primary':'border-gray-200')} onClick={()=>setTab('agenti')}>Agenti</button>
-              </div>
+      const province = useMemo(function(){ return data.province||[]; }, [data]);
 
-              {tab==='panoramica' && (
-                <section className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                    <KPICard label="Fatturato Totale Rete" value={formatEuro(kpi.fatturato_totale||0)} icon="€" />
-                    <KPICard label="% Raggiungimento Obiettivo" value={formatPercent(kpi.percentuale_obiettivo||0)} icon="🎯" color="text-success" />
-                    <KPICard label="Clienti Totali" value={formatNumber(kpi.clienti_totali||0)} icon="👥" color="text-primary" />
-                    <KPICard label="Agenti Attivi" value={formatNumber(kpi.agenti_attivi||0)} icon="🧑‍💼" color="text-primary" />
-                    <KPICard label="Variazione YoY" value={formatPercent(Math.abs(kpi.variazione_yoy||0))} icon="↕"
-                             color={(kpi.variazione_yoy||0)>=0?'text-success':'text-danger'}
-                             delta={kpi.variazione_yoy||0} />
-                  </div>
+      const topAgenti = useMemo(function(){
+        return agenti.slice().sort(function(a,b){ return (b.fatturato||0)-(a.fatturato||0); }).slice(0,10);
+      }, [agenti]);
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="font-semibold mb-2">Top 10 Agenti per Fatturato</div>
-                      <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={topAgenti}>
-                            <CartesianGrid stroke="#eee" />
-                            <XAxis type="number" tickFormatter={formatEuro} />
-                            <YAxis type="category" dataKey="nome" width={120} />
-                            <Tooltip formatter={(v)=>formatEuro(v)} />
-                            <Bar dataKey="fatturato">
-                              {topAgenti.map((a,i)=> <Cell key={i} fill={`hsl(${20 + i*6}, 70%, 50%)`} />)}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+      const topProv = useMemo(function(){
+        return province.slice().sort(function(a,b){ return (b.fatturato_totale||0)-(a.fatturato_totale||0); }).slice(0,10)
+          .map(function(p){ return { provincia:p.provincia, fatturato:p.fatturato_totale }; });
+      }, [province]);
 
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="font-semibold mb-2">Raggiungimento Obiettivo Generale</div>
-                      <Gauge percent={kpi.percentuale_obiettivo||0} />
-                    </div>
-                  </div>
+      const filteredAgentiInProv = useMemo(function(){
+        if (!provSel) return agenti;
+        return agenti.filter(function(a){ return (a.perProvincia||[]).some(function(pp){ return pp.provincia===provSel; }); });
+      }, [agenti, provSel]);
 
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                    <div className="font-semibold mb-2">Fatturato per Provincia (Top 10)</div>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={topProv}>
-                          <CartesianGrid stroke="#eee" />
-                          <XAxis dataKey="provincia" />
-                          <YAxis tickFormatter={formatEuro} />
-                          <Tooltip formatter={(v)=>formatEuro(v)} />
-                          <Bar dataKey="fatturato" fill="#2563eb" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+      const agenteCorrente = useMemo(function(){
+        if (!agSel) return agenti[0];
+        return agenti.find(function(a){ return a.codice===agSel || a.nome===agSel; }) || agenti[0];
+      }, [agenti, agSel]);
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="text-sm text-gray-500">Fatturato medio per agente</div>
-                      <div className="text-2xl font-bold mt-1">
-                        {formatEuro((kpi.fatturato_totale||0)/Math.max(1,(kpi.agenti_attivi||1)))}
-                      </div>
-                    </div>
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="text-sm text-gray-500">Clienti medi per agente</div>
-                      <div className="text-2xl font-bold mt-1">
-                        {formatNumber((kpi.clienti_totali||0)/Math.max(1,(kpi.agenti_attivi||1)))}
-                      </div>
-                    </div>
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="text-sm text-gray-500">Fatturato medio per cliente</div>
-                      <div className="text-2xl font-bold mt-1">
-                        {formatEuro((kpi.fatturato_totale||0)/Math.max(1,(kpi.clienti_totali||1)))}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {tab==='regioni' && (
-                <section className="space-y-6">
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <select className="px-3 py-2 rounded-xl border border-gray-200"
-                            value={provSel} onChange={e=>setProvSel(e.target.value)}>
-                      <option value="">Tutte le Province</option>
-                      {province.map(p=> <option key={p.provincia} value={p.provincia}>{p.provincia}</option>)}
-                    </select>
-                    <button className="px-3 py-2 rounded-xl border border-gray-200" onClick={()=>setProvSel('')}>Reset</button>
-                  </div>
-
-                  {provSel && (()=>{
-                    const P = province.find(p=>p.provincia===provSel);
-                    if (!P) return null;
-                    return (
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <KPICard label="Fatturato Provincia" value={formatEuro(P.fatturato_totale||0)} icon="€" />
-                        <KPICard label="Agenti operanti" value={formatNumber(P.numero_agenti||0)} icon="🧑‍💼" />
-                        <KPICard label="Clienti totali" value={formatNumber(P.clienti_totali||0)} icon="👥" />
-                        <KPICard label="% Obiettivo" value={formatPercent(P.percentuale_obiettivo||0)} icon="🎯" color="text-success" />
-                      </div>
-                    );
-                  })()}
-
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                    <div className="font-semibold mb-2">Fatturato per Provincia (tutte)</div>
-                    <div className="h-96">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={[...province].sort((a,b)=> (b.fatturato_totale||0)-(a.fatturato_totale||0))}>
-                          <CartesianGrid stroke="#eee" />
-                          <XAxis dataKey="provincia" interval={0} angle={-45} textAnchor="end" height={80} />
-                          <YAxis tickFormatter={formatEuro} />
-                          <Tooltip formatter={(v)=>formatEuro(v)} />
-                          <Bar dataKey="fatturato_totale">
-                            {[...province].sort((a,b)=> (b.fatturato_totale||0)-(a.fatturato_totale||0)).map((p,i)=>
-                              <Cell key={i} fill={getColorByPerformance(p.percentuale_obiettivo||0)} />
-                            )}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                    <div className="font-semibold mb-2">Clienti vs Fatturato (per Provincia)</div>
-                    <div className="h-96">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart>
-                          <CartesianGrid stroke="#eee" />
-                          <XAxis type="number" dataKey="x" name="Clienti" />
-                          <YAxis type="number" dataKey="y" name="Fatturato" tickFormatter={formatEuro} />
-                          <Tooltip formatter={(v, name)=> name==='y'?formatEuro(v):formatNumber(v)}
-                                   labelFormatter={(_,i)=> province[i]?.provincia } />
-                          <Scatter data={province.map(p=>({x:p.clienti_totali||0,y:p.fatturato_totale||0}))} fill="#2563eb" />
-                        </ScatterChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {tab==='agenti' && (
-                <section className="space-y-6">
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <select className="px-3 py-2 rounded-xl border border-gray-200"
-                            value={agSel} onChange={e=>setAgSel(e.target.value)}>
-                      {agenti.map(a=> <option key={a.codice} value={a.codice}>{a.codice} — {a.nome}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-                    <KPICard label="Fatturato A.C." value={formatEuro(agenteCorrente?.fatturato||0)} icon="€" />
-                    <KPICard label="Obiettivo" value={formatEuro(agenteCorrente?.obiettivo||0)} icon="🎯" />
-                    <KPICard label="% Raggiungimento" value={formatPercent(agenteCorrente?.perc||0)} icon="✓" color="text-success" />
-                    <KPICard label="Clienti Serviti" value={formatNumber(agenteCorrente?.clienti||0)} icon="👥" />
-                    <KPICard label="Variazione YoY" value={formatPercent(((agenteCorrente?.fatturato||0)-(agenteCorrente?.precedente||0))/Math.max(1,(agenteCorrente?.precedente||0))*100 || 0)} icon="↕"
-                             color={((agenteCorrente?.fatturato||0)-(agenteCorrente?.precedente||0))>=0?'text-success':'text-danger'} />
-                    <KPICard label="Province coperte" value={formatNumber((agenteCorrente?.perProvincia||[]).length)} icon="🗺️" />
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="font-semibold mb-2">Fatturato per Provincia (Agente)</div>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={[...(agenteCorrente?.perProvincia||[])].sort((a,b)=> (b.fatturato||0)-(a.fatturato||0))}>
-                            <CartesianGrid stroke="#eee" />
-                            <XAxis dataKey="provincia" />
-                            <YAxis tickFormatter={formatEuro} />
-                            <Tooltip formatter={(v)=>formatEuro(v)} />
-                            <Bar dataKey="fatturato" fill="#2563eb" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                      <div className="font-semibold mb-2">Performance vs Obiettivo</div>
-                      <div className="h-60">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie data={[{value:agenteCorrente?.perc||0},{value:100-(agenteCorrente?.perc||0)}]} startAngle={180} endAngle={0} innerRadius={70} outerRadius={100} dataKey="value">
-                              <Cell fill={getColorByPerformance(agenteCorrente?.perc||0)} /><Cell fill="#eee" />
-                            </Pie>
-                            <text x="50%" y="60%" textAnchor="middle" dominantBaseline="middle" className="fill-gray-700" style={{fontSize:24,fontWeight:700}}>
-                              {formatPercent(agenteCorrente?.perc||0)}
-                            </text>
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-md p-6">
-                    <div className="font-semibold mb-2">Top Province (Distribuzione Fatturato)</div>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={[...(agenteCorrente?.perProvincia||[])].sort((a,b)=>b.fatturato-a.fatturato).slice(0,5)}
-                               dataKey="fatturato" nameKey="provincia" cx="50%" cy="50%" outerRadius={120} label>
-                            {(agenteCorrente?.perProvincia||[]).slice(0,5).map((_,i)=>(
-                              <Cell key={i} fill={`hsl(${200 + i*25},70%,50%)`} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(v)=>formatEuro(v)} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </section>
-              )}
-            </main>
-          </div>
+      // ---------- UI Sections (no JSX) ----------
+      function Tabs(){
+        return React.createElement("div",{className:"flex gap-2 mb-6"},
+          React.createElement("button",{className:"px-4 py-2 rounded-full border " + (tab==='panoramica'?'bg-primary text-white border-primary':'border-gray-200'), onClick:function(){ setTab('panoramica'); }},"Panoramica Generale"),
+          React.createElement("button",{className:"px-4 py-2 rounded-full border " + (tab==='regioni'?'bg-primary text-white border-primary':'border-gray-200'), onClick:function(){ setTab('regioni'); }},"Regioni"),
+          React.createElement("button",{className:"px-4 py-2 rounded-full border " + (tab==='agenti'?'bg-primary text-white border-primary':'border-gray-200'), onClick:function(){ setTab('agenti'); }},"Agenti")
         );
       }
 
-      function renderApp(){
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(mount));
+      function Panoramica(){
+        return React.createElement("section",{className:"space-y-6"},
+          // KPI row
+          React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-5 gap-6"},
+            React.createElement(KPICard,{label:"Fatturato Totale Rete", value:formatEuro(_kpi.fatturato_totale||0), icon:"€"}),
+            React.createElement(KPICard,{label:"% Raggiungimento Obiettivo", value:formatPercent(_kpi.percentuale_obiettivo||0), icon:"🎯", color:"text-success"}),
+            React.createElement(KPICard,{label:"Clienti Totali", value:formatNumber(_kpi.clienti_totali||0), icon:"👥", color:"text-primary"}),
+            React.createElement(KPICard,{label:"Agenti Attivi", value:formatNumber(_kpi.agenti_attivi||0), icon:"🧑‍💼", color:"text-primary"}),
+            React.createElement(KPICard,{label:"Variazione YoY", value:formatPercent(Math.abs(_kpi.variazione_yoy||0)), icon:"↕", color:(_kpi.variazione_yoy||0)>=0?'text-success':'text-danger', delta:_kpi.variazione_yoy||0})
+          ),
+          // Charts row
+          React.createElement("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6"},
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"font-semibold mb-2"},"Top 10 Agenti per Fatturato"),
+              React.createElement("div",{className:"h-72"},
+                React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                  React.createElement(R.BarChart,{data:topAgenti},
+                    React.createElement(R.CartesianGrid,{stroke:"#eee"}),
+                    React.createElement(R.XAxis,{type:"number", tickFormatter:formatEuro}),
+                    React.createElement(R.YAxis,{type:"category", dataKey:"nome", width:120}),
+                    React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
+                    React.createElement(R.Bar,{dataKey:"fatturato"},
+                      topAgenti.map(function(a,i){
+                        return React.createElement(R.Cell,{key:i, fill:"hsl(" + (20 + i*6) + ",70%,50%)"});
+                      })
+                    )
+                  )
+                )
+              )
+            ),
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"font-semibold mb-2"},"Raggiungimento Obiettivo Generale"),
+              React.createElement(Gauge,{percent:_kpi.percentuale_obiettivo||0})
+            )
+          ),
+          // Province top 10
+          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+            React.createElement("div",{className:"font-semibold mb-2"},"Fatturato per Provincia (Top 10)"),
+            React.createElement("div",{className:"h-80"},
+              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                React.createElement(R.BarChart,{data:topProv},
+                  React.createElement(R.CartesianGrid,{stroke:"#eee"}),
+                  React.createElement(R.XAxis,{dataKey:"provincia"}),
+                  React.createElement(R.YAxis,{tickFormatter:formatEuro}),
+                  React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
+                  React.createElement(R.Bar,{dataKey:"fatturato", fill:"#2563eb"})
+                )
+              )
+            )
+          ),
+          // Metriche medie
+          React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-6"},
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"text-sm text-gray-500"},"Fatturato medio per agente"),
+              React.createElement("div",{className:"text-2xl font-bold mt-1"}, formatEuro((_kpi.fatturato_totale||0)/Math.max(1,(_kpi.agenti_attivi||1))))
+            ),
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"text-sm text-gray-500"},"Clienti medi per agente"),
+              React.createElement("div",{className:"text-2xl font-bold mt-1"}, formatNumber((_kpi.clienti_totali||0)/Math.max(1,(_kpi.agenti_attivi||1))))
+            ),
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"text-sm text-gray-500"},"Fatturato medio per cliente"),
+              React.createElement("div",{className:"text-2xl font-bold mt-1"}, formatEuro((_kpi.fatturato_totale||0)/Math.max(1,(_kpi.clienti_totali||1))))
+            )
+          )
+        );
       }
 
-      renderApp();
+      function Regioni(){
+        const [dummy, setDummy] = React.useState(0); // force update for select
+        return React.createElement("section",{className:"space-y-6"},
+          React.createElement("div",{className:"flex flex-col md:flex-row gap-3"},
+            React.createElement("select",{className:"px-3 py-2 rounded-xl border border-gray-200", value:provSel, onChange:function(e){ setProvSel(e.target.value); setDummy(dummy+1);} },
+              React.createElement("option",{value:""},"Tutte le Province"),
+              province.map(function(p){ return React.createElement("option",{key:p.provincia, value:p.provincia}, p.provincia); })
+            ),
+            React.createElement("button",{className:"px-3 py-2 rounded-xl border border-gray-200", onClick:function(){ setProvSel(""); setDummy(dummy+1);} },"Reset")
+          ),
+          (function(){
+            if (!provSel) return null;
+            const P = province.find(function(p){ return p.provincia===provSel; });
+            if (!P) return null;
+            return React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-4 gap-6"},
+              React.createElement(KPICard,{label:"Fatturato Provincia", value:formatEuro(P.fatturato_totale||0), icon:"€"}),
+              React.createElement(KPICard,{label:"Agenti operanti", value:formatNumber(P.numero_agenti||0), icon:"🧑‍💼"}),
+              React.createElement(KPICard,{label:"Clienti totali", value:formatNumber(P.clienti_totali||0), icon:"👥"}),
+              React.createElement(KPICard,{label:"% Obiettivo", value:formatPercent(P.percentuale_obiettivo||0), icon:"🎯", color:"text-success"})
+            );
+          })(),
+          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+            React.createElement("div",{className:"font-semibold mb-2"},"Fatturato per Provincia (tutte)"),
+            React.createElement("div",{className:"h-96"},
+              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                React.createElement(R.BarChart,{data: province.slice().sort(function(a,b){return (b.fatturato_totale||0)-(a.fatturato_totale||0);})},
+                  React.createElement(R.CartesianGrid,{stroke:"#eee"}),
+                  React.createElement(R.XAxis,{dataKey:"provincia", interval:0, angle:-45, textAnchor:"end", height:80}),
+                  React.createElement(R.YAxis,{tickFormatter:formatEuro}),
+                  React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
+                  React.createElement(R.Bar,{dataKey:"fatturato_totale"},
+                    province.slice().sort(function(a,b){return (b.fatturato_totale||0)-(a.fatturato_totale||0);}).map(function(p,i){
+                      return React.createElement(R.Cell,{key:i, fill:getColorByPerformance(p.percentuale_obiettivo||0)});
+                    })
+                  )
+                )
+              )
+            )
+          ),
+          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+            React.createElement("div",{className:"font-semibold mb-2"},"Clienti vs Fatturato (per Provincia)"),
+            React.createElement("div",{className:"h-96"},
+              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                React.createElement(R.ScatterChart,null,
+                  React.createElement(R.CartesianGrid,{stroke:"#eee"}),
+                  React.createElement(R.XAxis,{type:"number", dataKey:"x", name:"Clienti"}),
+                  React.createElement(R.YAxis,{type:"number", dataKey:"y", name:"Fatturato", tickFormatter:formatEuro}),
+                  React.createElement(R.Tooltip,{formatter:function(v,name){ return name==='y'?formatEuro(v):formatNumber(v); }, labelFormatter:function(_,i){ return (province[i]||{}).provincia; }}),
+                  React.createElement(R.Scatter,{data: province.map(function(p){ return {x:p.clienti_totali||0, y:p.fatturato_totale||0}; }), fill:"#2563eb"})
+                )
+              )
+            )
+          )
+        );
+      }
+
+      function Agenti(){
+        const [dummy, setDummy] = React.useState(0);
+        return React.createElement("section",{className:"space-y-6"},
+          React.createElement("div",{className:"flex flex-col md:flex-row gap-3"},
+            React.createElement("select",{className:"px-3 py-2 rounded-xl border border-gray-200", value:agSel, onChange:function(e){ setAgSel(e.target.value); setDummy(dummy+1);} },
+              agenti.map(function(a){ return React.createElement("option",{key:a.codice, value:a.codice}, a.codice + " — " + a.nome); })
+            )
+          ),
+          (function(){
+            const a = agenteCorrente;
+            if (!a) return null;
+            return React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-6 gap-6"},
+              React.createElement(KPICard,{label:"Fatturato A.C.", value:formatEuro(a.fatturato||0), icon:"€"}),
+              React.createElement(KPICard,{label:"Obiettivo", value:formatEuro(a.obiettivo||0), icon:"🎯"}),
+              React.createElement(KPICard,{label:"% Raggiungimento", value:formatPercent(a.perc||0), icon:"✓", color:"text-success"}),
+              React.createElement(KPICard,{label:"Clienti Serviti", value:formatNumber(a.clienti||0), icon:"👥"}),
+              React.createElement(KPICard,{label:"Variazione YoY", value:formatPercent(((a.fatturato||0)-(a.precedente||0))/Math.max(1,(a.precedente||0))*100 || 0), icon:"↕", color:((a.fatturato||0)-(a.precedente||0))>=0?'text-success':'text-danger'}),
+              React.createElement(KPICard,{label:"Province coperte", value:formatNumber((a.perProvincia||[]).length), icon:"🗺️"})
+            );
+          })(),
+          React.createElement("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6"},
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"font-semibold mb-2"},"Fatturato per Provincia (Agente)"),
+              React.createElement("div",{className:"h-80"},
+                React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                  React.createElement(R.BarChart,{data: (agenteCorrente?.perProvincia||[]).slice().sort(function(a,b){ return (b.fatturato||0)-(a.fatturato||0); })},
+                    React.createElement(R.CartesianGrid,{stroke:"#eee"}),
+                    React.createElement(R.XAxis,{dataKey:"provincia"}),
+                    React.createElement(R.YAxis,{tickFormatter:formatEuro}),
+                    React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }}),
+                    React.createElement(R.Bar,{dataKey:"fatturato", fill:"#2563eb"})
+                  )
+                )
+              )
+            ),
+            React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+              React.createElement("div",{className:"font-semibold mb-2"},"Performance vs Obiettivo"),
+              React.createElement("div",{className:"h-60"},
+                React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                  React.createElement(R.PieChart,null,
+                    React.createElement(R.Pie,{data:[{value:(agenteCorrente?.perc||0)},{value:100-(agenteCorrente?.perc||0)}], startAngle:180, endAngle:0, innerRadius:70, outerRadius:100, dataKey:"value"},
+                      React.createElement(R.Cell,{fill:getColorByPerformance(agenteCorrente?.perc||0)}),
+                      React.createElement(R.Cell,{fill:"#eee"})
+                    ),
+                    React.createElement("text",{x:"50%", y:"60%", textAnchor:"middle", dominantBaseline:"middle", className:"fill-gray-700", style:{fontSize:24, fontWeight:700}}, formatPercent(agenteCorrente?.perc||0))
+                  )
+                )
+              )
+            )
+          ),
+          React.createElement("div",{className:"bg-white border border-gray-100 rounded-2xl shadow-md p-6"},
+            React.createElement("div",{className:"font-semibold mb-2"},"Top Province (Distribuzione Fatturato)"),
+            React.createElement("div",{className:"h-80"},
+              React.createElement(R.ResponsiveContainer,{width:"100%", height:"100%"},
+                React.createElement(R.PieChart,null,
+                  React.createElement(R.Pie,{
+                      data:(agenteCorrente?.perProvincia||[]).slice().sort(function(a,b){return b.fatturato-a.fatturato;}).slice(0,5),
+                      dataKey:"fatturato", nameKey:"provincia", cx:"50%", cy:"50%", outerRadius:120, label:true
+                    },
+                    (agenteCorrente?.perProvincia||[]).slice(0,5).map(function(_,i){
+                      return React.createElement(R.Cell,{key:i, fill:"hsl("+ (200 + i*25) +",70%,50%)"});
+                    })
+                  ),
+                  React.createElement(R.Tooltip,{formatter:function(v){ return formatEuro(v); }})
+                )
+              )
+            )
+          )
+        );
+      }
+
+      const container = React.createElement("div", null,
+        React.createElement(Header,{updatedAt: updatedAt}),
+        React.createElement("main",{className:"max-w-7xl mx-auto px-4 py-8"},
+          React.createElement(Tabs,null),
+          (function(){
+            if (tab==='panoramica') return React.createElement(Panoramica,null);
+            if (tab==='regioni') return React.createElement(Regioni,null);
+            return React.createElement(Agenti,null);
+          })()
+        )
+      );
+
+      return container;
     }
 
     async function bootstrap(){
       await loadLiveData();
-      // Wait for Recharts to be defined
-      if (typeof Recharts === 'undefined') {
-        const timer = setInterval(()=>{
-          if (typeof Recharts !== 'undefined') {
-            clearInterval(timer);
-            mount();
-          }
-        }, 100);
-      } else {
-        mount();
+      function mountWhenReady(){
+        if (typeof Recharts === 'undefined') {
+          setTimeout(mountWhenReady, 50);
+          return;
+        }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
       }
+      mountWhenReady();
     }
 
-    // Kick off after DOM ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', bootstrap);
     } else {
