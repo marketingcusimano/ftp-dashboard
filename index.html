@@ -21,76 +21,42 @@
 
   <style>
     :root{
-      --terra:#D2691E;          /* terracotta */
-      --terra2:#CD853F;         /* terracotta chiaro */
-      --bg:#ffffff;
-      --text:#0b1320;
-      --muted:#6b7280;
-      --stroke:#e7e7e9;
-      --chip:#f7efe9;
-      --card:#ffffff;
-      --good:#16a34a;
-      --bad:#dc2626;
-      --shadow: 0 6px 18px rgba(0,0,0,.06);
-      --radius:14px;
+      --terra:#D2691E; --terra2:#CD853F;
+      --bg:#ffffff; --text:#0b1320; --muted:#6b7280; --stroke:#e7e7e9;
+      --chip:#f7efe9; --card:#ffffff; --good:#16a34a; --bad:#dc2626;
+      --shadow: 0 6px 18px rgba(0,0,0,.06); --radius:14px;
     }
     *{ box-sizing:border-box }
     html,body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif }
     .wrap{ max-width:1280px; margin:0 auto; padding:20px }
-
-    /* Header */
-    header{ display:grid; grid-template-columns: 220px 1fr auto; gap:16px; align-items:center; }
-    @media (max-width: 900px){ header{ grid-template-columns: 1fr } }
+    header{ display:grid; grid-template-columns: 220px 1fr auto; gap:16px; align-items:center }
+    @media (max-width: 900px){ header{ grid-template-columns:1fr } }
     .brand{ display:flex; align-items:center; gap:12px }
-    .logo{
-      width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--terra),var(--terra2));
-      color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; box-shadow:var(--shadow);
-    }
-    .title{text-align:center}
-    .title h1{ margin:0; font-size:22px }
+    .logo{ width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--terra),var(--terra2)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; box-shadow:var(--shadow) }
+    .title{text-align:center} .title h1{margin:0;font-size:22px}
     .sub{ color:var(--muted); font-size:12px; margin-top:4px }
     .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap }
     .btn{ border:1px solid var(--stroke); background:#fff; color:var(--text); border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer }
     .btn:hover{ border-color:#d9d9dd }
-
-    /* Toolbar filtri */
     .bar{ margin-top:16px; display:grid; grid-template-columns: 1.2fr 1fr auto; gap:10px }
-    @media (max-width: 900px){ .bar{ grid-template-columns: 1fr } }
-    select, input[type="search"]{
-      width:100%; border:1px solid var(--stroke); border-radius:12px; background:#fff; color:var(--text);
-      padding:10px 12px; font-size:13px;
-    }
-
-    /* Cards & sections */
-    .grid{ display:grid; gap:14px }
-    .g3{ grid-template-columns: repeat(3, 1fr) }
-    .g2{ grid-template-columns: repeat(2, 1fr) }
-    @media (max-width: 900px){ .g3, .g2{ grid-template-columns: 1fr } }
-
+    @media (max-width: 900px){ .bar{ grid-template-columns:1fr } }
+    select{ width:100%; border:1px solid var(--stroke); border-radius:12px; background:#fff; color:var(--text); padding:10px 12px; font-size:13px }
+    .grid{ display:grid; gap:14px } .g3{ grid-template-columns: repeat(3, 1fr) } .g2{ grid-template-columns: repeat(2, 1fr) }
+    @media (max-width: 900px){ .g3,.g2{ grid-template-columns:1fr } }
     .card{ background:var(--card); border:1px solid var(--stroke); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow) }
     .muted{ color:var(--muted); font-size:12px }
     .kpi{ display:flex; align-items:center; gap:12px; min-height:64px }
     .kpi-ico{ width:36px; height:36px; border-radius:10px; background:var(--chip); display:flex; align-items:center; justify-content:center; color:var(--terra); font-weight:700 }
-    .kpi-val{ font-size:26px; font-weight:700 }
-    .kpi-delta{ font-size:12px; margin-top:4px }
-
+    .kpi-val{ font-size:26px; font-weight:700 } .kpi-delta{ font-size:12px; margin-top:4px }
     canvas{ width:100%; height:340px }
-
-    /* Table */
-    table{ width:100% }
-    table.dataTable thead th{ background:#fafafa }
-    tbody tr:hover{ background:#fff7f1 }
-    .right{ text-align:right }
-
-    /* Skeleton */
+    table{ width:100% } table.dataTable thead th{ background:#fafafa } tbody tr:hover{ background:#fff7f1 }
     .sk{ position:relative; overflow:hidden; background:#f3f3f4; border-radius:8px; min-height:16px; display:inline-block }
-    .sk::after{ content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(0,0,0,.06), transparent); animation:sh 1.2s infinite }
+    .sk::after{ content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(0,0,0,.06),transparent); animation:sh 1.2s infinite }
     @keyframes sh{ 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- HEADER -->
     <header>
       <div class="brand">
         <div class="logo">CC</div>
@@ -106,108 +72,53 @@
       <div class="actions">
         <button class="btn" id="btnExcel">Esporta Excel</button>
         <button class="btn" id="btnPrint">Stampa / PDF</button>
-        <button class="btn" id="btnShare">Condividi</button>
       </div>
     </header>
 
-    <!-- FILTRI -->
     <div class="bar">
-      <select id="selAgente" title="Agente">
-        <option value="">Tutti gli agenti</option>
-      </select>
-      <select id="selProvincia" title="Provincia">
-        <option value="">Tutte le province</option>
-      </select>
+      <select id="selAgente"><option value="">Tutti gli agenti</option></select>
+      <select id="selProvincia"><option value="">Tutte le province</option></select>
       <button class="btn" id="btnReset">Reset filtri</button>
     </div>
 
-    <!-- KPI -->
     <div class="grid g3" style="margin-top:16px;">
-      <div class="card">
-        <div class="muted">Fatturato Totale</div>
-        <div class="kpi">
-          <div class="kpi-ico">€</div>
-          <div>
-            <div id="kpiFatturato" class="kpi-val sk" style="min-width:120px"></div>
-            <div id="kpiFattDelta" class="kpi-delta sk" style="min-width:60px"></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="muted">Clienti Totali</div>
-        <div class="kpi">
-          <div class="kpi-ico">👥</div>
-          <div>
-            <div id="kpiClienti" class="kpi-val sk" style="min-width:80px"></div>
-            <div class="kpi-delta muted">Fonte: blocco TOTALE</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="muted">Target raggiunto</div>
-        <div class="kpi">
-          <div class="kpi-ico">🎯</div>
-          <div>
-            <div id="kpiTarget" class="kpi-val sk" style="min-width:60px"></div>
-            <div class="kpi-delta muted">OBIETTIVI (Generale)</div>
-          </div>
-        </div>
-      </div>
+      <div class="card"><div class="muted">Fatturato Totale</div><div class="kpi"><div class="kpi-ico">€</div><div><div id="kpiFatturato" class="kpi-val sk" style="min-width:120px"></div><div id="kpiFattDelta" class="kpi-delta sk" style="min-width:60px"></div></div></div></div>
+      <div class="card"><div class="muted">Clienti Totali</div><div class="kpi"><div class="kpi-ico">👥</div><div><div id="kpiClienti" class="kpi-val sk" style="min-width:80px"></div><div class="kpi-delta muted">Fonte: blocco TOTALE</div></div></div></div>
+      <div class="card"><div class="muted">Target raggiunto</div><div class="kpi"><div class="kpi-ico">🎯</div><div><div id="kpiTarget" class="kpi-val sk" style="min-width:60px"></div><div class="kpi-delta muted">OBIETTIVI (Generale)</div></div></div></div>
     </div>
 
-    <!-- CHARTS -->
     <div class="grid g2" style="margin-top:16px;">
-      <div class="card">
-        <div class="muted" style="margin-bottom:6px;">Fatturato per Agente</div>
-        <canvas id="chartAgenti"></canvas>
-      </div>
-      <div class="card">
-        <div class="muted" style="margin-bottom:6px;">Distribuzione per Provincia</div>
-        <canvas id="chartProvince"></canvas>
-      </div>
+      <div class="card"><div class="muted" style="margin-bottom:6px;">Fatturato per Agente</div><canvas id="chartAgenti"></canvas></div>
+      <div class="card"><div class="muted" style="margin-bottom:6px;">Distribuzione per Provincia</div><canvas id="chartProvince"></canvas></div>
     </div>
 
-    <!-- TABLE -->
     <div class="card" style="margin-top:16px;">
       <div class="muted" style="margin-bottom:6px;">Vendite per Cliente</div>
       <table id="tbl" class="display">
-        <thead>
-          <tr>
-            <th>Agente</th>
-            <th>Provincia</th>
-            <th>Cliente</th>
-            <th>Fatturato (€)</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Agente</th><th>Provincia</th><th>Cliente</th><th>Fatturato (€)</th></tr></thead>
         <tbody><tr><td colspan="4" class="muted">Caricamento…</td></tr></tbody>
       </table>
     </div>
   </div>
 
   <script>
-    // ---------- Helpers ----------
     const fmtEUR = new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' });
     const fmtINT = new Intl.NumberFormat('it-IT');
     const asNum  = v => (typeof v === 'number') ? v : Number(v||0);
     const byTipo = (rows,t) => rows.filter(r => r.Tipo_Dato === t);
     const $ = s => document.querySelector(s);
 
-    function gradient(ctx){
-      const g = ctx.createLinearGradient(0,0,0,340);
-      g.addColorStop(0,'#D2691E'); g.addColorStop(1,'#CD853F'); return g;
-    }
+    function gradient(ctx){ const g=ctx.createLinearGradient(0,0,0,340); g.addColorStop(0,'#D2691E'); g.addColorStop(1,'#CD853F'); return g; }
     function unskeleton(ids){ ids.forEach(id => { const el=$(id); if(el) el.classList.remove('sk'); }); }
 
-    // ---------- State ----------
     const state = { all: [], rows: [], agente:'', provincia:'' };
     let CH_A=null, CH_P=null, DT=null;
 
-    // ---------- Init ----------
-    init().catch(err => { console.error(err); alert('Errore: '+err.message); });
+    init().catch(e=>{ console.error(e); alert('Errore: '+e.message); });
 
     async function init(){
       const res = await fetch('/data', { cache:'no-store' });
-      if (!res.ok) throw new Error('Fetch /data failed');
+      if(!res.ok) throw new Error('Fetch /data failed');
       const data = await res.json();
 
       $('#updated').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
@@ -216,32 +127,24 @@
       state.all = data.rows || [];
       state.rows = state.all.slice();
 
-      // Popola filtri
       const agenti = [...new Set(state.all.map(r => r.Agente_Nome || r.Agente_Codice || '—'))].filter(Boolean).sort();
       const province = [...new Set(state.all.map(r => r.Provincia).filter(Boolean))].sort();
 
       const selA = $('#selAgente'), selP = $('#selProvincia');
-      agenti.forEach(a => { const o=document.createElement('option'); o.value=a; o.textContent=a; selA.appendChild(o); });
-      province.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; selP.appendChild(o); });
+      agenti.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; selA.appendChild(o); });
+      province.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; selP.appendChild(o); });
 
-      // Handlers
       selA.addEventListener('change', ()=>{ state.agente=selA.value; apply(); });
       selP.addEventListener('change', ()=>{ state.provincia=selP.value; apply(); });
       $('#btnReset').addEventListener('click', ()=>{ state.agente=''; state.provincia=''; selA.value=''; selP.value=''; apply(); });
 
-      // Azioni
       $('#btnPrint').addEventListener('click', ()=>window.print());
-      $('#btnShare').addEventListener('click', async ()=>{
-        try{ await navigator.clipboard.writeText(location.href); alert('Link copiato'); }
-        catch{ prompt('Copia il link:', location.href); }
-      });
       $('#btnExcel').addEventListener('click', ()=>{
         const ws = XLSX.utils.json_to_sheet(state.rows);
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dati');
         XLSX.writeFile(wb, 'dashboard-cotto-cusimano.xlsx');
       });
 
-      // Primo render
       renderAll();
     }
 
@@ -253,13 +156,8 @@
       renderAll();
     }
 
-    // ---------- Render ----------
-    function renderAll(){
-      renderKPIs(state.rows);
-      renderCharts(state.rows);
-      renderTable(state.rows);
-      unskeleton(['#kpiFatturato','#kpiFattDelta','#kpiClienti','#kpiTarget']);
-    }
+    function renderAll(){ renderKPIs(state.rows); renderCharts(state.rows); renderTable(state.rows);
+      unskeleton(['#kpiFatturato','#kpiFattDelta','#kpiClienti','#kpiTarget']); }
 
     function renderKPIs(rows){
       const tot = byTipo(rows,'TOTALE');
@@ -279,7 +177,6 @@
     }
 
     function renderCharts(rows){
-      // per Agente (somma Fatturato su VENDITE_CLIENTE)
       const byAgent = {};
       rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
         const a = r.Agente_Nome || r.Agente_Codice || '—';
@@ -300,7 +197,6 @@
         }
       });
 
-      // per Provincia (somma Fatturato su VENDITE_CLIENTE)
       const byProv = {};
       rows.filter(r=>r.Tipo_Dato==='VENDITE_CLIENTE').forEach(r=>{
         const p = r.Provincia || '—';
