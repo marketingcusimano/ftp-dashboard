@@ -19,10 +19,10 @@ const PORT = process.env.PORT || 3000;
 const FTP_HOST = process.env.FTP_HOST;          // es: "ftp.dominosoluzioni.com"
 const FTP_USER = process.env.FTP_USER;          // es: "cusimano"
 const FTP_PASS = process.env.FTP_PASS;          // es: "PraService25!"
-const FTP_PATH = process.env.FTP_PATH || "/generalb2b_flat.csv";  // file flat normalizzato
+const FTP_PATH = process.env.FTP_PATH || "/generalb2b.csv";  // file flat normalizzato
 
 // In alternativa (per debug locali) puoi usare un file fisico
-const LOCAL_FILE = process.env.LOCAL_FILE || "";  // es: "./generalb2b_flat.csv"
+const LOCAL_FILE = process.env.LOCAL_FILE || "";  // es: "./generalb2b.csv"
 
 // CORS: CORS=true per permettere qualsiasi origine; oppure CORS_ORIGIN con lista domini separati da virgola
 const CORS = process.env.CORS || "false";
@@ -78,7 +78,7 @@ async function fetchRawCSV() {
       // fallback: leggi in memoria usando downloadTo con file temporaneo
       try {
         const os = require('os'); const fs = require('fs');
-        const tmp = path.join(os.tmpdir(), 'generalb2b_flat.csv');
+        const tmp = path.join(os.tmpdir(), 'generalb2b.csv');
         const client2 = new ftp.Client(30_000);
         await client2.access({ host: FTP_HOST, user: FTP_USER, password: FTP_PASS, secure: false });
         await client2.downloadTo(tmp, FTP_PATH);
