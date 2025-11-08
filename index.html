@@ -1,665 +1,91 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dashboard B2B Analytics Pro</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard B2B • Demo</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    
-    * { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      box-sizing: border-box;
+    :root { color-scheme: light dark; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; background: white; }
+    .muted { color: #6b7280; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    h2 { font-size: 16px; margin: 12px 0; }
+    .kpi { font-size: 28px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0b1320; color: #e5e7eb; }
+      .card { background: #0f172a; border-color: #1e293b; }
+      table th, table td { border-color: #1e293b; }
+      .muted { color: #94a3b8; }
     }
-
-    body {
-      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-      min-height: 100vh;
-    }
-
-    /* Glassmorphism effect */
-    .glass {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-    }
-
-    .glass-hover {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .glass-hover:hover {
-      background: rgba(30, 41, 59, 0.8);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.3);
-    }
-
-    /* KPI Cards con gradients */
-    .kpi-card {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .kpi-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
-      opacity: 0;
-      transition: opacity 0.4s;
-    }
-
-    .kpi-card:hover::before {
-      opacity: 1;
-    }
-
-    .kpi-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 60px rgba(59, 130, 246, 0.4);
-    }
-
-    /* Gradient text */
-    .gradient-text {
-      background: linear-gradient(135deg, #3b82f6 0%, #10b981 50%, #8b5cf6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 6s ease infinite;
-      background-size: 200% 200%;
-    }
-
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    /* Animated underline */
-    .animated-underline {
-      position: relative;
-      display: inline-block;
-    }
-
-    .animated-underline::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 0;
-      width: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #3b82f6, #10b981);
-      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 2px;
-    }
-
-    .animated-underline:hover::after {
-      width: 100%;
-    }
-
-    /* Button styles */
-    .btn {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s;
-    }
-
-    .btn::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    .btn:hover::before {
-      width: 300px;
-      height: 300px;
-    }
-
-    .btn:active {
-      transform: scale(0.95);
-    }
-
-    /* Table styles */
-    table {
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-      z-index: 10;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.1em;
-      padding: 1rem;
-      border-bottom: 2px solid #3b82f6;
-    }
-
-    tbody tr {
-      transition: all 0.2s;
-      border-bottom: 1px solid rgba(71, 85, 105, 0.3);
-    }
-
-    tbody tr:hover {
-      background: rgba(59, 130, 246, 0.1);
-      transform: scale(1.01);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-    }
-
-    td {
-      padding: 0.875rem 1rem;
-      white-space: nowrap;
-    }
-
-    /* Chart container */
-    .chart-wrapper {
-      position: relative;
-      height: 350px;
-      padding: 1rem;
-    }
-
-    /* Loading animation */
-    .loading-spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(59, 130, 246, 0.3);
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Pulse animation */
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-
-    .pulse {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    /* Badge styles */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      padding: 0.375rem 0.875rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.025em;
-    }
-
-    .badge-success {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
-      color: #10b981;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .badge-warning {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
-      color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .badge-danger {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    /* Icon animation */
-    .icon-bounce {
-      animation: bounce 2s infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
-    /* Select custom style */
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.75rem center;
-      background-size: 1.25rem;
-      padding-right: 2.5rem;
-    }
-
-    /* Scrollbar custom */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(30, 41, 59, 0.5);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #3b82f6, #10b981);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(135deg, #2563eb, #059669);
-    }
-
-    /* Section title decoration */
-    .section-title {
-      position: relative;
-      display: inline-block;
-      padding-bottom: 0.5rem;
-    }
-
-    .section-title::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 60%;
-      height: 3px;
-      background: linear-gradient(90deg, #3b82f6, transparent);
-      border-radius: 2px;
-    }
-
-    /* Fade in animation */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .fade-in {
-      animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-
-    /* Staggered animation */
-    .stagger-1 { animation-delay: 0.1s; }
-    .stagger-2 { animation-delay: 0.2s; }
-    .stagger-3 { animation-delay: 0.3s; }
-    .stagger-4 { animation-delay: 0.4s; }
   </style>
 </head>
+<body>
+  <div class="wrap">
+    <h1>Dashboard B2B • Demo</h1>
+    <div class="muted" id="meta">Caricamento…</div>
 
-<body class="text-gray-100">
-  
-  <!-- Background decoration -->
-  <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden;">
-    <div style="position: absolute; top: -50%; right: -20%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%); border-radius: 50%;"></div>
-    <div style="position: absolute; bottom: -30%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%); border-radius: 50%;"></div>
+    <div class="row">
+      <div class="card"><div class="muted">Fatturato Totale</div><div class="kpi" id="fatturato">—</div></div>
+      <div class="card"><div class="muted">Clienti Totali</div><div class="kpi" id="clienti">—</div></div>
+      <div class="card"><div class="muted">Ultimo aggiornamento</div><div class="kpi" id="updatedAt">—</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Vendite per Cliente (top 15)</h2>
+      <table id="tbl">
+        <thead><tr><th>Provincia</th><th>Cliente</th><th>Fatturato</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
-  <main class="max-w-7xl mx-auto p-4 md:p-8 relative z-10">
-    
-    <!-- Header -->
-    <header class="glass rounded-3xl p-6 md:p-8 mb-8 fade-in">
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <h1 class="text-4xl md:text-5xl font-extrabold gradient-text mb-2 animated-underline">
-            Dashboard B2B Analytics
-          </h1>
-          <p class="text-sm text-gray-400 flex items-center gap-2">
-            <span class="pulse inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-            Sistema di analisi commerciale in tempo reale
-          </p>
-        </div>
-        
-        <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
-          <select id="agent" class="glass px-4 py-3 rounded-xl text-sm font-medium text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all min-w-[200px]">
-            <option value="">Tutti gli agenti</option>
-          </select>
-          
-          <button id="refresh" class="btn glass-hover px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg">
-            <span class="relative z-10 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              Aggiorna
-            </span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- KPIs -->
-    <section id="kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></section>
-
-    <!-- Sections -->
-    <section id="sections" class="grid gap-8"></section>
-
-  </main>
-
   <script>
-    let RAW = [], CURRENT_AGENT = null, chartRefs = {};
+    const nfmt = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
 
-    const el = id => document.getElementById(id);
-    
-    const fmt = (n, decimals = 2) => {
-      if (n == null || isNaN(n)) return '—';
-      return Number(n).toLocaleString('it-IT', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: decimals
-      });
-    };
+    async function load() {
+      const res = await fetch('/data');
+      if (!res.ok) throw new Error('Fetch /data failed');
+      const data = await res.json();
 
-    const fmtCurrency = n => {
-      if (n == null || isNaN(n)) return '—';
-      return '€ ' + Number(n).toLocaleString('it-IT', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    };
+      document.getElementById('meta').textContent =
+        `Delimitatore: ${data.delimiter} • Righe: ${data.rowCount}`;
 
-    const fmtPercent = n => {
-      if (n == null || isNaN(n)) return '—';
-      return Number(n).toLocaleString('it-IT', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-      }) + '%';
-    };
+      // KPI finali (TOTALE)
+      const tot = data.rows.filter(r => r.Tipo_Dato === 'TOTALE');
+      const fatt = tot.find(r => r.Descrizione === 'Fatturato_Totale');
+      const cli  = tot.find(r => r.Descrizione === 'Clienti_Totale');
+      document.getElementById('fatturato').textContent = fatt ? nfmt.format(fatt.Valore || 0) : '—';
+      document.getElementById('clienti').textContent   = cli ? (cli.Valore ?? '—') : '—';
+      document.getElementById('updatedAt').textContent = new Date(data.updatedAt).toLocaleString('it-IT');
 
-    async function loadData() {
-      try {
-        const res = await fetch('/data', {cache: 'no-store'});
-        const data = await res.json();
-        RAW = data.rows || [];
-        buildAgentSelect();
-        el('agent').dispatchEvent(new Event('change'));
-      } catch (error) {
-        console.error('Errore caricamento:', error);
-      }
-    }
+      // Tabella vendite per cliente
+      const vendite = data.rows
+        .filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE')
+        .sort((a,b) => (b.Fatturato||0) - (a.Fatturato||0))
+        .slice(0, 15);
 
-    function buildAgentSelect() {
-      const agents = [...new Map(RAW.map(r => [r.Agente_Codice, r.Agente_Nome]))];
-      el('agent').innerHTML = '<option value="">Tutti gli agenti (' + RAW.length + ' record)</option>' +
-        agents.map(([cod, nome]) => `<option value="${cod}">${nome || cod}</option>`).join('');
-    }
-
-    function groupBy(arr, key) {
-      return arr.reduce((acc, r) => {
-        const k = r[key] || 'Generale';
-        (acc[k] = acc[k] || []).push(r);
-        return acc;
-      }, {});
-    }
-
-    function sum(rows, keys) {
-      return rows.reduce((acc,r)=>{
-        for (const k of keys) if (r[k] && !isNaN(r[k])) return acc + parseFloat(r[k]);
-        return acc;
-      },0);
-    }
-
-    function avg(rows, keys) {
-      const vals = [];
-      for (const r of rows) {
-        for (const k of keys) if (r[k] && !isNaN(r[k])) vals.push(parseFloat(r[k]));
-      }
-      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
-    }
-
-    function getPercentageBadge(perc) {
-      if (perc == null) return '';
-      if (perc >= 80) return '<span class="badge badge-success">🎯 Eccellente</span>';
-      if (perc >= 50) return '<span class="badge badge-warning">⚡ Buono</span>';
-      return '<span class="badge badge-danger">📊 Da migliorare</span>';
-    }
-
-    function drawKPI(agentRows) {
-      const container = el('kpis');
-      const fatturato = sum(agentRows, ['Fatturato','Importo_Totale','Importo','Anno_Corrente']);
-      const clienti = sum(agentRows, ['Clienti_Serviti','Clienti_Totale','Clienti_Anno_Corrente']);
-      const perc = avg(agentRows, ['Percentuale_Obiettivo','Percentuale_Obiettivo_Clienti']);
-      const periodo = (agentRows.find(r => r.Periodo) || {}).Periodo || 'N/D';
-
-      const cards = [
-        {
-          label:'Fatturato Totale', 
-          val: fmtCurrency(fatturato),
-          icon: '💰',
-          gradient: 'from-blue-500 to-blue-600',
-          delay: 'stagger-1'
-        },
-        {
-          label:'Clienti Serviti', 
-          val: fmt(clienti, 0),
-          icon: '👥',
-          gradient: 'from-green-500 to-green-600',
-          delay: 'stagger-2'
-        },
-        {
-          label:'Media % Obiettivo', 
-          val: fmtPercent(perc),
-          icon: '🎯',
-          gradient: 'from-purple-500 to-purple-600',
-          badge: getPercentageBadge(perc),
-          delay: 'stagger-3'
-        },
-        {
-          label:'Periodo', 
-          val: periodo,
-          icon: '📅',
-          gradient: 'from-orange-500 to-orange-600',
-          delay: 'stagger-4'
-        }
-      ];
-
-      container.innerHTML = cards.map(c => `
-        <div class="kpi-card glass glass-hover rounded-2xl p-6 fade-in ${c.delay}">
-          <div class="flex items-start justify-between mb-4">
-            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">${c.label}</div>
-            <div class="text-4xl icon-bounce">${c.icon}</div>
-          </div>
-          <div class="text-3xl font-extrabold bg-gradient-to-r ${c.gradient} bg-clip-text text-transparent mb-2">
-            ${c.val}
-          </div>
-          ${c.badge ? `<div class="mt-3">${c.badge}</div>` : ''}
-        </div>
-      `).join('');
-    }
-
-    function buildSections(agentRows) {
-      const bySection = groupBy(agentRows, '__Sezione');
-      const container = el('sections');
-      container.innerHTML = '';
-
-      for (const [sec, rows] of Object.entries(bySection)) {
-        const block = document.createElement('div');
-        block.className = "glass rounded-3xl p-8 fade-in";
-        block.innerHTML = `
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="section-title text-2xl font-bold">${sec}</h2>
-            <span class="badge badge-success">${rows.length} record</span>
-          </div>
-          
-          <div class="grid lg:grid-cols-2 gap-8">
-            <div class="chart-wrapper glass rounded-2xl">
-              <canvas id="chart_${sec.replace(/\s+/g, '_')}"></canvas>
-            </div>
-            <div class="overflow-auto glass rounded-2xl" style="max-height: 450px;">
-              <table class="w-full text-sm">
-                <thead></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        `;
-        container.appendChild(block);
-
-        drawTable(block.querySelector('table'), rows);
-        drawChart(block.querySelector('canvas').id, sec, rows);
-      }
-    }
-
-    function drawTable(tbl, rows) {
-      if (!rows.length) {
-        tbl.querySelector('thead').innerHTML = '<tr><th class="px-4 py-3 text-gray-400">Nessun dato</th></tr>';
-        return;
-      }
-      const cols = Object.keys(rows[0]).filter(k => !k.startsWith('__'));
-      const head = '<tr>' + cols.map(c=>`<th class="px-4 py-4 text-gray-300">${c.replace(/_/g, ' ')}</th>`).join('') + '</tr>';
-      const body = rows.slice(0,30).map(r=>
-        '<tr>'+
-        cols.map(c=>{
-          let val = r[c];
-          let formatted = val;
-          if (typeof val === 'number') {
-            if (c.toLowerCase().includes('percentuale')) {
-              formatted = fmtPercent(val);
-            } else if (c.toLowerCase().includes('fatturato') || c.toLowerCase().includes('importo')) {
-              formatted = fmtCurrency(val);
-            } else {
-              formatted = fmt(val);
-            }
-          } else {
-            formatted = val || '—';
-          }
-          return `<td class="px-4 py-3 text-gray-200">${formatted}</td>`;
-        }).join('')+
-        '</tr>'
-      ).join('');
-      tbl.querySelector('thead').innerHTML = head;
-      tbl.querySelector('tbody').innerHTML = body;
-    }
-
-    function drawChart(id, section, rows) {
-      const ctx = document.getElementById(id);
-      if (!ctx) return;
-      if (chartRefs[id]) chartRefs[id].destroy();
-
-      let labels = [], data = [], type = 'bar', label = 'Valore';
-      const gradientColors = [
-        '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', 
-        '#ec4899', '#14b8a6', '#f97316', '#06b6d4'
-      ];
-
-      if (/OBIETTIVI/i.test(section)) {
-        const group = groupBy(rows,'Provincia');
-        labels = Object.keys(group).slice(0, 10);
-        data = labels.map(p => sum(group[p], ['Anno_Corrente']));
-        label = 'Anno Corrente';
-      } else if (/CLIENTI/i.test(section)) {
-        const group = groupBy(rows,'Provincia');
-        labels = Object.keys(group).slice(0, 10);
-        data = labels.map(p => sum(group[p], ['Fatturato','Clienti_Serviti']));
-        label = 'Fatturato';
-      } else if (/VENDITE/i.test(section)) {
-        const top = rows.sort((a,b)=>(b.Fatturato||0) - (a.Fatturato||0)).slice(0,10);
-        labels = top.map(r=>r.Ragione_Sociale_Cliente);
-        data = top.map(r=>r.Fatturato);
-        label = 'Fatturato';
-      } else if (/CATEGORIA/i.test(section)) {
-        const group = groupBy(rows,'Categoria');
-        labels = Object.keys(group).slice(0, 8);
-        data = labels.map(c => sum(group[c], ['Importo_Totale']));
-        label = 'Importo';
-        type = 'doughnut';
-      } else if (/RIPARTIZIONE/i.test(section)) {
-        labels = rows.map(r=>r.Categoria_Prodotto).slice(0, 8);
-        data = rows.map(r=>r.Percentuale || r.Importo).slice(0, 8);
-        label = '%';
-        type = 'doughnut';
-      } else if (/RIEPILOGHI/i.test(section) || /TOTALE/i.test(section)) {
-        const val = sum(rows, ['Valore','Fatturato_Totale']);
-        labels = ['Totale'];
-        data = [val];
-        label = 'Totale';
-      }
-
-      chartRefs[id] = new Chart(ctx, {
-        type,
-        data: { 
-          labels, 
-          datasets: [{ 
-            label, 
-            data, 
-            backgroundColor: type === 'doughnut' ? gradientColors : '#3b82f6',
-            borderWidth: 0,
-            borderRadius: 8,
-            hoverBackgroundColor: type === 'doughnut' ? gradientColors.map(c => c + 'dd') : '#2563eb'
-          }] 
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { 
-            legend: { 
-              display: type === 'doughnut',
-              position: 'bottom',
-              labels: { 
-                color: '#f1f5f9',
-                padding: 20,
-                font: { size: 12, weight: '600' },
-                usePointStyle: true
-              } 
-            },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#f1f5f9',
-              bodyColor: '#94a3b8',
-              borderColor: '#3b82f6',
-              borderWidth: 1,
-              padding: 12,
-              displayColors: true,
-              cornerRadius: 8
-            }
-          },
-          scales: type==='doughnut' ? {} : {
-            x: {
-              ticks: { color: '#94a3b8', font: { size: 11 } },
-              grid: { color: 'rgba(71, 85, 105, 0.3)', drawBorder: false }
-            },
-            y: {
-              ticks: { color: '#94a3b8', font: { size: 11 } },
-              grid: { color: 'rgba(71, 85, 105, 0.3)', drawBorder: false }
-            }
-          }
-        }
+      const tbody = document.querySelector('#tbl tbody');
+      tbody.innerHTML = '';
+      vendite.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.Provincia ?? ''}</td>
+                        <td>${r.Ragione_Sociale_Cliente ?? ''}</td>
+                        <td style="text-align:right">${r.Fatturato != null ? nfmt.format(r.Fatturato) : ''}</td>`;
+        tbody.appendChild(tr);
       });
     }
 
-    el('refresh').addEventListener('click', loadData);
-    el('agent').addEventListener('change', e => {
-      const code = e.target.value;
-      CURRENT_AGENT = code || null;
-      const rows = code ? RAW.filter(r=>r.Agente_Codice===code) : RAW;
-      drawKPI(rows);
-      buildSections(rows);
+    load().catch(err => {
+      document.getElementById('meta').textContent = 'Errore: ' + err.message;
+      console.error(err);
     });
-
-    loadData();
   </script>
 </body>
 </html>
