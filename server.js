@@ -45,48 +45,222 @@ const schemas = {
     { cols: ['Tipo_Dato','Descrizione','Valore'] },
 };
 
-function parseSmart(rawText){
-  const lines = cleanLines(rawText);
-  const hasTSVHeaders = lines.some(l => schemas[l]);
-  if (!hasTSVHeaders) {
-    const first = (rawText.replace(/^\uFEFF/,'').split(/\r?\n/).find(x => x.trim() && !/^#{1,2}\s/.test(x))) || '';
-    const candidates = [',',';','\t','|'];
-    let best = ',', bestCount = 0;
-    for (const d of candidates) {
-      const count = (first.match(new RegExp(`\\${d}(?=(?:[^"]*"[^"]*")*[^"]*$)`, 'g')) || []).length;
-      if (count > bestCount) { best = d; bestCount = count; }
+function parseSmart(rawText) {
+  const text = rawText.replace(/^\uFEFF/, '');
+  const all = parse(text, {
+    delimiter: '\t',
+    relax_column_count: true,
+    skip_empty_lines: true,
+    bom: true,
+    trim: true,
+    columns: false
+  }).filter(arr => {
+    const line = (arr.join('\t') || '').trim();
+    return line && !/^#{1,2}\s/.test(line);
+  });
+
+  const isTipo = v => ['OBIETTIVI','CLIENTI_PROVINCIA','VENDITE_CLIENTE','CATEGORIA_RIEPILOGO','RIPARTIZIONE','TOTALE'].includes(v);
+  const out = [];
+
+  for (let arr of all) {
+    const tipo = (arr[0] || '').trim();
+    if (!isTipo(tipo)) continue;
+
+    if (tipo === 'OBIETTIVI') {
+      out.push({
+        Tipo_Dato: 'OBIETTIVI',
+        Provincia: arr[1] ?? null,
+        Anno_Precedente: ITnum(arr[2]),
+        Anno_Corrente: ITnum(arr[3]),
+        Obiettivo: ITnum(arr[4]),
+        Percentuale_Obiettivo: ITnum(arr[5]),
+        Clienti_Anno_Precedente: ITnum(arr[6]),
+        Clienti_Anno_Corrente: ITnum(arr[7]),
+        Obiettivo_Clienti: ITnum(arr[8]),
+        Percentuale_Obiettivo_Clienti: ITnum(arr[9])
+      });
+      continue;
     }
-    const records = parse(rawText, {
-      delimiter: best, relax_quotes: true, relax_column_count: true,
-      skip_empty_lines: true, bom: true, columns: true, trim: true
-    }).map(o => Object.fromEntries(Object.entries(o).map(([k,v]) => [k, ITnum(v)])));
-    const columns = Object.keys(records[0] || []);
-    return { columns, rows: records, rowCount: records.length, delimiter: best };
+
+    if (tipo === 'CLIENTI_PROVINCIA') {
+      out.push({
+        Tipo_Dato: 'CLIENTI_PROVINCIA',
+        Provincia: arr[1] ?? null,
+        Clienti_Serviti: ITnum(arr[2]),
+        Fatturato: ITnum(arr[3])
+      });
+      continue;
+    }
+
+    if (tipo === 'VENDITE_CLIENTE') {
+      let provincia = arr[1] ?? null;
+      let fatt = arr[arr.length - 1];
+      let nome = arr.slice(2, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'VENDITE_CLIENTE',
+        Provincia: provincia,
+        Ragione_Sociale_Cliente: nome,
+        Fatturato: ITnum(fatt)
+      });
+      continue;
+    }
+
+    if (tipo === 'CATEGORIA_RIEPILOGO') {
+      let importo = arr[arr.length - 1];
+      let categoria = arr.slice(1, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'CATEGORIA_RIEPILOGO',
+        Categoria: categoria || null,
+        Importo_Totale: ITnum(importo)
+      });
+      continue;
+    }
+
+    if (tipo === 'RIPARTIZIONE') {
+      const percent = arr[arr.length - 1];
+      const importo = arr[arr.length - 2];
+      const cat = arr.slice(1, arr.length - 2).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'RIPARTIZIONE',
+        Categoria_Prodotto: cat || null,
+        Importo: ITnum(importo),
+        Percentuale: ITnum(percent)
+      });
+      continue;
+    }
+
+    if (tipo === 'TOTALE') {
+      const valore = arr[arr.length - 1];
+      const descr = arr.slice(1, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'TOTALE',
+        Descrizione: descr || null,
+        Valore: ITnum(valore)
+      });
+      continue;
+    }
   }
 
-  const blocks = [];
-  let i=0;
-  while(i<lines.length){
-    const header = lines[i++]; if(!schemas[header]) continue;
-    const { cols } = schemas[header];
-    const rows=[]; while(i<lines.length && !schemas[lines[i]]) rows.push(lines[i++]);
+  const columns = Array.from(out.reduce((set, r) => {
+    Object.keys(r).forEach(k => set.add(k));
+    return set;
+  }, new Set()));
 
-    const parsed = parse(rows.join('\n'), {
-      delimiter:'\t', relax_column_count:true, skip_empty_lines:true
-    }).map(arr=>{
-      if (arr.length>cols.length){
-        if (cols.includes('Ragione_Sociale_Cliente'))
-          arr=[arr[0],arr[1],arr.slice(2,arr.length-1).join(' '),arr[arr.length-1]];
-        else if (cols.includes('Categoria'))
-          arr=[arr[0],arr.slice(1,arr.length-1).join(' '),arr[arr.length-1]];
-      }
-      const o={}; cols.forEach((k,idx)=>o[k]=ITnum(arr[idx])); return o;
-    });
-    blocks.push({ cols, rows: parsed });
+  return {
+    delimiter: '\\t',
+    columns,
+    rowCount: out.length,
+    rows: out
+  };
+}
+
+function parseSmart(rawText) {
+  const text = rawText.replace(/^\uFEFF/, '');
+  const all = parse(text, {
+    delimiter: '\t',
+    relax_column_count: true,
+    skip_empty_lines: true,
+    bom: true,
+    trim: true,
+    columns: false
+  }).filter(arr => {
+    const line = (arr.join('\t') || '').trim();
+    return line && !/^#{1,2}\s/.test(line);
+  });
+
+  const isTipo = v => ['OBIETTIVI','CLIENTI_PROVINCIA','VENDITE_CLIENTE','CATEGORIA_RIEPILOGO','RIPARTIZIONE','TOTALE'].includes(v);
+  const out = [];
+
+  for (let arr of all) {
+    const tipo = (arr[0] || '').trim();
+    if (!isTipo(tipo)) continue;
+
+    if (tipo === 'OBIETTIVI') {
+      out.push({
+        Tipo_Dato: 'OBIETTIVI',
+        Provincia: arr[1] ?? null,
+        Anno_Precedente: ITnum(arr[2]),
+        Anno_Corrente: ITnum(arr[3]),
+        Obiettivo: ITnum(arr[4]),
+        Percentuale_Obiettivo: ITnum(arr[5]),
+        Clienti_Anno_Precedente: ITnum(arr[6]),
+        Clienti_Anno_Corrente: ITnum(arr[7]),
+        Obiettivo_Clienti: ITnum(arr[8]),
+        Percentuale_Obiettivo_Clienti: ITnum(arr[9])
+      });
+      continue;
+    }
+
+    if (tipo === 'CLIENTI_PROVINCIA') {
+      out.push({
+        Tipo_Dato: 'CLIENTI_PROVINCIA',
+        Provincia: arr[1] ?? null,
+        Clienti_Serviti: ITnum(arr[2]),
+        Fatturato: ITnum(arr[3])
+      });
+      continue;
+    }
+
+    if (tipo === 'VENDITE_CLIENTE') {
+      let provincia = arr[1] ?? null;
+      let fatt = arr[arr.length - 1];
+      let nome = arr.slice(2, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'VENDITE_CLIENTE',
+        Provincia: provincia,
+        Ragione_Sociale_Cliente: nome,
+        Fatturato: ITnum(fatt)
+      });
+      continue;
+    }
+
+    if (tipo === 'CATEGORIA_RIEPILOGO') {
+      let importo = arr[arr.length - 1];
+      let categoria = arr.slice(1, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'CATEGORIA_RIEPILOGO',
+        Categoria: categoria || null,
+        Importo_Totale: ITnum(importo)
+      });
+      continue;
+    }
+
+    if (tipo === 'RIPARTIZIONE') {
+      const percent = arr[arr.length - 1];
+      const importo = arr[arr.length - 2];
+      const cat = arr.slice(1, arr.length - 2).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'RIPARTIZIONE',
+        Categoria_Prodotto: cat || null,
+        Importo: ITnum(importo),
+        Percentuale: ITnum(percent)
+      });
+      continue;
+    }
+
+    if (tipo === 'TOTALE') {
+      const valore = arr[arr.length - 1];
+      const descr = arr.slice(1, arr.length - 1).join(' ').replace(/\s+/g, ' ').trim();
+      out.push({
+        Tipo_Dato: 'TOTALE',
+        Descrizione: descr || null,
+        Valore: ITnum(valore)
+      });
+      continue;
+    }
   }
-  const allRows = blocks.flatMap(b=>b.rows);
-  const columns = [...new Set(blocks.flatMap(b=>b.cols))];
-  return { columns, rows: allRows, rowCount: allRows.length, delimiter: '\\t' };
+
+  const columns = Array.from(out.reduce((set, r) => {
+    Object.keys(r).forEach(k => set.add(k));
+    return set;
+  }, new Set()));
+
+  return {
+    delimiter: '\\t',
+    columns,
+    rowCount: out.length,
+    rows: out
+  };
 }
 
 async function downloadFromFtpAsText(){
