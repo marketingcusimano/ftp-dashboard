@@ -44,9 +44,11 @@
   </style>
 </head>
 <body>
+  <noscript>Attiva JavaScript per visualizzare la dashboard.</noscript>
   <div id="root"></div>
 
-  <script type="text/babel">
+  <!-- IMPORTANT: add data-presets so Babel compiles JSX -->
+  <script type="text/babel" data-presets="env,react">
     const { useMemo, useState } = React;
     const {
       ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -446,9 +448,9 @@
           </div>
 
           <div className="mt-6 flex flex-wrap gap-2">
-            <button className={\`tab-btn \${tab==='panoramica'?'tab-btn-active':''}\`} onClick={()=>setTab('panoramica')}>Panoramica Generale</button>
-            <button className={\`tab-btn \${tab==='regioni'?'tab-btn-active':''}\`} onClick={()=>setTab('regioni')}>Regioni</button>
-            <button className={\`tab-btn \${tab==='agenti'?'tab-btn-active':''}\`} onClick={()=>setTab('agenti')}>Agenti</button>
+            <button className={`tab-btn ${tab==='panoramica'?'tab-btn-active':''}`} onClick={()=>setTab('panoramica')}>Panoramica Generale</button>
+            <button className={`tab-btn ${tab==='regioni'?'tab-btn-active':''}`} onClick={()=>setTab('regioni')}>Regioni</button>
+            <button className={`tab-btn ${tab==='agenti'?'tab-btn-active':''}`} onClick={()=>setTab('agenti')}>Agenti</button>
           </div>
 
           <div className="mt-6">
