@@ -21,22 +21,17 @@
   <style>
     :root {
       /* Brand Palette */
-      --primary: #D2691E;       /* Terra Cotto */
+      --primary: #D2691E;       
       --primary-light: #fdf3eb; 
       --primary-dark: #8B4513;
       
       /* Neutral Palette */
-      --bg-body: #f8f9fa;       /* Grigio chiarissimo quasi bianco */
+      --bg-body: #f8f9fa;       
       --bg-card: #ffffff;
-      --text-main: #1f2937;     /* Nero morbido */
-      --text-muted: #6b7280;    /* Grigio testo */
+      --text-main: #1f2937;     
+      --text-muted: #6b7280;    
       --border: #edf2f7;
       
-      /* Accents */
-      --success: #10b981; 
-      --danger: #ef4444;
-      --info: #3b82f6;
-
       /* Effects */
       --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
       --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
@@ -51,7 +46,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Animazione ingresso */
     .animate-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; transform: translateY(10px); }
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
@@ -83,8 +77,7 @@
       background: var(--bg-card); border: 1px solid #e5e7eb;
       padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
       color: var(--text-main); cursor: pointer; min-width: 180px;
-      transition: all 0.2s;
-      box-shadow: var(--shadow-card);
+      transition: all 0.2s; box-shadow: var(--shadow-card);
     }
     select:hover, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.1); }
     
@@ -92,8 +85,7 @@
       background: var(--bg-card); border: 1px solid #e5e7eb;
       padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
       cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
-      transition: all 0.2s; color: var(--text-main);
-      box-shadow: var(--shadow-card);
+      transition: all 0.2s; color: var(--text-main); box-shadow: var(--shadow-card);
     }
     .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); }
     .btn-primary { background: var(--primary); color: white; border: none; }
@@ -106,8 +98,6 @@
       transition: all 0.3s ease; position: relative; overflow: hidden;
     }
     .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
-    
-    /* Decorazione laterale Card */
     .card-accent::before {
       content: ""; position: absolute; left: 0; top: 20px; bottom: 20px;
       width: 4px; background: var(--primary); border-radius: 0 4px 4px 0;
@@ -115,13 +105,11 @@
 
     /* --- GRIDS --- */
     .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px; }
-    /* Heatmap riga intera */
-    .grid-full { margin-bottom: 24px; } 
     .grid-split { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; }
     .grid-split-rev { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px; }
     @media (max-width: 1024px) { .grid-split, .grid-split-rev { grid-template-columns: 1fr; } }
 
-    /* --- KPI TYPOGRAPHY --- */
+    /* --- TYPOGRAPHY --- */
     .kpi-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
     .kpi-icon { 
@@ -132,7 +120,6 @@
     .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; color: var(--text-main); letter-spacing: -1px; }
     .kpi-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
-    /* --- CHART HEADERS --- */
     .chart-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
     .chart-title { font-size: 16px; font-weight: 700; margin: 0; }
     .chart-ico { color: var(--primary); font-size: 18px; }
@@ -146,11 +133,9 @@
     }
     table.dataTable tbody td { padding: 16px; border-bottom: 1px solid #f3f4f6; font-size: 13px; vertical-align: middle; }
     table.dataTable tbody tr:hover { background-color: #fdf8f5 !important; transition: background 0.2s; }
-    
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #edf2f7; color: #4a5568; border: 1px solid #e2e8f0; }
     .money { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--primary-dark); }
 
-    /* --- LOADING --- */
     #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
     .spinner { width: 50px; height: 50px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -227,17 +212,7 @@
       </div>
     </div>
 
-    <div class="grid-full animate-in" style="animation-delay: 0.2s">
-      <div class="card">
-        <div class="chart-header">
-          <i class="ri-fire-fill chart-ico" style="color:#ef4444"></i>
-          <h3 class="chart-title">Matrice Copertura (Heatmap Agenti/Province)</h3>
-        </div>
-        <div id="chartHeatmap"></div>
-      </div>
-    </div>
-
-    <div class="grid-split animate-in" style="animation-delay: 0.3s">
+    <div class="grid-split animate-in" style="animation-delay: 0.2s">
       <div class="card">
         <div class="chart-header">
           <i class="ri-bar-chart-box-fill chart-ico"></i>
@@ -254,7 +229,7 @@
       </div>
     </div>
 
-    <div class="grid-split-rev animate-in" style="animation-delay: 0.4s">
+    <div class="grid-split-rev animate-in" style="animation-delay: 0.3s">
       <div class="card">
         <div class="chart-header">
           <i class="ri-dashboard-3-fill chart-ico"></i>
@@ -271,7 +246,7 @@
       </div>
     </div>
 
-    <div class="card animate-in" style="animation-delay: 0.5s">
+    <div class="card animate-in" style="animation-delay: 0.4s">
       <div class="chart-header">
         <i class="ri-table-2 chart-ico"></i>
         <h3 class="chart-title">Registro Transazioni</h3>
@@ -288,15 +263,29 @@
   <script>
     // --- UTILS ---
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-    const asNum = v => {
-        if (typeof v === 'number') return v;
-        if (!v) return 0;
-        return Number(v.toString().replace(/\./g, '').replace(',', '.'));
+    const asNum = v => (typeof v === 'number') ? v : Number((v||"0").toString().replace(/\./g, '').replace(',', '.') || 0);
+
+    // --- PROVINCE MAPPING (Sigla -> Nome Esteso) ---
+    const PROV_MAP = {
+      'AG': 'Agrigento', 'AL': 'Alessandria', 'AN': 'Ancona', 'AO': 'Aosta', 'AR': 'Arezzo', 'AP': 'Ascoli Piceno', 'AT': 'Asti', 'AV': 'Avellino', 
+      'BA': 'Bari', 'BT': 'Barletta-Andria-Trani', 'BL': 'Belluno', 'BN': 'Benevento', 'BG': 'Bergamo', 'BI': 'Biella', 'BO': 'Bologna', 'BZ': 'Bolzano', 
+      'BS': 'Brescia', 'BR': 'Brindisi', 'CA': 'Cagliari', 'CL': 'Caltanissetta', 'CB': 'Campobasso', 'CI': 'Carbonia-Iglesias', 'CE': 'Caserta', 'CT': 'Catania', 
+      'CZ': 'Catanzaro', 'CH': 'Chieti', 'CO': 'Como', 'CS': 'Cosenza', 'CR': 'Cremona', 'KR': 'Crotone', 'CN': 'Cuneo', 'EN': 'Enna', 'FM': 'Fermo', 
+      'FE': 'Ferrara', 'FI': 'Firenze', 'FG': 'Foggia', 'FC': 'Forlì-Cesena', 'FR': 'Frosinone', 'GE': 'Genova', 'GO': 'Gorizia', 'GR': 'Grosseto', 
+      'IM': 'Imperia', 'IS': 'Isernia', 'SP': 'La Spezia', 'AQ': 'L\'Aquila', 'LT': 'Latina', 'LE': 'Lecce', 'LC': 'Lecco', 'LI': 'Livorno', 'LO': 'Lodi', 
+      'LU': 'Lucca', 'MC': 'Macerata', 'MN': 'Mantova', 'MS': 'Massa-Carrara', 'MT': 'Matera', 'VS': 'Medio Campidano', 'ME': 'Messina', 'MI': 'Milano', 
+      'MO': 'Modena', 'MB': 'Monza e della Brianza', 'NA': 'Napoli', 'NO': 'Novara', 'NU': 'Nuoro', 'OG': 'Ogliastra', 'OT': 'Olbia-Tempio', 'OR': 'Oristano', 
+      'PD': 'Padova', 'PA': 'Palermo', 'PR': 'Parma', 'PV': 'Pavia', 'PG': 'Perugia', 'PU': 'Pesaro e Urbino', 'PE': 'Pescara', 'PC': 'Piacenza', 'PI': 'Pisa', 
+      'PT': 'Pistoia', 'PN': 'Pordenone', 'PZ': 'Potenza', 'PO': 'Prato', 'RG': 'Ragusa', 'RA': 'Ravenna', 'RC': 'Reggio Calabria', 'RE': 'Reggio Emilia', 
+      'RI': 'Rieti', 'RN': 'Rimini', 'RM': 'Roma', 'RO': 'Rovigo', 'SA': 'Salerno', 'SS': 'Sassari', 'SV': 'Savona', 'SI': 'Siena', 'SR': 'Siracusa', 
+      'SO': 'Sondrio', 'TA': 'Taranto', 'TE': 'Teramo', 'TR': 'Terni', 'TO': 'Torino', 'TP': 'Trapani', 'TN': 'Trento', 'TV': 'Treviso', 'TS': 'Trieste', 
+      'UD': 'Udine', 'VA': 'Varese', 'VE': 'Venezia', 'VB': 'Verbano-Cusio-Ossola', 'VC': 'Vercelli', 'VR': 'Verona', 'VV': 'Vibo Valentia', 'VI': 'Vicenza', 
+      'VT': 'Viterbo'
     };
 
     // --- STATE ---
     let state = { all: [], rows: [] };
-    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, heatmap: null };
+    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null };
     let dataTable = null;
 
     // --- INIT ---
@@ -306,7 +295,15 @@
             if(!res.ok) throw new Error("Network err: " + res.status);
             const data = await res.json();
 
-            state.all = data.rows || [];
+            // Pre-processing: Conversione sigle province in nomi estesi
+            state.all = (data.rows || []).map(r => {
+                if(r.Provincia) {
+                    const cleanProv = r.Provincia.trim().toUpperCase();
+                    r.Provincia = PROV_MAP[cleanProv] || r.Provincia; // Usa mappa o originale se non trovata
+                }
+                return r;
+            });
+
             state.rows = [...state.all];
             
             if(data.updatedAt) document.getElementById('lastUpdate').textContent = new Date(data.updatedAt).toLocaleString();
@@ -382,7 +379,7 @@
             document.getElementById('kpiTopAgentVal').textContent = "";
         }
 
-        // 2. GRAFICI STANDARD
+        // 2. GRAFICI
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
@@ -403,27 +400,7 @@
         charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) });
         charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
 
-        // 3. HEATMAP UPDATE (Logica Matrice)
-        // Prendiamo i Top 8 Agenti e Top 10 Province per non sovraffollare
-        const topAgentsKeys = agSorted.slice(0,8).map(x=>x[0]);
-        const topProvKeys = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,12).map(x=>x[0]);
-
-        const heatSeries = topAgentsKeys.map(agent => {
-            return {
-                name: agent,
-                data: topProvKeys.map(prov => {
-                    // Trova somma fatturato per questo agente in questa provincia
-                    const val = data
-                        .filter(r => (r.Agente_Nome===agent) && (r.Provincia||'').trim()===prov)
-                        .reduce((sum, r) => sum + asNum(r.Fatturato), 0);
-                    return { x: prov, y: val };
-                })
-            };
-        });
-        
-        charts.heatmap.updateSeries(heatSeries);
-
-        // 4. TABELLA
+        // 3. TABELLA
         updateTable(data);
     }
 
@@ -442,21 +419,6 @@
             tooltip: { y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.bar.render();
-
-        // Heatmap (NUOVO)
-        charts.heatmap = new ApexCharts(document.querySelector("#chartHeatmap"), {
-            series: [],
-            chart: { type:'heatmap', height:350, fontFamily:font, toolbar:{show:false} },
-            plotOptions: { heatmap: { shadeIntensity:0.5, radius: 6, colorScale: { 
-                ranges: [{from:0, to:0, color:'#f3f4f6', name:'Nessuna vendita'}],
-                inverse: false, min:0, max:undefined /*auto*/ 
-            }}},
-            dataLabels: { enabled: false },
-            colors: ['#D2691E'], // Colore base che diventa più scuro
-            tooltip: { y: { formatter: v => fmtEUR.format(v) } },
-            xaxis: { tooltip: { enabled:false } }
-        });
-        charts.heatmap.render();
 
         // Donut
         charts.donut = new ApexCharts(document.querySelector("#chartDonut"), {
