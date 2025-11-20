@@ -14,18 +14,27 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/2.0.6/js/dataTables.min.js"></script>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
+
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
   <style>
     :root {
-      /* --- PALETTE --- */
-      --primary: #c2410c;         
+      /* --- PALETTE PREMIUM --- */
+      --primary: #c2410c;         /* Terracotta Vibrante */
       --primary-gradient: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
-      --bg-body: #fffaf5;         
+      --secondary: #1e293b;       /* Ardesia Scuro */
+      
+      /* Backgrounds */
+      --bg-body: #fffaf5;         /* Crema caldo */
       --bg-card: #ffffff;
       --bg-glass: rgba(255, 255, 255, 0.8);
+      
+      /* Text */
       --text-main: #0f172a;
       --text-muted: #64748b;
+      
+      /* Borders & Shadows */
       --border: rgba(194, 65, 12, 0.08);
       --radius: 24px;
       --shadow-glow: 0 20px 40px -10px rgba(194, 65, 12, 0.15), 0 10px 20px -5px rgba(0,0,0,0.02);
@@ -48,7 +57,7 @@
 
     .container { max-width: 1500px; margin: 0 auto; padding: 0 32px; }
 
-    /* --- HEADER & CONTROLS --- */
+    /* --- HEADER --- */
     header {
       background: var(--bg-glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       position: sticky; top: 0; z-index: 100;
@@ -56,44 +65,56 @@
       padding: 20px 0; margin-bottom: 40px;
     }
     .header-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+    
     .brand { display: flex; align-items: center; gap: 16px; }
     .logo { 
-      width: 52px; height: 52px; background: var(--primary-gradient);
-      border-radius: 16px; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px;
+      width: 52px; height: 52px; 
+      background: var(--primary-gradient);
+      border-radius: 16px; color: #fff; 
+      display: grid; place-items: center; font-weight: 800; font-size: 22px;
       box-shadow: 0 8px 20px rgba(194, 65, 12, 0.3);
+      position: relative; overflow: hidden;
     }
+    .logo::after { content:''; position: absolute; inset:0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.1)); }
+    
     .h-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; color: var(--text-main); }
     .h-sub { font-size: 14px; color: var(--text-muted); font-weight: 600; display:flex; align-items:center; gap:6px; }
-    .h-sub::before { content:""; width:6px; height:6px; background:#22c55e; border-radius:50%; display:inline-block; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); }
-
+    
+    /* --- CONTROLS --- */
     .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    
     .select-wrapper { position: relative; display: inline-block; }
     select {
-      background: #fff; border: 1px solid #e2e8f0; padding: 12px 36px 12px 16px; border-radius: 12px; 
-      font-size: 13px; font-weight: 600; color: var(--text-main); cursor: pointer; min-width: 160px;
-      transition: all 0.3s; box-shadow: var(--shadow-sm); appearance: none;
+      background: #fff; border: 1px solid #e2e8f0;
+      padding: 12px 36px 12px 16px; border-radius: 12px; 
+      font-size: 13px; font-weight: 600; color: var(--text-main); 
+      cursor: pointer; min-width: 160px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      box-shadow: var(--shadow-sm); appearance: none;
     }
-    select:hover { transform: translateY(-2px); border-color: var(--primary); }
-    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 16px; }
+    select:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); border-color: var(--primary); }
+    select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.1); }
+    
+    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 16px; transition: 0.2s; }
+    .select-wrapper:hover .sel-arrow { color: var(--primary); transform: translateY(-50%) rotate(180deg); }
+
     .btn {
-      background: #fff; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 12px; 
-      font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
+      background: #fff; border: 1px solid #e2e8f0;
+      padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
       transition: all 0.3s; color: var(--text-main); box-shadow: var(--shadow-sm);
     }
-    .btn:hover { transform: translateY(-2px); }
-    .btn-primary { background: var(--primary); color: white; border: none; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
 
-    /* --- CARDS & GRID --- */
+    /* --- CARDS UNIFORMI --- */
     .card {
       background: linear-gradient(180deg, #ffffff 0%, #fffbf8 100%);
       border-radius: var(--radius); padding: 32px;
       box-shadow: var(--shadow-glow); border: 1px solid rgba(255,255,255,0.6);
       position: relative; transition: transform 0.3s ease;
-      /* FLEXBOX PER ALLINEAMENTO VERTICALE UNIFORME */
-      display: flex;
-      flex-direction: column;
-      /* Altezza minima per uniformare visivamente */
-      min-height: 220px; 
+      
+      /* Flex column per uniformare */
+      display: flex; flex-direction: column; height: 100%;
     }
     .card:hover { transform: translateY(-4px); }
 
@@ -102,39 +123,30 @@
     .grid-charts-rev { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 32px; }
     @media (max-width: 1200px) { .grid-charts, .grid-charts-rev { grid-template-columns: 1fr; } }
 
-    /* --- KPI DESIGN UNIFORMATO --- */
-    
-    /* 1. Header Fisso: Occupa sempre lo stesso spazio in alto */
+    /* --- KPI DESIGN UNIFORME --- */
     .kpi-head { 
-        display: flex; justify-content: space-between; align-items: flex-start; 
-        height: 60px; /* Forza l'altezza della testata uguale per tutti */
-        margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: flex-start; 
+      margin-bottom: 24px; /* Margine fisso per spingere giù il contenuto */
+      min-height: 48px;    /* Altezza minima per allineare tutto anche se i titoli vanno a capo */
     }
-    .kpi-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+    .kpi-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
     
     .kpi-icon-wrap {
-      width: 48px; height: 48px; border-radius: 14px;
+      width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
       background: linear-gradient(135deg, #fff5eb 0%, #fff0e0 100%);
       color: var(--primary); display: grid; place-items: center; font-size: 22px;
       box-shadow: inset 0 0 0 1px rgba(194, 65, 12, 0.05);
     }
-
-    /* 2. Body Flex: Spinge il contenuto verso il basso in modo uniforme o centrato */
-    .kpi-body {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end; /* Allinea tutto al fondo del container body se c'è spazio extra */
-        flex-grow: 1;
-    }
     
-    /* 3. Value & Subtext */
+    /* Wrapper per il contenuto dati in basso */
+    .kpi-body {
+      margin-top: auto; /* Spinge il contenuto in basso se c'è spazio extra */
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+
     .kpi-val { 
-        font-family: 'JetBrains Mono', monospace; 
-        font-size: 36px; font-weight: 700; 
-        color: var(--text-main); 
-        letter-spacing: -1.5px; 
-        line-height: 1.1; 
-        margin-bottom: 8px; 
+      font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; 
+      color: var(--text-main); letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 6px; 
     }
     .kpi-sub { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
@@ -145,88 +157,69 @@
     }
     .card-dark .kpi-label { color: rgba(255,255,255,0.5); }
     .card-dark .kpi-icon-wrap { background: rgba(255,255,255,0.1); color: #fbbf24; border:none; }
-    .card-dark .kpi-val { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.3); font-size: 24px; /* Nome agente leggermente più piccolo */ margin-bottom: 12px; line-height: 1.3;}
-    .card-dark .money-gold { color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.4); font-family:'JetBrains Mono'; font-weight:700; font-size: 26px;}
+    .card-dark .kpi-val { color: #fff; font-size:18px; font-family:'Plus Jakarta Sans', sans-serif; letter-spacing: 0; margin-bottom: 4px; }
+    .card-dark .money-gold { color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.4); font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 24px; }
 
-    /* --- CHARTS & TABLES --- */
+    /* --- CHART STYLES --- */
     .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .chart-title { font-size: 18px; font-weight: 700; margin: 0; }
-    .chart-badge { background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .chart-badge { 
+      background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; 
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
 
+    /* --- TABLE --- */
     table.dataTable { width: 100% !important; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
-    table.dataTable thead th { background: transparent; padding: 16px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; border-bottom: 2px solid var(--border) !important; text-align: left; }
+    table.dataTable thead th { 
+      background: transparent; padding: 16px; font-size: 11px; 
+      text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border) !important; text-align: left;
+    }
     table.dataTable tbody td { padding: 20px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 500; }
-    table.dataTable tbody tr:hover { background-color: #fff7ed !important; transform: scale(1.005); border-radius: 8px; position:relative; z-index:1; }
+    table.dataTable tbody tr:hover { background-color: #fff7ed !important; transform: scale(1.005); box-shadow: 0 4px 12px rgba(0,0,0,0.03); border-radius: 8px; }
     
     .badge-pill { padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
     .badge-geo { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
     .badge-prov { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
     .money-cell { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary); font-size: 15px; }
 
-    /* --- NEW COOL MULTI-COLOR LOADER (Quantum Spinner) --- */
+    /* --- NUOVO LOADING SCREEN "FIGO" --- */
     #loading { 
-        position: fixed; inset: 0; background: #0f172a; z-index: 9999; 
-        display: flex; justify-content: center; align-items: center; flex-direction: column; 
+      position: fixed; inset: 0; background: #fffaf5; z-index: 9999; 
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+      transition: opacity 0.5s ease;
     }
     
-    .quantum-spinner {
-        position: relative; width: 80px; height: 80px;
-        perspective: 800px;
+    .loader-container { position: relative; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; }
+    
+    /* Anello rotante */
+    .loader-ring {
+      position: absolute; inset: 0;
+      border: 4px solid rgba(194, 65, 12, 0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
-
-    .quantum-spinner div {
-        position: absolute; box-sizing: border-box; width: 100%; height: 100%; border-radius: 50%;
+    
+    /* Icona che pulsa */
+    .loader-icon {
+      font-size: 32px; color: var(--primary);
+      animation: pulseIcon 2s infinite ease-in-out;
     }
-
-    .quantum-spinner div:nth-child(1) {
-        left: 0%; top: 0%;
-        border-bottom: 4px solid #c2410c; /* Terracotta */
-        animation: rotate1 1.5s linear infinite;
-    }
-
-    .quantum-spinner div:nth-child(2) {
-        right: 0%; top: 0%;
-        border-right: 4px solid #8b5cf6; /* Viola Cyber */
-        animation: rotate2 1.5s linear infinite;
-    }
-
-    .quantum-spinner div:nth-child(3) {
-        right: 0%; bottom: 0%;
-        border-top: 4px solid #0ea5e9; /* Blu Elettrico */
-        animation: rotate3 1.5s linear infinite;
-    }
-
-    @keyframes rotate1 { 
-        0% { transform: rotateX(35deg) rotateY(-45deg) rotateZ(0deg); } 
-        100% { transform: rotateX(35deg) rotateY(-45deg) rotateZ(360deg); } 
-    }
-    @keyframes rotate2 { 
-        0% { transform: rotateX(50deg) rotateY(10deg) rotateZ(0deg); } 
-        100% { transform: rotateX(50deg) rotateY(10deg) rotateZ(360deg); } 
-    }
-    @keyframes rotate3 { 
-        0% { transform: rotateX(35deg) rotateY(55deg) rotateZ(0deg); } 
-        100% { transform: rotateX(35deg) rotateY(55deg) rotateZ(360deg); } 
-    }
-
-    .loading-text {
-        margin-top: 30px; font-weight: 700; letter-spacing: 2px; 
-        text-transform: uppercase; font-size: 14px;
-        background: linear-gradient(90deg, #c2410c, #8b5cf6, #0ea5e9);
-        -webkit-background-clip: text; background-clip: text; color: transparent;
-        animation: shine 2s linear infinite;
-    }
-    @keyframes shine { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulseIcon { 0%, 100% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
 
   </style>
 </head>
 <body>
 
   <div id="loading">
-    <div class="quantum-spinner">
-        <div></div><div></div><div></div>
+    <div class="loader-container">
+        <div class="loader-ring"></div>
+        <i class="ri-pie-chart-2-fill loader-icon"></i>
     </div>
-    <div class="loading-text">Caricamento Dati...</div>
+    <p style="margin-top:20px; font-weight:700; color:var(--primary); letter-spacing:1px; text-transform:uppercase; font-size:12px;">Analisi Dati in corso...</p>
   </div>
 
   <header>
@@ -240,9 +233,23 @@
       </div>
       
       <div class="controls">
-        <div class="select-wrapper"><select id="selAgente"><option value="">Tutti gli Agenti</option></select><i class="ri-user-3-line sel-arrow"></i></div>
-        <div class="select-wrapper"><select id="selRegione" style="border-color:#fbbf24; background:#fffdf5"><option value="">📍 FILTRA REGIONE</option></select><i class="ri-map-2-line sel-arrow" style="color:#d97706"></i></div>
-        <div class="select-wrapper"><select id="selProvincia"><option value="">Tutte le Province</option></select><i class="ri-map-pin-range-line sel-arrow"></i></div>
+        <div class="select-wrapper">
+            <select id="selAgente"><option value="">Tutti gli Agenti</option></select>
+            <i class="ri-user-3-line sel-arrow"></i>
+        </div>
+        
+        <div class="select-wrapper">
+            <select id="selRegione" style="border-color: #fbbf24; background:#fffdf5">
+                <option value="">Filtra Regione</option> 
+            </select>
+            <i class="ri-map-2-line sel-arrow" style="color:#d97706"></i>
+        </div>
+
+        <div class="select-wrapper">
+            <select id="selProvincia"><option value="">Tutte le Province</option></select>
+            <i class="ri-map-pin-range-line sel-arrow"></i>
+        </div>
+
         <button class="btn" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
       </div>
     </div>
@@ -279,12 +286,14 @@
           <span class="kpi-label">Obiettivo Annuale</span>
           <div class="kpi-icon-wrap"><i class="ri-focus-3-line"></i></div>
         </div>
-        <div class="kpi-body" style="flex-direction: row; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <div class="kpi-val" id="kpiTargetVal">0%</div>
-                <div class="kpi-sub">Completamento</div>
+        <div class="kpi-body">
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; width:100%">
+                <div>
+                   <div class="kpi-val" id="kpiTargetVal">0%</div>
+                   <div class="kpi-sub">Completamento</div>
+                </div>
+                <div id="miniRadial" style="margin-bottom:-10px; margin-right:-10px"></div>
             </div>
-            <div id="miniRadial" style="margin-bottom:-10px; margin-right:-10px"></div>
         </div>
       </div>
       
@@ -294,7 +303,7 @@
           <div class="kpi-icon-wrap"><i class="ri-trophy-fill"></i></div>
         </div>
         <div class="kpi-body">
-            <div id="kpiTopAgent" class="kpi-val" style="font-family:'Plus Jakarta Sans';">--</div>
+            <div id="kpiTopAgent" class="kpi-val" style="font-size:18px; margin-bottom:2px">--</div>
             <div id="kpiTopAgentVal" class="money-gold">€ 0</div>
         </div>
       </div>
@@ -302,23 +311,35 @@
 
     <div class="grid-charts animate-in" style="animation-delay: 0.2s">
       <div class="card">
-        <div class="chart-header"><h3 class="chart-title">Classifica Agenti</h3><span class="chart-badge">Fatturato</span></div>
+        <div class="chart-header">
+          <h3 class="chart-title">Classifica Agenti</h3>
+          <span class="chart-badge">Fatturato</span>
+        </div>
         <div id="chartBar"></div>
       </div>
       <div class="card">
-        <div class="chart-header"><h3 class="chart-title">Macro Aree</h3><span class="chart-badge">Geografia</span></div>
+        <div class="chart-header">
+          <h3 class="chart-title">Macro Aree</h3>
+          <span class="chart-badge">Geografia</span>
+        </div>
         <div id="chartDonut" style="display:flex; justify-content:center; align-items:center; height:100%"></div>
       </div>
     </div>
 
     <div class="grid-charts-rev animate-in" style="animation-delay: 0.3s">
       <div class="card">
-        <div class="chart-header"><h3 class="chart-title">Peso Province</h3><span class="chart-badge">Impatto %</span></div>
+        <div class="chart-header">
+          <h3 class="chart-title">Peso Province</h3>
+          <span class="chart-badge">Impatto %</span>
+        </div>
         <div id="chartPolar" style="display:flex; justify-content:center"></div>
       </div>
       
       <div class="card">
-        <div class="chart-header"><h3 class="chart-title">Top 5 Clienti</h3><span class="chart-badge">Strategici</span></div>
+        <div class="chart-header">
+          <h3 class="chart-title">Top 5 Clienti</h3>
+          <span class="chart-badge">Strategici</span>
+        </div>
         <div id="chartClients"></div>
       </div>
     </div>
@@ -334,67 +355,94 @@
     <div style="text-align:center; margin-top:60px; font-size:12px; color:var(--text-muted); font-weight:500">
       Cotto Cusimano Analytics System • Aggiornato: <span id="lastUpdate" style="color:var(--primary)">--</span>
     </div>
+
   </div>
 
   <script>
     // --- CONFIGURAZIONE ---
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
     const asNum = v => (typeof v === 'number') ? v : Number((v||"0").toString().replace(/\./g, '').replace(',', '.') || 0);
+
     const GEO_DATA = {
-      'AG':{n:'Agrigento',r:'Sicilia'}, 'AL':{n:'Alessandria',r:'Piemonte'}, 'AN':{n:'Ancona',r:'Marche'}, 'AO':{n:'Aosta',r:'Valle d\'Aosta'}, 'AR':{n:'Arezzo',r:'Toscana'}, 'AP':{n:'Ascoli Piceno',r:'Marche'}, 'AT':{n:'Asti',r:'Piemonte'}, 'AV':{n:'Avellino',r:'Campania'}, 
-      'BA':{n:'Bari',r:'Puglia'}, 'BT':{n:'Barletta-Andria-Trani',r:'Puglia'}, 'BL':{n:'Belluno',r:'Veneto'}, 'BN':{n:'Benevento',r:'Campania'}, 'BG':{n:'Bergamo',r:'Lombardia'}, 'BI':{n:'Biella',r:'Piemonte'}, 'BO':{n:'Bologna',r:'Emilia-Romagna'}, 'BZ':{n:'Bolzano',r:'Trentino-Alto Adige'}, 
-      'BS':{n:'Brescia',r:'Lombardia'}, 'BR':{n:'Brindisi',r:'Puglia'}, 'CA':{n:'Cagliari',r:'Sardegna'}, 'CL':{n:'Caltanissetta',r:'Sicilia'}, 'CB':{n:'Campobasso',r:'Molise'}, 'CI':{n:'Carbonia-Iglesias',r:'Sardegna'}, 'CE':{n:'Caserta',r:'Campania'}, 'CT':{n:'Catania',r:'Sicilia'}, 
-      'CZ':{n:'Catanzaro',r:'Calabria'}, 'CH':{n:'Chieti',r:'Abruzzo'}, 'CO':{n:'Como',r:'Lombardia'}, 'CS':{n:'Cosenza',r:'Calabria'}, 'CR':{n:'Cremona',r:'Lombardia'}, 'KR':{n:'Crotone',r:'Calabria'}, 'CN':{n:'Cuneo',r:'Piemonte'}, 'EN':{n:'Enna',r:'Sicilia'}, 
-      'FM':{n:'Fermo',r:'Marche'}, 'FE':{n:'Ferrara',r:'Emilia-Romagna'}, 'FI':{n:'Firenze',r:'Toscana'}, 'FG':{n:'Foggia',r:'Puglia'}, 'FC':{n:'Forlì-Cesena',r:'Emilia-Romagna'}, 'FR':{n:'Frosinone',r:'Lazio'}, 'GE':{n:'Genova',r:'Liguria'}, 'GO':{n:'Gorizia',r:'Friuli-Venezia Giulia'}, 
-      'GR':{n:'Grosseto',r:'Toscana'}, 'IM':{n:'Imperia',r:'Liguria'}, 'IS':{n:'Isernia',r:'Molise'}, 'SP':{n:'La Spezia',r:'Liguria'}, 'AQ':{n:'L\'Aquila',r:'Abruzzo'}, 'LT':{n:'Latina',r:'Lazio'}, 'LE':{n:'Lecce',r:'Puglia'}, 'LC':{n:'Lecco',r:'Lombardia'}, 
-      'LI':{n:'Livorno',r:'Toscana'}, 'LO':{n:'Lodi',r:'Lombardia'}, 'LU':{n:'Lucca',r:'Toscana'}, 'MC':{n:'Macerata',r:'Marche'}, 'MN':{n:'Mantova',r:'Lombardia'}, 'MS':{n:'Massa-Carrara',r:'Toscana'}, 'MT':{n:'Matera',r:'Basilicata'}, 'VS':{n:'Medio Campidano',r:'Sardegna'}, 
-      'ME':{n:'Messina',r:'Sicilia'}, 'MI':{n:'Milano',r:'Lombardia'}, 'MO':{n:'Modena',r:'Emilia-Romagna'}, 'MB':{n:'Monza e Brianza',r:'Lombardia'}, 'NA':{n:'Napoli',r:'Campania'}, 'NO':{n:'Novara',r:'Piemonte'}, 'NU':{n:'Nuoro',r:'Sardegna'}, 'OG':{n:'Ogliastra',r:'Sardegna'}, 
-      'OT':{n:'Olbia-Tempio',r:'Sardegna'}, 'OR':{n:'Oristano',r:'Sardegna'}, 'PD':{n:'Padova',r:'Veneto'}, 'PA':{n:'Palermo',r:'Sicilia'}, 'PR':{n:'Parma',r:'Emilia-Romagna'}, 'PV':{n:'Pavia',r:'Lombardia'}, 'PG':{n:'Perugia',r:'Umbria'}, 'PU':{n:'Pesaro e Urbino',r:'Marche'}, 
-      'PE':{n:'Pescara',r:'Abruzzo'}, 'PC':{n:'Piacenza',r:'Emilia-Romagna'}, 'PI':{n:'Pisa',r:'Toscana'}, 'PT':{n:'Pistoia',r:'Toscana'}, 'PN':{n:'Pordenone',r:'Friuli-Venezia Giulia'}, 'PZ':{n:'Potenza',r:'Basilicata'}, 'PO':{n:'Prato',r:'Toscana'}, 'RG':{n:'Ragusa',r:'Sicilia'}, 
-      'RA':{n:'Ravenna',r:'Emilia-Romagna'}, 'RC':{n:'Reggio Calabria',r:'Calabria'}, 'RE':{n:'Reggio Emilia',r:'Emilia-Romagna'}, 'RI':{n:'Rieti',r:'Lazio'}, 'RN':{n:'Rimini',r:'Emilia-Romagna'}, 'RM':{n:'Roma',r:'Lazio'}, 'RO':{n:'Rovigo',r:'Veneto'}, 'SA':{n:'Salerno',r:'Campania'}, 
-      'SS':{n:'Sassari',r:'Sardegna'}, 'SV':{n:'Savona',r:'Liguria'}, 'SI':{n:'Siena',r:'Toscana'}, 'SR':{n:'Siracusa',r:'Sicilia'}, 'SO':{n:'Sondrio',r:'Lombardia'}, 'TA':{n:'Taranto',r:'Puglia'}, 'TE':{n:'Teramo',r:'Abruzzo'}, 'TR':{n:'Terni',r:'Umbria'}, 'TO':{n:'Torino',r:'Piemonte'}, 
-      'TP':{n:'Trapani',r:'Sicilia'}, 'TN':{n:'Trento',r:'Trentino-Alto Adige'}, 'TV':{n:'Treviso',r:'Veneto'}, 'TS':{n:'Trieste',r:'Friuli-Venezia Giulia'}, 'UD':{n:'Udine',r:'Friuli-Venezia Giulia'}, 'VA':{n:'Varese',r:'Lombardia'}, 'VE':{n:'Venezia',r:'Veneto'}, 'VB':{n:'Verbano-Cusio-Ossola',r:'Piemonte'}, 
-      'VC':{n:'Vercelli',r:'Piemonte'}, 'VR':{n:'Verona',r:'Veneto'}, 'VV':{n:'Vibo Valentia',r:'Calabria'}, 'VI':{n:'Vicenza',r:'Veneto'}, 'VT':{n:'Viterbo',r:'Lazio'}
+      'AG':{n:'Agrigento',r:'Sicilia'}, 'AL':{n:'Alessandria',r:'Piemonte'}, 'AN':{n:'Ancona',r:'Marche'}, 'AO':{n:'Aosta',r:'Valle d\'Aosta'}, 
+      'AR':{n:'Arezzo',r:'Toscana'}, 'AP':{n:'Ascoli Piceno',r:'Marche'}, 'AT':{n:'Asti',r:'Piemonte'}, 'AV':{n:'Avellino',r:'Campania'}, 
+      'BA':{n:'Bari',r:'Puglia'}, 'BT':{n:'Barletta-Andria-Trani',r:'Puglia'}, 'BL':{n:'Belluno',r:'Veneto'}, 'BN':{n:'Benevento',r:'Campania'}, 
+      'BG':{n:'Bergamo',r:'Lombardia'}, 'BI':{n:'Biella',r:'Piemonte'}, 'BO':{n:'Bologna',r:'Emilia-Romagna'}, 'BZ':{n:'Bolzano',r:'Trentino-Alto Adige'}, 
+      'BS':{n:'Brescia',r:'Lombardia'}, 'BR':{n:'Brindisi',r:'Puglia'}, 'CA':{n:'Cagliari',r:'Sardegna'}, 'CL':{n:'Caltanissetta',r:'Sicilia'}, 
+      'CB':{n:'Campobasso',r:'Molise'}, 'CI':{n:'Carbonia-Iglesias',r:'Sardegna'}, 'CE':{n:'Caserta',r:'Campania'}, 'CT':{n:'Catania',r:'Sicilia'}, 
+      'CZ':{n:'Catanzaro',r:'Calabria'}, 'CH':{n:'Chieti',r:'Abruzzo'}, 'CO':{n:'Como',r:'Lombardia'}, 'CS':{n:'Cosenza',r:'Calabria'}, 
+      'CR':{n:'Cremona',r:'Lombardia'}, 'KR':{n:'Crotone',r:'Calabria'}, 'CN':{n:'Cuneo',r:'Piemonte'}, 'EN':{n:'Enna',r:'Sicilia'}, 
+      'FM':{n:'Fermo',r:'Marche'}, 'FE':{n:'Ferrara',r:'Emilia-Romagna'}, 'FI':{n:'Firenze',r:'Toscana'}, 'FG':{n:'Foggia',r:'Puglia'}, 
+      'FC':{n:'Forlì-Cesena',r:'Emilia-Romagna'}, 'FR':{n:'Frosinone',r:'Lazio'}, 'GE':{n:'Genova',r:'Liguria'}, 'GO':{n:'Gorizia',r:'Friuli-Venezia Giulia'}, 
+      'GR':{n:'Grosseto',r:'Toscana'}, 'IM':{n:'Imperia',r:'Liguria'}, 'IS':{n:'Isernia',r:'Molise'}, 'SP':{n:'La Spezia',r:'Liguria'}, 
+      'AQ':{n:'L\'Aquila',r:'Abruzzo'}, 'LT':{n:'Latina',r:'Lazio'}, 'LE':{n:'Lecce',r:'Puglia'}, 'LC':{n:'Lecco',r:'Lombardia'}, 
+      'LI':{n:'Livorno',r:'Toscana'}, 'LO':{n:'Lodi',r:'Lombardia'}, 'LU':{n:'Lucca',r:'Toscana'}, 'MC':{n:'Macerata',r:'Marche'}, 
+      'MN':{n:'Mantova',r:'Lombardia'}, 'MS':{n:'Massa-Carrara',r:'Toscana'}, 'MT':{n:'Matera',r:'Basilicata'}, 'VS':{n:'Medio Campidano',r:'Sardegna'}, 
+      'ME':{n:'Messina',r:'Sicilia'}, 'MI':{n:'Milano',r:'Lombardia'}, 'MO':{n:'Modena',r:'Emilia-Romagna'}, 'MB':{n:'Monza e Brianza',r:'Lombardia'}, 
+      'NA':{n:'Napoli',r:'Campania'}, 'NO':{n:'Novara',r:'Piemonte'}, 'NU':{n:'Nuoro',r:'Sardegna'}, 'OG':{n:'Ogliastra',r:'Sardegna'}, 
+      'OT':{n:'Olbia-Tempio',r:'Sardegna'}, 'OR':{n:'Oristano',r:'Sardegna'}, 'PD':{n:'Padova',r:'Veneto'}, 'PA':{n:'Palermo',r:'Sicilia'}, 
+      'PR':{n:'Parma',r:'Emilia-Romagna'}, 'PV':{n:'Pavia',r:'Lombardia'}, 'PG':{n:'Perugia',r:'Umbria'}, 'PU':{n:'Pesaro e Urbino',r:'Marche'}, 
+      'PE':{n:'Pescara',r:'Abruzzo'}, 'PC':{n:'Piacenza',r:'Emilia-Romagna'}, 'PI':{n:'Pisa',r:'Toscana'}, 'PT':{n:'Pistoia',r:'Toscana'}, 
+      'PN':{n:'Pordenone',r:'Friuli-Venezia Giulia'}, 'PZ':{n:'Potenza',r:'Basilicata'}, 'PO':{n:'Prato',r:'Toscana'}, 'RG':{n:'Ragusa',r:'Sicilia'}, 
+      'RA':{n:'Ravenna',r:'Emilia-Romagna'}, 'RC':{n:'Reggio Calabria',r:'Calabria'}, 'RE':{n:'Reggio Emilia',r:'Emilia-Romagna'}, 'RI':{n:'Rieti',r:'Lazio'}, 
+      'RN':{n:'Rimini',r:'Emilia-Romagna'}, 'RM':{n:'Roma',r:'Lazio'}, 'RO':{n:'Rovigo',r:'Veneto'}, 'SA':{n:'Salerno',r:'Campania'}, 
+      'SS':{n:'Sassari',r:'Sardegna'}, 'SV':{n:'Savona',r:'Liguria'}, 'SI':{n:'Siena',r:'Toscana'}, 'SR':{n:'Siracusa',r:'Sicilia'}, 
+      'SO':{n:'Sondrio',r:'Lombardia'}, 'TA':{n:'Taranto',r:'Puglia'}, 'TE':{n:'Teramo',r:'Abruzzo'}, 'TR':{n:'Terni',r:'Umbria'}, 
+      'TO':{n:'Torino',r:'Piemonte'}, 'TP':{n:'Trapani',r:'Sicilia'}, 'TN':{n:'Trento',r:'Trentino-Alto Adige'}, 'TV':{n:'Treviso',r:'Veneto'}, 
+      'TS':{n:'Trieste',r:'Friuli-Venezia Giulia'}, 'UD':{n:'Udine',r:'Friuli-Venezia Giulia'}, 'VA':{n:'Varese',r:'Lombardia'}, 'VE':{n:'Venezia',r:'Veneto'}, 
+      'VB':{n:'Verbano-Cusio-Ossola',r:'Piemonte'}, 'VC':{n:'Vercelli',r:'Piemonte'}, 'VR':{n:'Verona',r:'Veneto'}, 'VV':{n:'Vibo Valentia',r:'Calabria'}, 
+      'VI':{n:'Vicenza',r:'Veneto'}, 'VT':{n:'Viterbo',r:'Lazio'}
     };
 
+    // --- STATE ---
     let state = { all: [], rows: [] };
     let charts = { bar: null, donut: null, radial: null, clients: null, polar: null };
     let dataTable = null;
 
+    // --- INIT ---
     document.addEventListener("DOMContentLoaded", async () => {
         try {
             const res = await fetch('/data', { cache: "no-store" });
-            if(!res.ok) throw new Error("Network Error");
+            if(!res.ok) throw new Error("Errore caricamento dati");
             const data = await res.json();
 
             state.all = (data.rows || []).map(r => {
                 if(r.Provincia) {
                     const code = r.Provincia.trim().toUpperCase();
                     const geo = GEO_DATA[code];
-                    if(geo) { r.Provincia = geo.n; r.Regione = geo.r; } 
-                    else { r.Regione = 'Altro'; }
-                } else { r.Regione = 'N/D'; }
+                    if(geo) {
+                        r.Provincia = geo.n;
+                        r.Regione = geo.r;
+                    } else {
+                        r.Regione = 'Altro';
+                    }
+                } else {
+                    r.Regione = 'N/D';
+                }
                 return r;
             });
             state.rows = [...state.all];
             
             if(data.updatedAt) document.getElementById('lastUpdate').textContent = new Date(data.updatedAt).toLocaleString();
             
-            // Fade Out Loader
+            // Nascondi loader con transizione
             const loader = document.getElementById('loading');
-            setTimeout(() => { loader.style.opacity = '0'; setTimeout(()=>loader.remove(), 500); }, 1500); // Minimo tempo per vedere l'animazione
+            loader.style.opacity = '0';
+            setTimeout(()=>loader.remove(), 500);
 
             populateFilters();
             initCharts();
             updateDashboard();
 
         } catch (err) {
-            document.getElementById('loading').innerHTML = `<h3 style="color:#c2410c">Errore Caricamento</h3><p>${err.message}</p>`;
+            document.getElementById('loading').innerHTML = `<h3 style="color:#c2410c">Errore Connessione</h3><p>${err.message}</p>`;
         }
 
+        // Listeners
         document.getElementById('selAgente').addEventListener('change', applyFilters);
         document.getElementById('selRegione').addEventListener('change', applyFilters);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
+        
         document.getElementById('btnReset').addEventListener('click', () => {
             document.getElementById('selAgente').value = "";
             document.getElementById('selRegione').value = "";
@@ -413,7 +461,7 @@
         const sP = document.getElementById('selProvincia');
         
         sA.innerHTML='<option value="">Tutti gli Agenti</option>';
-        sR.innerHTML='<option value="">📍 FILTRA REGIONE</option>';
+        sR.innerHTML='<option value="">Filtra Regione</option>'; // PULITO
         sP.innerHTML='<option value="">Tutte le Province</option>';
 
         agenti.forEach(a => sA.add(new Option(a, a)));
@@ -428,7 +476,9 @@
 
         state.rows = state.all.filter(r => {
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
-            return (!ag || rAg === ag) && (!reg || r.Regione === reg) && (!pr || (r.Provincia||'').trim() === pr);
+            return (!ag || rAg === ag) && 
+                   (!reg || r.Regione === reg) && 
+                   (!pr || (r.Provincia||'').trim() === pr);
         });
         updateDashboard();
     }
@@ -437,6 +487,7 @@
         const data = state.rows.filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE');
         const objs = state.all.find(r => r.Tipo_Dato === 'OBIETTIVI');
 
+        // KPI
         const totFatt = data.reduce((a,b) => a + asNum(b.Fatturato), 0);
         const totCli = new Set(data.map(r => r.Ragione_Sociale_Cliente)).size;
         
@@ -459,7 +510,7 @@
             document.getElementById('kpiTopAgentVal').textContent = "€ 0";
         }
 
-        // Charts Data Update
+        // GRAFICI
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
@@ -486,18 +537,21 @@
     function initCharts() {
         const font = "'Plus Jakarta Sans', sans-serif";
         
+        // Bar Chart
         charts.bar = new ApexCharts(document.querySelector("#chartBar"), {
             series: [{ name:'Fatturato', data:[] }],
             chart: { type:'bar', height:340, fontFamily:font, toolbar:{show:false} },
             plotOptions: { bar: { horizontal:true, borderRadius:6, barHeight:'55%', distributed:true } },
             fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.85, opacityTo: 0.85, stops: [50, 0, 100] } },
             colors: ['#c2410c', '#ea580c', '#f97316', '#fdba74', '#94a3b8'],
-            legend: { show:false }, dataLabels: { enabled:false }, grid: { show:false },
+            legend: { show:false }, dataLabels: { enabled:false },
+            grid: { show:false },
             xaxis: { labels: { formatter: v => "€ " + (v/1000).toFixed(0) + "k" } },
             tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.bar.render();
 
+        // Donut
         charts.donut = new ApexCharts(document.querySelector("#chartDonut"), {
             series: [], labels: [],
             chart: { type:'donut', height:340, fontFamily:font },
@@ -511,6 +565,7 @@
         });
         charts.donut.render();
 
+        // Clients
         charts.clients = new ApexCharts(document.querySelector("#chartClients"), {
             series: [{ name:'Acquisti', data:[] }],
             chart: { type:'bar', height:320, fontFamily:font, toolbar:{show:false} },
@@ -523,6 +578,7 @@
         });
         charts.clients.render();
 
+        // Polar
         charts.polar = new ApexCharts(document.querySelector("#chartPolar"), {
             series: [], labels: [],
             chart: { type: 'polarArea', height: 340, fontFamily: font, toolbar:{show:false} },
@@ -533,6 +589,7 @@
         });
         charts.polar.render();
 
+        // Radial
         charts.radial = new ApexCharts(document.querySelector("#miniRadial"), {
             series: [0],
             chart: { type:'radialBar', height:130, width:130, sparkline:{enabled:true} },
