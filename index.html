@@ -73,14 +73,19 @@
 
     /* --- CONTROLS --- */
     .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    /* Stile Select */
+    .select-wrapper { position:relative; }
     select {
       background: var(--bg-card); border: 1px solid #e5e7eb;
       padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
-      color: var(--text-main); cursor: pointer; min-width: 180px;
-      transition: all 0.2s; box-shadow: var(--shadow-card);
+      color: var(--text-main); cursor: pointer; min-width: 160px;
+      transition: all 0.2s; box-shadow: var(--shadow-card); appearance: none; padding-right: 30px;
     }
     select:hover, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.1); }
     
+    /* Icona chevron custom per select */
+    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 12px; }
+
     .btn {
       background: var(--bg-card); border: 1px solid #e5e7eb;
       padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
@@ -133,7 +138,8 @@
     }
     table.dataTable tbody td { padding: 16px; border-bottom: 1px solid #f3f4f6; font-size: 13px; vertical-align: middle; }
     table.dataTable tbody tr:hover { background-color: #fdf8f5 !important; transition: background 0.2s; }
-    .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #edf2f7; color: #4a5568; border: 1px solid #e2e8f0; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #edf2f7; color: #4a5568; border: 1px solid #e2e8f0; display:inline-block; margin-right:4px;}
+    .badge-reg { background: #fff7ed; color: #c2410c; border-color: #ffedd5; }
     .money { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--primary-dark); }
 
     #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
@@ -159,8 +165,21 @@
         </div>
       </div>
       <div class="controls">
-        <select id="selAgente"><option value="">Tutti gli Agenti</option></select>
-        <select id="selProvincia"><option value="">Tutte le Province</option></select>
+        <div class="select-wrapper">
+            <select id="selAgente"><option value="">Tutti gli Agenti</option></select>
+            <i class="ri-arrow-down-s-line sel-arrow"></i>
+        </div>
+        
+        <div class="select-wrapper">
+            <select id="selRegione"><option value="">Tutte le Regioni</option></select>
+            <i class="ri-arrow-down-s-line sel-arrow"></i>
+        </div>
+
+        <div class="select-wrapper">
+            <select id="selProvincia"><option value="">Tutte le Province</option></select>
+            <i class="ri-arrow-down-s-line sel-arrow"></i>
+        </div>
+
         <button class="btn" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
         <button class="btn btn-primary" id="btnExcel"><i class="ri-download-cloud-2-line"></i> Export Excel</button>
       </div>
@@ -223,7 +242,7 @@
       <div class="card">
         <div class="chart-header">
           <i class="ri-pie-chart-2-fill chart-ico"></i>
-          <h3 class="chart-title">Distribuzione Geo</h3>
+          <h3 class="chart-title">Distribuzione Geografica</h3>
         </div>
         <div id="chartDonut" style="display:flex; justify-content:center"></div>
       </div>
@@ -265,22 +284,36 @@
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
     const asNum = v => (typeof v === 'number') ? v : Number((v||"0").toString().replace(/\./g, '').replace(',', '.') || 0);
 
-    // --- PROVINCE MAPPING (Sigla -> Nome Esteso) ---
-    const PROV_MAP = {
-      'AG': 'Agrigento', 'AL': 'Alessandria', 'AN': 'Ancona', 'AO': 'Aosta', 'AR': 'Arezzo', 'AP': 'Ascoli Piceno', 'AT': 'Asti', 'AV': 'Avellino', 
-      'BA': 'Bari', 'BT': 'Barletta-Andria-Trani', 'BL': 'Belluno', 'BN': 'Benevento', 'BG': 'Bergamo', 'BI': 'Biella', 'BO': 'Bologna', 'BZ': 'Bolzano', 
-      'BS': 'Brescia', 'BR': 'Brindisi', 'CA': 'Cagliari', 'CL': 'Caltanissetta', 'CB': 'Campobasso', 'CI': 'Carbonia-Iglesias', 'CE': 'Caserta', 'CT': 'Catania', 
-      'CZ': 'Catanzaro', 'CH': 'Chieti', 'CO': 'Como', 'CS': 'Cosenza', 'CR': 'Cremona', 'KR': 'Crotone', 'CN': 'Cuneo', 'EN': 'Enna', 'FM': 'Fermo', 
-      'FE': 'Ferrara', 'FI': 'Firenze', 'FG': 'Foggia', 'FC': 'Forlì-Cesena', 'FR': 'Frosinone', 'GE': 'Genova', 'GO': 'Gorizia', 'GR': 'Grosseto', 
-      'IM': 'Imperia', 'IS': 'Isernia', 'SP': 'La Spezia', 'AQ': 'L\'Aquila', 'LT': 'Latina', 'LE': 'Lecce', 'LC': 'Lecco', 'LI': 'Livorno', 'LO': 'Lodi', 
-      'LU': 'Lucca', 'MC': 'Macerata', 'MN': 'Mantova', 'MS': 'Massa-Carrara', 'MT': 'Matera', 'VS': 'Medio Campidano', 'ME': 'Messina', 'MI': 'Milano', 
-      'MO': 'Modena', 'MB': 'Monza e della Brianza', 'NA': 'Napoli', 'NO': 'Novara', 'NU': 'Nuoro', 'OG': 'Ogliastra', 'OT': 'Olbia-Tempio', 'OR': 'Oristano', 
-      'PD': 'Padova', 'PA': 'Palermo', 'PR': 'Parma', 'PV': 'Pavia', 'PG': 'Perugia', 'PU': 'Pesaro e Urbino', 'PE': 'Pescara', 'PC': 'Piacenza', 'PI': 'Pisa', 
-      'PT': 'Pistoia', 'PN': 'Pordenone', 'PZ': 'Potenza', 'PO': 'Prato', 'RG': 'Ragusa', 'RA': 'Ravenna', 'RC': 'Reggio Calabria', 'RE': 'Reggio Emilia', 
-      'RI': 'Rieti', 'RN': 'Rimini', 'RM': 'Roma', 'RO': 'Rovigo', 'SA': 'Salerno', 'SS': 'Sassari', 'SV': 'Savona', 'SI': 'Siena', 'SR': 'Siracusa', 
-      'SO': 'Sondrio', 'TA': 'Taranto', 'TE': 'Teramo', 'TR': 'Terni', 'TO': 'Torino', 'TP': 'Trapani', 'TN': 'Trento', 'TV': 'Treviso', 'TS': 'Trieste', 
-      'UD': 'Udine', 'VA': 'Varese', 'VE': 'Venezia', 'VB': 'Verbano-Cusio-Ossola', 'VC': 'Vercelli', 'VR': 'Verona', 'VV': 'Vibo Valentia', 'VI': 'Vicenza', 
-      'VT': 'Viterbo'
+    // --- GEO MAPPING: Sigla -> {Nome, Regione} ---
+    const GEO_DATA = {
+      'AG':{n:'Agrigento',r:'Sicilia'}, 'AL':{n:'Alessandria',r:'Piemonte'}, 'AN':{n:'Ancona',r:'Marche'}, 'AO':{n:'Aosta',r:'Valle d\'Aosta'}, 
+      'AR':{n:'Arezzo',r:'Toscana'}, 'AP':{n:'Ascoli Piceno',r:'Marche'}, 'AT':{n:'Asti',r:'Piemonte'}, 'AV':{n:'Avellino',r:'Campania'}, 
+      'BA':{n:'Bari',r:'Puglia'}, 'BT':{n:'Barletta-Andria-Trani',r:'Puglia'}, 'BL':{n:'Belluno',r:'Veneto'}, 'BN':{n:'Benevento',r:'Campania'}, 
+      'BG':{n:'Bergamo',r:'Lombardia'}, 'BI':{n:'Biella',r:'Piemonte'}, 'BO':{n:'Bologna',r:'Emilia-Romagna'}, 'BZ':{n:'Bolzano',r:'Trentino-Alto Adige'}, 
+      'BS':{n:'Brescia',r:'Lombardia'}, 'BR':{n:'Brindisi',r:'Puglia'}, 'CA':{n:'Cagliari',r:'Sardegna'}, 'CL':{n:'Caltanissetta',r:'Sicilia'}, 
+      'CB':{n:'Campobasso',r:'Molise'}, 'CI':{n:'Carbonia-Iglesias',r:'Sardegna'}, 'CE':{n:'Caserta',r:'Campania'}, 'CT':{n:'Catania',r:'Sicilia'}, 
+      'CZ':{n:'Catanzaro',r:'Calabria'}, 'CH':{n:'Chieti',r:'Abruzzo'}, 'CO':{n:'Como',r:'Lombardia'}, 'CS':{n:'Cosenza',r:'Calabria'}, 
+      'CR':{n:'Cremona',r:'Lombardia'}, 'KR':{n:'Crotone',r:'Calabria'}, 'CN':{n:'Cuneo',r:'Piemonte'}, 'EN':{n:'Enna',r:'Sicilia'}, 
+      'FM':{n:'Fermo',r:'Marche'}, 'FE':{n:'Ferrara',r:'Emilia-Romagna'}, 'FI':{n:'Firenze',r:'Toscana'}, 'FG':{n:'Foggia',r:'Puglia'}, 
+      'FC':{n:'Forlì-Cesena',r:'Emilia-Romagna'}, 'FR':{n:'Frosinone',r:'Lazio'}, 'GE':{n:'Genova',r:'Liguria'}, 'GO':{n:'Gorizia',r:'Friuli-Venezia Giulia'}, 
+      'GR':{n:'Grosseto',r:'Toscana'}, 'IM':{n:'Imperia',r:'Liguria'}, 'IS':{n:'Isernia',r:'Molise'}, 'SP':{n:'La Spezia',r:'Liguria'}, 
+      'AQ':{n:'L\'Aquila',r:'Abruzzo'}, 'LT':{n:'Latina',r:'Lazio'}, 'LE':{n:'Lecce',r:'Puglia'}, 'LC':{n:'Lecco',r:'Lombardia'}, 
+      'LI':{n:'Livorno',r:'Toscana'}, 'LO':{n:'Lodi',r:'Lombardia'}, 'LU':{n:'Lucca',r:'Toscana'}, 'MC':{n:'Macerata',r:'Marche'}, 
+      'MN':{n:'Mantova',r:'Lombardia'}, 'MS':{n:'Massa-Carrara',r:'Toscana'}, 'MT':{n:'Matera',r:'Basilicata'}, 'VS':{n:'Medio Campidano',r:'Sardegna'}, 
+      'ME':{n:'Messina',r:'Sicilia'}, 'MI':{n:'Milano',r:'Lombardia'}, 'MO':{n:'Modena',r:'Emilia-Romagna'}, 'MB':{n:'Monza e Brianza',r:'Lombardia'}, 
+      'NA':{n:'Napoli',r:'Campania'}, 'NO':{n:'Novara',r:'Piemonte'}, 'NU':{n:'Nuoro',r:'Sardegna'}, 'OG':{n:'Ogliastra',r:'Sardegna'}, 
+      'OT':{n:'Olbia-Tempio',r:'Sardegna'}, 'OR':{n:'Oristano',r:'Sardegna'}, 'PD':{n:'Padova',r:'Veneto'}, 'PA':{n:'Palermo',r:'Sicilia'}, 
+      'PR':{n:'Parma',r:'Emilia-Romagna'}, 'PV':{n:'Pavia',r:'Lombardia'}, 'PG':{n:'Perugia',r:'Umbria'}, 'PU':{n:'Pesaro e Urbino',r:'Marche'}, 
+      'PE':{n:'Pescara',r:'Abruzzo'}, 'PC':{n:'Piacenza',r:'Emilia-Romagna'}, 'PI':{n:'Pisa',r:'Toscana'}, 'PT':{n:'Pistoia',r:'Toscana'}, 
+      'PN':{n:'Pordenone',r:'Friuli-Venezia Giulia'}, 'PZ':{n:'Potenza',r:'Basilicata'}, 'PO':{n:'Prato',r:'Toscana'}, 'RG':{n:'Ragusa',r:'Sicilia'}, 
+      'RA':{n:'Ravenna',r:'Emilia-Romagna'}, 'RC':{n:'Reggio Calabria',r:'Calabria'}, 'RE':{n:'Reggio Emilia',r:'Emilia-Romagna'}, 'RI':{n:'Rieti',r:'Lazio'}, 
+      'RN':{n:'Rimini',r:'Emilia-Romagna'}, 'RM':{n:'Roma',r:'Lazio'}, 'RO':{n:'Rovigo',r:'Veneto'}, 'SA':{n:'Salerno',r:'Campania'}, 
+      'SS':{n:'Sassari',r:'Sardegna'}, 'SV':{n:'Savona',r:'Liguria'}, 'SI':{n:'Siena',r:'Toscana'}, 'SR':{n:'Siracusa',r:'Sicilia'}, 
+      'SO':{n:'Sondrio',r:'Lombardia'}, 'TA':{n:'Taranto',r:'Puglia'}, 'TE':{n:'Teramo',r:'Abruzzo'}, 'TR':{n:'Terni',r:'Umbria'}, 
+      'TO':{n:'Torino',r:'Piemonte'}, 'TP':{n:'Trapani',r:'Sicilia'}, 'TN':{n:'Trento',r:'Trentino-Alto Adige'}, 'TV':{n:'Treviso',r:'Veneto'}, 
+      'TS':{n:'Trieste',r:'Friuli-Venezia Giulia'}, 'UD':{n:'Udine',r:'Friuli-Venezia Giulia'}, 'VA':{n:'Varese',r:'Lombardia'}, 'VE':{n:'Venezia',r:'Veneto'}, 
+      'VB':{n:'Verbano-Cusio-Ossola',r:'Piemonte'}, 'VC':{n:'Vercelli',r:'Piemonte'}, 'VR':{n:'Verona',r:'Veneto'}, 'VV':{n:'Vibo Valentia',r:'Calabria'}, 
+      'VI':{n:'Vicenza',r:'Veneto'}, 'VT':{n:'Viterbo',r:'Lazio'}
     };
 
     // --- STATE ---
@@ -295,11 +328,22 @@
             if(!res.ok) throw new Error("Network err: " + res.status);
             const data = await res.json();
 
-            // Pre-processing: Conversione sigle province in nomi estesi
+            // ENRICH DATA: Aggiungo Nome Esteso e Regione ad ogni riga
             state.all = (data.rows || []).map(r => {
                 if(r.Provincia) {
-                    const cleanProv = r.Provincia.trim().toUpperCase();
-                    r.Provincia = PROV_MAP[cleanProv] || r.Provincia; // Usa mappa o originale se non trovata
+                    // Pulisco il codice provincia (es. " MI " -> "MI")
+                    const code = r.Provincia.trim().toUpperCase();
+                    const geo = GEO_DATA[code];
+                    
+                    if(geo) {
+                        r.Provincia = geo.n;    // Sovrascrivo con Nome Esteso
+                        r.Regione = geo.r;      // Aggiungo campo Regione
+                    } else {
+                        // Fallback se non trovo la sigla (uso quello che ho)
+                        r.Regione = 'Altro';
+                    }
+                } else {
+                    r.Regione = 'N/D';
                 }
                 return r;
             });
@@ -319,10 +363,14 @@
             document.getElementById('loading').innerHTML = `<h3 style="color:#ef4444">Errore Dati</h3><p>${err.message}</p>`;
         }
 
+        // Listeners
         document.getElementById('selAgente').addEventListener('change', applyFilters);
+        document.getElementById('selRegione').addEventListener('change', applyFilters);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
+        
         document.getElementById('btnReset').addEventListener('click', () => {
             document.getElementById('selAgente').value = "";
+            document.getElementById('selRegione').value = "";
             document.getElementById('selProvincia').value = "";
             applyFilters();
         });
@@ -331,23 +379,31 @@
 
     function populateFilters() {
         const agenti = [...new Set(state.all.map(r => (r.Agente_Nome || r.Agente_Codice || '').trim()))].filter(Boolean).sort();
+        const regioni = [...new Set(state.all.map(r => r.Regione))].filter(x => x && x!=='N/D' && x!=='Altro').sort();
         const province = [...new Set(state.all.map(r => (r.Provincia || '').trim()))].filter(Boolean).sort();
         
         const sA = document.getElementById('selAgente');
+        const sR = document.getElementById('selRegione');
         const sP = document.getElementById('selProvincia');
         
         agenti.forEach(a => sA.add(new Option(a, a)));
+        regioni.forEach(r => sR.add(new Option(r, r)));
         province.forEach(p => sP.add(new Option(p, p)));
     }
 
     function applyFilters() {
         const ag = document.getElementById('selAgente').value;
+        const reg = document.getElementById('selRegione').value;
         const pr = document.getElementById('selProvincia').value;
 
         state.rows = state.all.filter(r => {
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
+            const rReg = r.Regione;
             const rPr = (r.Provincia || '').trim();
-            return (!ag || rAg === ag) && (!pr || rPr === pr);
+            
+            return (!ag || rAg === ag) && 
+                   (!reg || rReg === reg) && 
+                   (!pr || rPr === pr);
         });
         updateDashboard();
     }
@@ -356,7 +412,7 @@
         const data = state.rows.filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE');
         const objs = state.all.find(r => r.Tipo_Dato === 'OBIETTIVI');
 
-        // 1. KPI
+        // KPI
         const totFatt = data.reduce((a,b) => a + asNum(b.Fatturato), 0);
         const totCli = new Set(data.map(r => r.Ragione_Sociale_Cliente)).size;
         
@@ -379,7 +435,7 @@
             document.getElementById('kpiTopAgentVal').textContent = "";
         }
 
-        // 2. GRAFICI
+        // GRAFICI
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
@@ -400,7 +456,7 @@
         charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) });
         charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
 
-        // 3. TABELLA
+        // TABELLA
         updateTable(data);
     }
 
@@ -468,7 +524,7 @@
     function updateTable(data) {
         const body = data.map(r => [
             `<div style="font-weight:600">${r.Agente_Nome||'—'}</div>`,
-            `<span class="badge">${r.Provincia||'?'}</span>`,
+            `<div><span class="badge badge-reg">${r.Regione}</span> <span class="badge">${r.Provincia}</span></div>`,
             r.Ragione_Sociale_Cliente,
             `<div class="money">${fmtEUR.format(asNum(r.Fatturato))}</div>`
         ]);
@@ -476,7 +532,7 @@
         if (dataTable) dataTable.destroy();
         dataTable = new DataTable('#tbl', {
             data: body,
-            columns: [{title:"Agente"},{title:"Prov"},{title:"Cliente"},{title:"Fatturato", className:"dt-right"}],
+            columns: [{title:"Agente"},{title:"Area Geografica"},{title:"Cliente"},{title:"Fatturato", className:"dt-right"}],
             order: [[3,'desc']], pageLength: 10, lengthChange: false,
             language: { search:"Cerca:", paginate:{next:">", previous:"<"}, info:"_START_ - _END_ di _TOTAL_" }
         });
@@ -484,7 +540,7 @@
 
     function exportExcel() {
         const data = state.rows.filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE').map(r => ({
-            Agente: r.Agente_Nome, Prov: r.Provincia, Cliente: r.Ragione_Sociale_Cliente, Fatturato: asNum(r.Fatturato)
+            Agente: r.Agente_Nome, Regione: r.Regione, Provincia: r.Provincia, Cliente: r.Ragione_Sociale_Cliente, Fatturato: asNum(r.Fatturato)
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
