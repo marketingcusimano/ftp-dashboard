@@ -14,8 +14,6 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/2.0.6/js/dataTables.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
-
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
   <style>
@@ -26,7 +24,7 @@
       --secondary: #1e293b;       /* Ardesia Scuro */
       
       /* Backgrounds */
-      --bg-body: #fffaf5;         /* Crema caldo (Pietra Leccese) */
+      --bg-body: #fffaf5;         /* Crema caldo */
       --bg-card: #ffffff;
       --bg-glass: rgba(255, 255, 255, 0.8);
       
@@ -106,8 +104,6 @@
       transition: all 0.3s; color: var(--text-main); box-shadow: var(--shadow-sm);
     }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
-    .btn-primary { background: var(--primary); color: white; border: none; box-shadow: 0 4px 12px rgba(194, 65, 12, 0.2); }
-    .btn-primary:hover { background: #9a3412; box-shadow: 0 8px 20px rgba(194, 65, 12, 0.4); }
 
     /* --- CARDS --- */
     .card {
@@ -216,8 +212,7 @@
         </div>
 
         <button class="btn" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
-        <button class="btn btn-primary" id="btnExcel"><i class="ri-file-excel-2-line"></i> Export Report</button>
-      </div>
+        </div>
     </div>
   </header>
 
@@ -253,7 +248,7 @@
              <div class="kpi-val" id="kpiTargetVal">0%</div>
              <div class="kpi-sub">Completamento</div>
           </div>
-          <div id="miniRadial" style="margin-bottom:-15px; margin-right:-15px"></div>
+          <div id="miniRadial" style="margin-bottom:-10px; margin-right:-10px"></div>
         </div>
       </div>
       
@@ -292,6 +287,7 @@
         </div>
         <div id="chartPolar" style="display:flex; justify-content:center"></div>
       </div>
+      
       <div class="card">
         <div class="chart-header">
           <h3 class="chart-title">Top 5 Clienti</h3>
@@ -408,7 +404,6 @@
             document.getElementById('selProvincia').value = "";
             applyFilters();
         });
-        document.getElementById('btnExcel').addEventListener('click', exportExcel);
     });
 
     function populateFilters() {
@@ -503,7 +498,6 @@
             series: [{ name:'Fatturato', data:[] }],
             chart: { type:'bar', height:340, fontFamily:font, toolbar:{show:false} },
             plotOptions: { bar: { horizontal:true, borderRadius:6, barHeight:'55%', distributed:true } },
-            // Gradient from Terracotta to Orange
             fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.85, opacityTo: 0.85, stops: [50, 0, 100] } },
             colors: ['#c2410c', '#ea580c', '#f97316', '#fdba74', '#94a3b8'],
             legend: { show:false }, dataLabels: { enabled:false },
@@ -527,35 +521,59 @@
         });
         charts.donut.render();
 
-        // Clients
+        // --- CLIENTI (MIGLIORATO: COLORE BRAND E BORDATURA) ---
         charts.clients = new ApexCharts(document.querySelector("#chartClients"), {
             series: [{ name:'Acquisti', data:[] }],
             chart: { type:'bar', height:320, fontFamily:font, toolbar:{show:false} },
-            plotOptions: { bar: { horizontal:true, borderRadius:6, barHeight:'40%' } },
-            colors: ['#334155'], 
-            dataLabels: { enabled:true, formatter: v => "€ " + (v/1000).toFixed(1) + "k", offsetX:10, style: { colors: ['#334155'], fontSize:'11px', fontWeight:700 } },
+            plotOptions: { bar: { horizontal:true, borderRadius:6, barHeight:'60%' } },
+            
+            // USA IL GRADIENTE TERRACOTTA COME L'ALTRO GRAFICO
+            fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.9, opacityTo: 0.9, stops: [50, 0, 100] } },
+            colors: ['#c2410c'], 
+
+            dataLabels: { 
+                enabled:true, 
+                formatter: v => "€ " + (v/1000).toFixed(1) + "k", 
+                offsetX: 0, 
+                style: { colors: ['#fff'], fontSize:'11px', fontWeight:700 } 
+            },
             xaxis: { show:false }, grid: { show:false }, 
             tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.clients.render();
 
-        // Polar (Earth Tones)
+        // Polar
         charts.polar = new ApexCharts(document.querySelector("#chartPolar"), {
             series: [], labels: [],
             chart: { type: 'polarArea', height: 340, fontFamily: font, toolbar:{show:false} },
             stroke: { colors: ['#fff'], width:1 }, fill: { opacity: 0.9 },
-            // Palette: Brown, Terracotta, Gold, Slate, Gray
             colors: ['#78350f', '#9a3412', '#c2410c', '#d97706', '#475569', '#64748b', '#94a3b8', '#cbd5e1'],
             legend: { position: 'bottom' }, yaxis: { show: false },
             tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.polar.render();
 
-        // Mini Radial
+        // --- RADIAL (MIGLIORATO: PIÙ SPESSO E CON SFONDO) ---
         charts.radial = new ApexCharts(document.querySelector("#miniRadial"), {
             series: [0],
-            chart: { type:'radialBar', height:120, width:120, sparkline:{enabled:true} },
-            plotOptions: { radialBar: { hollow:{size:'60%'}, track:{background:'#f1f5f9'}, dataLabels:{show:false} } },
+            chart: { type:'radialBar', height:130, width:130, sparkline:{enabled:true} },
+            plotOptions: { 
+                radialBar: { 
+                    hollow: { size: '50%' }, 
+                    track: { background: '#ffedd5', strokeWidth: '100%' }, // Sfondo giallino per l'anello vuoto
+                    dataLabels: { show: false } 
+                } 
+            },
+            // Gradiente Arancio
+            fill: {
+              type: "gradient",
+              gradient: {
+                shade: "dark",
+                type: "horizontal",
+                gradientToColors: ["#fbbf24"],
+                stops: [0, 100]
+              }
+            },
             colors: ['#c2410c'], stroke: { lineCap:'round' }
         });
         charts.radial.render();
@@ -576,16 +594,6 @@
             order: [[3,'desc']], pageLength: 10, lengthChange: false,
             language: { search:"_INPUT_", searchPlaceholder:"Cerca cliente o agente...", paginate:{next:">", previous:"<"}, info:"_START_ - _END_ di _TOTAL_" }
         });
-    }
-
-    function exportExcel() {
-        const data = state.rows.filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE').map(r => ({
-            Agente: r.Agente_Nome, Regione: r.Regione, Provincia: r.Provincia, Cliente: r.Ragione_Sociale_Cliente, Fatturato: asNum(r.Fatturato)
-        }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Dati");
-        XLSX.writeFile(wb, "CottoCusimano_Report.xlsx");
     }
   </script>
 </body>
