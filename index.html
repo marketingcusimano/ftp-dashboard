@@ -50,11 +50,11 @@
 
     /* --- HEADER --- */
     header {
-      background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
       position: sticky; top: 0; z-index: 100;
       border-bottom: 1px solid var(--border);
       padding: 16px 0; margin-bottom: 32px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
     .header-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
     .brand { display: flex; align-items: center; gap: 14px; }
@@ -69,20 +69,21 @@
     .h-sub { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
     /* --- CONTROLS --- */
-    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     
     .select-wrapper { position: relative; display: inline-block; }
     
     select {
       background: var(--bg-card); border: 1px solid #e5e7eb;
-      padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
-      color: var(--text-main); cursor: pointer; min-width: 160px;
+      padding: 10px 32px 10px 14px; /* Spazio per freccia */
+      border-radius: 10px; font-size: 13px; font-weight: 500;
+      color: var(--text-main); cursor: pointer; min-width: 150px;
       transition: all 0.2s; box-shadow: var(--shadow-card); 
-      appearance: none; padding-right: 30px; /* Spazio per la freccia */
+      appearance: none; -webkit-appearance: none; -moz-appearance: none;
     }
     select:hover, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.1); }
     
-    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 14px; }
+    .sel-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 16px; }
 
     .btn {
       background: var(--bg-card); border: 1px solid #e5e7eb;
@@ -94,46 +95,34 @@
     .btn-primary { background: var(--primary); color: white; border: none; }
     .btn-primary:hover { background: var(--primary-dark); }
 
-    /* --- CARDS --- */
+    /* --- CARDS & GRID --- */
     .card {
       background: var(--bg-card); border-radius: var(--radius); padding: 24px;
       box-shadow: var(--shadow-card); border: 1px solid rgba(0,0,0,0.01);
       transition: all 0.3s ease; position: relative; overflow: hidden;
     }
     .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
-    .card-accent::before {
-      content: ""; position: absolute; left: 0; top: 20px; bottom: 20px;
-      width: 4px; background: var(--primary); border-radius: 0 4px 4px 0;
-    }
+    .card-accent::before { content: ""; position: absolute; left: 0; top: 20px; bottom: 20px; width: 4px; background: var(--primary); border-radius: 0 4px 4px 0; }
 
-    /* --- GRIDS --- */
     .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px; }
     .grid-split { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; }
     .grid-split-rev { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px; }
     @media (max-width: 1024px) { .grid-split, .grid-split-rev { grid-template-columns: 1fr; } }
 
-    /* --- TYPOGRAPHY --- */
+    /* --- TEXT & KPI --- */
     .kpi-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-icon { 
-      width: 36px; height: 36px; border-radius: 10px; 
-      background: var(--primary-light); color: var(--primary); 
-      display: grid; place-items: center; font-size: 18px;
-    }
+    .kpi-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; font-size: 18px; }
     .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; color: var(--text-main); letter-spacing: -1px; }
     .kpi-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-
+    
     .chart-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
     .chart-title { font-size: 16px; font-weight: 700; margin: 0; }
     .chart-ico { color: var(--primary); font-size: 18px; }
 
     /* --- TABLE --- */
     table.dataTable { width: 100% !important; border-collapse: separate; border-spacing: 0; }
-    table.dataTable thead th { 
-      background: #f9fafb; padding: 16px; font-size: 11px; 
-      text-transform: uppercase; color: var(--text-muted); font-weight: 600; 
-      border-bottom: 1px solid var(--border) !important; 
-    }
+    table.dataTable thead th { background: #f9fafb; padding: 16px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border) !important; }
     table.dataTable tbody td { padding: 16px; border-bottom: 1px solid #f3f4f6; font-size: 13px; vertical-align: middle; }
     table.dataTable tbody tr:hover { background-color: #fdf8f5 !important; transition: background 0.2s; }
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #edf2f7; color: #4a5568; border: 1px solid #e2e8f0; display:inline-block; margin-right:4px;}
@@ -161,6 +150,7 @@
           <div class="h-sub">Executive Dashboard</div>
         </div>
       </div>
+      
       <div class="controls">
         <div class="select-wrapper">
             <select id="selAgente"><option value="">Tutti gli Agenti</option></select>
@@ -168,7 +158,9 @@
         </div>
         
         <div class="select-wrapper">
-            <select id="selRegione"><option value="">Tutte le Regioni</option></select>
+            <select id="selRegione" style="border-color:var(--primary); background:#fffaf0">
+                <option value="">📍 FILTRA REGIONE</option>
+            </select>
             <i class="ri-arrow-down-s-line sel-arrow"></i>
         </div>
 
@@ -178,7 +170,7 @@
         </div>
 
         <button class="btn" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
-        <button class="btn btn-primary" id="btnExcel"><i class="ri-download-cloud-2-line"></i> Export Excel</button>
+        <button class="btn btn-primary" id="btnExcel"><i class="ri-download-cloud-2-line"></i> Export</button>
       </div>
     </div>
   </header>
@@ -335,7 +327,6 @@
                         r.Provincia = geo.n;    // Sovrascrivo con Nome Esteso
                         r.Regione = geo.r;      // Aggiungo campo Regione
                     } else {
-                        // Fallback se non trovo la sigla
                         r.Regione = 'Altro';
                     }
                 } else {
@@ -382,6 +373,11 @@
         const sR = document.getElementById('selRegione');
         const sP = document.getElementById('selProvincia');
         
+        // Svuoto prima di ripopolare (sicurezza)
+        sA.innerHTML='<option value="">Tutti gli Agenti</option>';
+        sR.innerHTML='<option value="">📍 FILTRA REGIONE</option>';
+        sP.innerHTML='<option value="">Tutte le Province</option>';
+
         agenti.forEach(a => sA.add(new Option(a, a)));
         regioni.forEach(r => sR.add(new Option(r, r)));
         province.forEach(p => sP.add(new Option(p, p)));
@@ -460,19 +456,16 @@
         const font = 'Inter, sans-serif';
         const colors = ['#D2691E', '#A0522D', '#CD853F', '#DEB887', '#F4A460'];
 
-        // Bar Agenti
         charts.bar = new ApexCharts(document.querySelector("#chartBar"), {
             series: [{ name:'Fatturato', data:[] }],
             chart: { type:'bar', height:320, fontFamily:font, toolbar:{show:false} },
             plotOptions: { bar: { horizontal:true, borderRadius:6, barHeight:'60%', distributed:true } },
-            colors: colors, legend: { show:false },
-            dataLabels: { enabled:false },
+            colors: colors, legend: { show:false }, dataLabels: { enabled:false },
             xaxis: { labels: { formatter: v => "€ " + (v/1000).toFixed(0) + "k" } },
             tooltip: { y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.bar.render();
 
-        // Donut
         charts.donut = new ApexCharts(document.querySelector("#chartDonut"), {
             series: [], labels: [],
             chart: { type:'donut', height:320, fontFamily:font },
@@ -485,7 +478,6 @@
         });
         charts.donut.render();
 
-        // Clients
         charts.clients = new ApexCharts(document.querySelector("#chartClients"), {
             series: [{ name:'Acquisti', data:[] }],
             chart: { type:'bar', height:300, fontFamily:font, toolbar:{show:false} },
@@ -496,7 +488,6 @@
         });
         charts.clients.render();
 
-        // Polar
         charts.polar = new ApexCharts(document.querySelector("#chartPolar"), {
             series: [], labels: [],
             chart: { type: 'polarArea', height: 320, fontFamily: font, toolbar:{show:false} },
@@ -507,7 +498,6 @@
         });
         charts.polar.render();
 
-        // Mini Radial KPI
         charts.radial = new ApexCharts(document.querySelector("#miniRadial"), {
             series: [0],
             chart: { type:'radialBar', height:100, width:100, sparkline:{enabled:true} },
