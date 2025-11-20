@@ -127,7 +127,7 @@
         <div id="chartBar"></div>
       </div>
       <div class="card">
-        <div class="chart-title"><i class="ri-pie-chart-fill"></i> Distribuzione Geografica</div>
+        <div class="chart-title"><i class="ri-pie-chart-fill"></i> Distribuzione Geografica (Donut)</div>
         <div id="chartDonut" style="display:flex; justify-content:center"></div>
       </div>
     </div>
@@ -138,8 +138,8 @@
         <div id="chartClients"></div>
       </div>
       <div class="card">
-        <div class="chart-title"><i class="ri-layout-grid-fill"></i> Mappa Province (Treemap)</div>
-        <div id="chartTreemap"></div>
+        <div class="chart-title"><i class="ri-focus-3-line"></i> Impatto Province (Peso)</div>
+        <div id="chartPolar" style="display:flex; justify-content:center"></div>
       </div>
     </div>
 
@@ -159,30 +159,27 @@
     const asNum = v => {
         if (typeof v === 'number') return v;
         if (!v) return 0;
-        // Pulisce stringhe tipo "1.200,50" -> 1200.50
         return Number(v.toString().replace(/\./g, '').replace(',', '.'));
     };
 
     // STATE
     let state = { all: [], rows: [] };
-    let charts = { bar: null, donut: null, radial: null, clients: null, treemap: null };
+    // Sostituito 'treemap' con 'polar'
+    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null };
     let dataTable = null;
 
     // MAIN
     document.addEventListener("DOMContentLoaded", async () => {
         try {
-            // 1. FETCH DATI REALI
-            // Assicurati che il tuo server risponda a /data con il JSON
             const res = await fetch('/data', { cache: "no-store" });
             if(!res.ok) throw new Error("Server Error: " + res.status);
             const data = await res.json();
 
             state.all = data.rows || [];
-            state.rows = [...state.all]; // copia iniziale
+            state.rows = [...state.all];
             
             if(data.updatedAt) document.getElementById('lastUpdate').textContent = new Date(data.updatedAt).toLocaleString();
             
-            // 2. INIT
             document.getElementById('loading').style.display = 'none';
             populateFilters();
             initCharts();
@@ -193,7 +190,6 @@
             console.error(err);
         }
 
-        // 3. HANDLERS
         document.getElementById('selAgente').addEventListener('change', applyFilters);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
         document.getElementById('btnReset').addEventListener('click', () => {
@@ -205,7 +201,6 @@
     });
 
     function populateFilters() {
-        // Usiamo trim() per pulire eventuali spazi vuoti che rompono i filtri
         const agenti = [...new Set(state.all.map(r => (r.Agente_Nome || r.Agente_Codice || '').trim()))].filter(Boolean).sort();
         const province = [...new Set(state.all.map(r => (r.Provincia || '').trim()))].filter(Boolean).sort();
         
@@ -221,10 +216,8 @@
         const pr = document.getElementById('selProvincia').value;
 
         state.rows = state.all.filter(r => {
-            // Confronto sicuro: puliamo gli spazi e gestiamo i null
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
             const rPr = (r.Provincia || '').trim();
-
             const matchA = !ag || rAg === ag;
             const matchP = !pr || rPr === pr;
             return matchA && matchP;
@@ -236,19 +229,17 @@
         const data = state.rows.filter(r => r.Tipo_Dato === 'VENDITE_CLIENTE');
         const objs = state.all.find(r => r.Tipo_Dato === 'OBIETTIVI');
 
-        // --- KPI ---
+        // KPI
         const totFatt = data.reduce((a,b) => a + asNum(b.Fatturato), 0);
         const totCli = new Set(data.map(r => r.Ragione_Sociale_Cliente)).size;
         
         document.getElementById('kpiFatturato').textContent = fmtEUR.format(totFatt);
         document.getElementById('kpiClienti').textContent = totCli;
         
-        // Target
         const pct = objs ? objs.Percentuale_Obiettivo : 0;
         charts.radial.updateSeries([pct]);
         document.getElementById('kpiTargetVal').textContent = Number(pct).toFixed(1) + "%";
 
-        // Top Agent
         const agMap = {};
         data.forEach(r => { const k = (r.Agente_Nome||'N/D'); agMap[k] = (agMap[k]||0) + asNum(r.Fatturato); });
         const top = Object.entries(agMap).sort((a,b)=>b[1]-a[1])[0];
@@ -259,32 +250,29 @@
             document.getElementById('kpiTopAgent').textContent = "—";
         }
 
-        // --- GRAFICI ---
-        
-        // 1. Bar Chart Agenti
+        // AGGIORNAMENTO GRAFICI
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
 
-        // 2. Donut Province
         const prMap = {};
         data.forEach(r => { const k = (r.Provincia||'?').trim(); prMap[k] = (prMap[k]||0) + asNum(r.Fatturato); });
-        const prSorted = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+        const prSorted = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,6); // Top 6 Donut
+        
         charts.donut.updateOptions({ labels: prSorted.map(x=>x[0]) });
         charts.donut.updateSeries(prSorted.map(x=>x[1]));
 
-        // 3. Top 5 Clienti (NUOVO)
         const clMap = {};
         data.forEach(r => { const k = r.Ragione_Sociale_Cliente||'N/D'; clMap[k] = (clMap[k]||0) + asNum(r.Fatturato); });
-        const clSorted = Object.entries(clMap).sort((a,b)=>b[1]-a[1]).slice(0,5); // Top 5
+        const clSorted = Object.entries(clMap).sort((a,b)=>b[1]-a[1]).slice(0,5); 
         charts.clients.updateOptions({ xaxis: { categories: clSorted.map(x=>x[0]) } });
         charts.clients.updateSeries([{ data: clSorted.map(x=>x[1]) }]);
 
-        // 4. Treemap Province (NUOVO)
-        const treeData = Object.entries(prMap).map(([k,v]) => ({ x: k, y: v }));
-        charts.treemap.updateSeries([{ data: treeData }]);
+        // Aggiornamento Polar Area (Top 8 Province per peso)
+        const prSortedPolar = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+        charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) });
+        charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
 
-        // --- TABELLA ---
         updateTable(data);
     }
 
@@ -297,14 +285,13 @@
             chart: { type:'bar', height:300, fontFamily:font, toolbar:{show:false} },
             plotOptions: { bar: { horizontal:true, borderRadius:4, barHeight:'60%', distributed:true } },
             colors: ['#D2691E', '#A0522D', '#CD853F', '#DEB887', '#F4A460'],
-            dataLabels: { enabled:false },
-            legend: { show:false },
+            dataLabels: { enabled:false }, legend: { show:false },
             xaxis: { labels: { formatter: v => "€ " + (v/1000).toFixed(0) + "k" } },
             tooltip: { y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.bar.render();
 
-        // Province Donut
+        // Donut
         charts.donut = new ApexCharts(document.querySelector("#chartDonut"), {
             series: [], labels: [],
             chart: { type:'donut', height:300, fontFamily:font },
@@ -317,30 +304,31 @@
         });
         charts.donut.render();
 
-        // Clients Bar (NUOVO)
+        // Clients
         charts.clients = new ApexCharts(document.querySelector("#chartClients"), {
             series: [{ name:'Acquisti', data:[] }],
             chart: { type:'bar', height:300, fontFamily:font, toolbar:{show:false} },
             plotOptions: { bar: { horizontal:true, borderRadius:4, barHeight:'50%' } },
-            colors: ['#2563eb'], // Blu per i clienti
-            dataLabels: { enabled:true, formatter: v => "€ " + (v/1000).toFixed(1) + "k", offsetX: 30, style: { colors: ['#333'] } },
-            xaxis: { labels: { show:false } }, // Nascondo asse X tanto ho le label
-            grid: { show:false },
-            tooltip: { y: { formatter: v => fmtEUR.format(v) } }
+            colors: ['#2563eb'], dataLabels: { enabled:true, formatter: v => "€ " + (v/1000).toFixed(1) + "k", offsetX: 30, style: { colors: ['#333'] } },
+            xaxis: { show:false }, grid: { show:false }, tooltip: { y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.clients.render();
 
-        // Treemap (NUOVO)
-        charts.treemap = new ApexCharts(document.querySelector("#chartTreemap"), {
-            series: [],
-            chart: { type:'treemap', height:300, fontFamily:font, toolbar:{show:false} },
-            colors: ['#D2691E'],
-            plotOptions: { treemap: { distributed: true, enableShades: true } },
-            dataLabels: { formatter: (text, op) => [text, fmtEUR.format(op.value)] } // Mostra nome e valore
+        // NUOVO: Polar Area Chart (Sostituisce Treemap)
+        charts.polar = new ApexCharts(document.querySelector("#chartPolar"), {
+            series: [], labels: [],
+            chart: { type: 'polarArea', height: 320, fontFamily: font, toolbar:{show:false} },
+            stroke: { colors: ['#fff'] },
+            fill: { opacity: 0.9 },
+            // Palette: Terra Cotta scuro -> Chiaro -> Grigio
+            colors: ['#8B4513', '#A0522D', '#D2691E', '#CD853F', '#F4A460', '#DEB887', '#9CA3AF', '#D1D5DB'],
+            legend: { position: 'bottom' },
+            yaxis: { show: false }, // Nasconde i cerchi concentrici dei valori
+            tooltip: { y: { formatter: v => fmtEUR.format(v) } }
         });
-        charts.treemap.render();
+        charts.polar.render();
 
-        // Radial KPI
+        // Radial
         charts.radial = new ApexCharts(document.querySelector("#chartRadial"), {
             series: [0],
             chart: { type:'radialBar', height:140, width:140 },
