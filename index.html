@@ -20,19 +20,16 @@
 
   <style>
     :root {
-      /* Brand Palette */
       --primary: #D2691E;       
       --primary-light: #fdf3eb; 
       --primary-dark: #8B4513;
       
-      /* Neutral Palette */
       --bg-body: #f8f9fa;       
       --bg-card: #ffffff;
       --text-main: #1f2937;     
       --text-muted: #6b7280;    
       --border: #edf2f7;
       
-      /* Effects */
       --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
       --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
       --radius: 16px;
@@ -73,18 +70,19 @@
 
     /* --- CONTROLS --- */
     .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    /* Stile Select */
-    .select-wrapper { position:relative; }
+    
+    .select-wrapper { position: relative; display: inline-block; }
+    
     select {
       background: var(--bg-card); border: 1px solid #e5e7eb;
       padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
       color: var(--text-main); cursor: pointer; min-width: 160px;
-      transition: all 0.2s; box-shadow: var(--shadow-card); appearance: none; padding-right: 30px;
+      transition: all 0.2s; box-shadow: var(--shadow-card); 
+      appearance: none; padding-right: 30px; /* Spazio per la freccia */
     }
     select:hover, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.1); }
     
-    /* Icona chevron custom per select */
-    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 12px; }
+    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 14px; }
 
     .btn {
       background: var(--bg-card); border: 1px solid #e5e7eb;
@@ -145,7 +143,6 @@
     #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
     .spinner { width: 50px; height: 50px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
   </style>
 </head>
 <body>
@@ -331,7 +328,6 @@
             // ENRICH DATA: Aggiungo Nome Esteso e Regione ad ogni riga
             state.all = (data.rows || []).map(r => {
                 if(r.Provincia) {
-                    // Pulisco il codice provincia (es. " MI " -> "MI")
                     const code = r.Provincia.trim().toUpperCase();
                     const geo = GEO_DATA[code];
                     
@@ -339,7 +335,7 @@
                         r.Provincia = geo.n;    // Sovrascrivo con Nome Esteso
                         r.Regione = geo.r;      // Aggiungo campo Regione
                     } else {
-                        // Fallback se non trovo la sigla (uso quello che ho)
+                        // Fallback se non trovo la sigla
                         r.Regione = 'Altro';
                     }
                 } else {
