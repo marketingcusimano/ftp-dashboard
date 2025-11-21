@@ -138,12 +138,18 @@
     .kpi-body { margin-top: auto; display: flex; flex-direction: column; justify-content: flex-end; }
 
     /* KPI Values & Trends */
-    .kpi-val-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+    .kpi-val-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
     .kpi-val { 
       font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; 
       color: var(--text-main); letter-spacing: -1.5px; line-height: 1; 
     }
-    .kpi-sub { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    
+    /* Sub-valore Anno Precedente (NEW) */
+    .kpi-prev-row {
+        font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 12px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .kpi-prev-num { font-family: 'JetBrains Mono', monospace; color: #334155; font-weight: 700; }
 
     /* TREND BADGES */
     .trend-badge {
@@ -157,8 +163,8 @@
     .trend-down { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .trend-neutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
     
-    .trend-val-abs { opacity: 0.9; } /* Valore assoluto (es € 500) */
-    .trend-sep { opacity: 0.4; font-weight: 400; margin: 0 2px; } /* Separatore | */
+    .trend-val-abs { opacity: 0.9; } 
+    .trend-sep { opacity: 0.4; font-weight: 400; margin: 0 2px; }
 
     /* Special Card: Top Performer */
     .card-dark {
@@ -267,7 +273,10 @@
                 <div class="kpi-val" id="kpiFatturato">€ 0</div>
                 <div id="kpiTrendFatt" class="trend-badge trend-neutral" style="display:none"></div>
             </div>
-            <div class="kpi-sub">vs Anno Precedente</div>
+            <div class="kpi-prev-row">
+                <span>Anno Prec:</span>
+                <span id="kpiFatturatoPrev" class="kpi-prev-num">€ 0</span>
+            </div>
         </div>
       </div>
       
@@ -281,7 +290,10 @@
                 <div class="kpi-val" id="kpiClienti">0</div>
                 <div id="kpiTrendCli" class="trend-badge trend-neutral" style="display:none"></div>
             </div>
-            <div class="kpi-sub">Confronto su Anno Prec.</div>
+            <div class="kpi-prev-row">
+                <span>Anno Prec:</span>
+                <span id="kpiClientiPrev" class="kpi-prev-num">0</span>
+            </div>
         </div>
       </div>
 
@@ -365,7 +377,6 @@
   <script>
     // --- CONFIGURAZIONE ---
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-    // Formatter compatto per i badge (es. € 12k) se servisse, ma usiamo quello esteso per chiarezza
     const fmtNum = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 }); 
 
     const asNum = v => (typeof v === 'number') ? v : Number((v||"0").toString().replace(/\./g, '').replace(',', '.') || 0);
@@ -539,13 +550,16 @@
         // Fallback se Obiettivi vuoto
         if (obiettiviData.length === 0 && venditeData.length > 0) {
              fatturatoCorrente = venditeData.reduce((a,b) => a + asNum(b.Fatturato), 0);
-             // Qui non abbiamo lo storico clienti dai dati vendita raw, usiamo count attuale
              cliCorrente = new Set(venditeData.map(r => r.Ragione_Sociale_Cliente)).size;
         }
 
-        // --- UI KPI FATTURATO (Valore + % e Delta €) ---
+        // --- UI KPI FATTURATO ---
+        // 1. Main
         document.getElementById('kpiFatturato').textContent = fmtEUR.format(fatturatoCorrente);
-        
+        // 2. Previous Absolute (ANTIBLASTER MODE)
+        document.getElementById('kpiFatturatoPrev').textContent = fmtEUR.format(fatturatoPrecedente);
+
+        // 3. Trend Badge
         const kpiTrendFatt = document.getElementById('kpiTrendFatt');
         if (fatturatoPrecedente > 0) {
             const deltaEur = fatturatoCorrente - fatturatoPrecedente;
@@ -564,9 +578,13 @@
             kpiTrendFatt.style.display = 'none';
         }
 
-        // --- UI KPI CLIENTI (Valore + % e Delta numerico) ---
+        // --- UI KPI CLIENTI ---
+        // 1. Main
         document.getElementById('kpiClienti').textContent = cliCorrente;
-        
+        // 2. Previous Absolute
+        document.getElementById('kpiClientiPrev').textContent = cliPrecedente;
+
+        // 3. Trend Badge
         const kpiTrendCli = document.getElementById('kpiTrendCli');
         if (cliPrecedente > 0) {
             const deltaCli = cliCorrente - cliPrecedente;
@@ -582,7 +600,6 @@
                 <span>${Math.abs(deltaCliPct).toFixed(1)}%</span>
             `;
         } else {
-            // Se non ho storico, nascondo badge
             kpiTrendCli.style.display = 'none';
         }
 
