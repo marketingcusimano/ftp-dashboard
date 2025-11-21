@@ -54,7 +54,7 @@
 
     .container { max-width: 1500px; margin: 0 auto; padding: 0 32px; }
 
-    /* --- HEADER --- */
+    /* --- HEADER (MIGLIORATO) --- */
     header {
       background: var(--bg-glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       position: sticky; top: 0; z-index: 100;
@@ -64,44 +64,39 @@
     .header-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
     
     .brand { display: flex; align-items: center; gap: 16px; }
-    .logo { 
-      width: 52px; height: 52px; 
-      background: var(--primary-gradient);
-      border-radius: 16px; color: #fff; 
-      display: grid; place-items: center; font-weight: 800; font-size: 22px;
-      box-shadow: 0 8px 20px rgba(194, 65, 12, 0.3);
-      position: relative; overflow: hidden;
-    }
-    .logo::after { content:''; position: absolute; inset:0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.1)); }
+    .logo-img { height: 48px; width: auto; }
     
     .h-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; color: var(--text-main); }
     .h-sub { font-size: 14px; color: var(--text-muted); font-weight: 600; display:flex; align-items:center; gap:6px; }
     
-    /* --- CONTROLS --- */
+    /* --- CONTROLS (MIGLIORATI) --- */
     .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     
-    .select-wrapper { position: relative; display: inline-block; }
+    .select-wrapper { position: relative; display: inline-block; flex-grow: 1; }
     select {
       background: #fff; border: 1px solid #e2e8f0;
-      padding: 12px 36px 12px 16px; border-radius: 12px; 
-      font-size: 13px; font-weight: 600; color: var(--text-main); 
-      cursor: pointer; min-width: 160px;
+      padding: 12px 40px 12px 16px; border-radius: 12px; 
+      font-size: 14px; font-weight: 700; color: var(--text-main); 
+      cursor: pointer; width: 100%; min-width: 180px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
       box-shadow: var(--shadow-sm); appearance: none;
     }
     select:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); border-color: var(--primary); }
     select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.1); }
     
-    .sel-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 16px; transition: 0.2s; }
+    .sel-arrow { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 18px; transition: 0.2s; }
     .select-wrapper:hover .sel-arrow { color: var(--primary); transform: translateY(-50%) rotate(180deg); }
 
     .btn {
       background: #fff; border: 1px solid #e2e8f0;
-      padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 700;
+      padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700;
       cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
       transition: all 0.3s; color: var(--text-main); box-shadow: var(--shadow-sm);
     }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
+    
+    .btn-reset { color: #ef4444; border-color: #fee2e2; background: #fef2f2; }
+    .btn-reset:hover { background: #fee2e2; border-color: #fecaca; box-shadow: 0 8px 16px rgba(239, 68, 68, 0.1); }
 
     /* --- CARDS --- */
     .card {
@@ -120,7 +115,10 @@
     .grid-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
 
     @media (max-width: 1200px) { 
-        .grid-charts, .grid-charts-rev, .grid-split { grid-template-columns: 1fr; } 
+        .grid-charts, .grid-charts-rev, .grid-split { grid-template-columns: 1fr; }
+        .header-inner { flex-direction: column; align-items: stretch; }
+        .controls { width: 100%; }
+        .select-wrapper, .btn { flex-grow: 1; }
     }
 
     /* --- KPI DESIGN --- */
@@ -169,10 +167,10 @@
     /* --- MODAL (POP UP) STYLES --- */
     .modal-overlay {
         position: fixed; inset: 0; 
-        background: rgba(15, 23, 42, 0.6); /* Sfondo scuro */
+        background: rgba(15, 23, 42, 0.6);
         backdrop-filter: blur(4px);
-        z-index: 99999; /* Z-index altissimo per stare sopra a tutto */
-        display: none; /* Nascosto di base */
+        z-index: 99999; /* Sempre sopra */
+        display: none; 
         justify-content: center; align-items: center; padding: 20px;
         animation: fadeIn 0.2s ease;
     }
@@ -258,7 +256,7 @@
   <header>
     <div class="container header-inner">
       <div class="brand">
-        <div class="logo">CC</div>
+        <img src="https://www.cottocusimano.com//Resources/dashboard-agenti/logo-cusimano-dashboard.png" alt="Cotto Cusimano" class="logo-img">
         <div>
           <h1 class="h-title">Cotto Cusimano</h1>
           <div class="h-sub">Analytics Hub</div>
@@ -272,10 +270,10 @@
         </div>
         
         <div class="select-wrapper">
-            <select id="selRegione" style="border-color: #fbbf24; background:#fffdf5">
+            <select id="selRegione">
                 <option value="">Filtra Regione</option> 
             </select>
-            <i class="ri-map-2-line sel-arrow" style="color:#d97706"></i>
+            <i class="ri-map-2-line sel-arrow"></i>
         </div>
 
         <div class="select-wrapper">
@@ -283,7 +281,7 @@
             <i class="ri-map-pin-range-line sel-arrow"></i>
         </div>
 
-        <button class="btn" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
+        <button class="btn btn-reset" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
       </div>
     </div>
   </header>
@@ -800,6 +798,7 @@
         const bucketsNames = ['Critico (<50%)', 'In Ritardo (50-80%)', 'In Target (80-100%)', 'Star (>100%)'];
         const bucketColors = ['tag-crit', 'tag-warn', 'tag-ok', 'tag-ok']; 
         
+        // ORDINAMENTO CRESCENTE (PERCENTUALE MINORE IN CIMA)
         const agents = agentPerformanceData.filter(a => a.bucket === bucketIndex).sort((a,b) => a.pct - b.pct);
         
         title.textContent = `${bucketsNames[bucketIndex]} (${agents.length} Agenti)`;
