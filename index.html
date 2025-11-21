@@ -116,10 +116,18 @@
     }
     .card:hover { transform: translateY(-4px); }
 
+    /* LAYOUT GRIDS */
     .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 32px; }
+    
     .grid-charts { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
     .grid-charts-rev { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 32px; }
-    @media (max-width: 1200px) { .grid-charts, .grid-charts-rev { grid-template-columns: 1fr; } }
+    
+    /* --- NUOVA GRID 50/50 PER STRATEGIA --- */
+    .grid-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+
+    @media (max-width: 1200px) { 
+        .grid-charts, .grid-charts-rev, .grid-split { grid-template-columns: 1fr; } 
+    }
 
     /* --- KPI DESIGN --- */
     .kpi-head { 
@@ -144,7 +152,6 @@
       color: var(--text-main); letter-spacing: -1.5px; line-height: 1; 
     }
     
-    /* Sub-valore Anno Precedente (NEW) */
     .kpi-prev-row {
         font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 12px;
         display: flex; align-items: center; gap: 6px;
@@ -177,7 +184,7 @@
     .card-dark .money-gold { color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.4); font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 24px; }
 
     /* --- CHART STYLES --- */
-    .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .chart-title { font-size: 18px; font-weight: 700; margin: 0; }
     .chart-badge { 
       background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; 
@@ -306,7 +313,7 @@
             <div style="display:flex; align-items:flex-end; justify-content:space-between; width:100%">
                 <div>
                    <div class="kpi-val" id="kpiTargetVal">0%</div>
-                   <div class="kpi-sub">Completamento</div>
+                   <div class="kpi-sub" style="font-size:12px; color:var(--text-muted)">Completamento</div>
                 </div>
                 <div id="miniRadial" style="margin-bottom:-10px; margin-right:-10px"></div>
             </div>
@@ -358,6 +365,32 @@
         </div>
         <div id="chartClients"></div>
       </div>
+    </div>
+
+    <div class="grid-split animate-in" style="animation-delay: 0.35s">
+      
+        <div class="card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Efficienza Rete</h3>
+              <div style="font-size:12px; color:var(--text-muted); font-weight:500">Fatturato vs N. Clienti</div>
+            </div>
+            <span class="chart-badge" style="background:#f1f5f9; color:#475569">Posizionamento</span>
+          </div>
+          <div id="chartScatter"></div>
+        </div>
+  
+        <div class="card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Salute Obiettivi</h3>
+              <div style="font-size:12px; color:var(--text-muted); font-weight:500">Distribuzione % Performance</div>
+            </div>
+            <span class="chart-badge" style="background:#ecfccb; color:#3f6212">Target</span>
+          </div>
+          <div id="chartHisto"></div>
+        </div>
+  
     </div>
 
     <div class="card animate-in" style="animation-delay: 0.4s">
@@ -414,7 +447,8 @@
 
     // --- STATE ---
     let state = { all: [], rows: [] };
-    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null };
+    // Aggiunto 'scatter' e 'histo'
+    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, scatter: null, histo: null };
     let dataTable = null;
 
     // --- INIT ---
@@ -429,7 +463,6 @@
                 // Normalizza Provincia
                 if(r.Provincia) {
                     const code = r.Provincia.trim().toUpperCase();
-                    // Caso speciale: 'Generale' nei dati Obiettivi resta tale
                     if(code === 'GENERALE') {
                         r.Provincia = 'Generale';
                         r.Regione = 'Altro'; 
@@ -529,7 +562,7 @@
             }
         });
 
-        // --- CALCOLI ---
+        // --- CALCOLI KPI ---
         let fatturatoCorrente = 0;
         let fatturatoPrecedente = 0;
         let targetTotale = 0;
@@ -542,7 +575,6 @@
             fatturatoPrecedente += asNum(r.Anno_Precedente);
             targetTotale += asNum(r.Obiettivo);
             
-            // Nuovi calcoli per i clienti dai dati OBIETTIVI
             cliCorrente += asNum(r.Clienti_Anno_Corrente);
             cliPrecedente += asNum(r.Clienti_Anno_Precedente);
         });
@@ -553,13 +585,10 @@
              cliCorrente = new Set(venditeData.map(r => r.Ragione_Sociale_Cliente)).size;
         }
 
-        // --- UI KPI FATTURATO ---
-        // 1. Main
+        // --- UI KPI AGGIORNAMENTO ---
         document.getElementById('kpiFatturato').textContent = fmtEUR.format(fatturatoCorrente);
-        // 2. Previous Absolute (ANTIBLASTER MODE)
         document.getElementById('kpiFatturatoPrev').textContent = fmtEUR.format(fatturatoPrecedente);
 
-        // 3. Trend Badge
         const kpiTrendFatt = document.getElementById('kpiTrendFatt');
         if (fatturatoPrecedente > 0) {
             const deltaEur = fatturatoCorrente - fatturatoPrecedente;
@@ -578,13 +607,9 @@
             kpiTrendFatt.style.display = 'none';
         }
 
-        // --- UI KPI CLIENTI ---
-        // 1. Main
         document.getElementById('kpiClienti').textContent = cliCorrente;
-        // 2. Previous Absolute
         document.getElementById('kpiClientiPrev').textContent = cliPrecedente;
 
-        // 3. Trend Badge
         const kpiTrendCli = document.getElementById('kpiTrendCli');
         if (cliPrecedente > 0) {
             const deltaCli = cliCorrente - cliPrecedente;
@@ -603,7 +628,6 @@
             kpiTrendCli.style.display = 'none';
         }
 
-        // --- ALTRI KPI ---
         let pctTarget = 0;
         if(targetTotale > 0) pctTarget = (fatturatoCorrente / targetTotale) * 100;
         
@@ -630,7 +654,7 @@
             document.getElementById('kpiTopAgentVal').textContent = "€ 0";
         }
 
-        // --- GRAFICI ---
+        // --- AGGIORNAMENTO GRAFICI STANDARD ---
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
@@ -665,6 +689,55 @@
         const clSorted = Object.entries(clMap).sort((a,b)=>b[1]-a[1]).slice(0,5); 
         charts.clients.updateOptions({ xaxis: { categories: clSorted.map(x=>x[0]) } });
         charts.clients.updateSeries([{ data: clSorted.map(x=>x[1]) }]);
+
+        // --- NUOVO: CALCOLO SCATTER PLOT (EFFICIENZA) ---
+        const scatterMap = {};
+        venditeData.forEach(r => {
+            const agName = (r.Agente_Nome || r.Agente_Codice || 'N/D').trim();
+            if(!scatterMap[agName]) scatterMap[agName] = { val: 0, cli: new Set() };
+            scatterMap[agName].val += asNum(r.Fatturato);
+            scatterMap[agName].cli.add(r.Ragione_Sociale_Cliente);
+        });
+        
+        const scatterSeriesData = Object.keys(scatterMap).map(k => {
+            return { name: k, x: scatterMap[k].cli.size, y: scatterMap[k].val };
+        });
+        charts.scatter.updateSeries([{ name: "Agenti", data: scatterSeriesData }]);
+
+        // --- NUOVO: CALCOLO ISTOGRAMMA (SALUTE OBIETTIVI) ---
+        let histoCounts = [0, 0, 0, 0]; // [Critico, Ritardo, Target, Star]
+        const objMap = {};
+        
+        // Filtriamo 'obiettiviData' per rimuovere righe generali se vogliamo dettaglio agenti
+        // Qui usiamo state.all filtrato solo per tipo obiettivo per avere tutti gli agenti
+        // Nota: usiamo 'obiettiviData' che è già filtrato, ma se il filtro cancella gli agenti non vediamo la rete globale
+        // Per vedere la "Salute Rete" meglio usare tutti gli agenti eccetto se filtrati esplicitamente
+        
+        let objSource = obiettiviData;
+        // Se non c'è filtro agente attivo, usiamo tutti gli obiettivi (eccetto generali) per vedere la distribuzione
+        if(!ag) {
+             objSource = state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI' && r.Provincia === 'Generale');
+             // Se 'Generale' è solo 1 riga totale, non va bene. Dobbiamo cercare le righe Agente su Provincia 'Generale'.
+             // Assumiamo che OBIETTIVI abbia una riga per Agente con Provincia='Generale' (Totale Agente)
+        }
+
+        objSource.forEach(r => {
+             const agName = (r.Agente_Nome || 'N/D').trim();
+             if(!objMap[agName]) objMap[agName] = { curr: 0, target: 0 };
+             objMap[agName].curr += asNum(r.Anno_Corrente);
+             objMap[agName].target += asNum(r.Obiettivo);
+        });
+
+        Object.values(objMap).forEach(o => {
+            if(o.target > 0) {
+                const pct = (o.curr / o.target) * 100;
+                if(pct < 50) histoCounts[0]++;
+                else if(pct < 80) histoCounts[1]++;
+                else if(pct < 100) histoCounts[2]++;
+                else histoCounts[3]++;
+            }
+        });
+        charts.histo.updateSeries([{ data: histoCounts }]);
 
         updateTable(venditeData);
     }
@@ -728,6 +801,67 @@
             colors: ['#c2410c'], stroke: { lineCap:'round' }
         });
         charts.radial.render();
+
+        // --- NUOVO: SCATTER PLOT ---
+        charts.scatter = new ApexCharts(document.querySelector("#chartScatter"), {
+            series: [],
+            chart: { type: 'scatter', height: 320, fontFamily: font, toolbar: {show: false}, zoom: {enabled: false} },
+            colors: ['#ea580c'], 
+            xaxis: { 
+                tickAmount: 8, 
+                labels: { formatter: val => parseFloat(val).toFixed(0) },
+                title: { text: 'Numero Clienti Attivi', style: {fontSize:'11px', color:'#94a3b8'} }
+            },
+            yaxis: { 
+                tickAmount: 5,
+                labels: { formatter: val => "€ " + (val/1000).toFixed(0) + "k" },
+                title: { text: 'Fatturato Generato', style: {fontSize:'11px', color:'#94a3b8'} }
+            },
+            grid: { borderColor: '#f1f5f9', xaxis: {lines: {show: true}}, yaxis: {lines: {show: true}} },
+            markers: { size: 6, strokeColors: '#fff', strokeWidth: 2, hover: {size: 9} },
+            tooltip: {
+                custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                    var data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                    var avg = data.x > 0 ? (data.y / data.x) : 0;
+                    return '<div style="background:#1e293b; padding:12px; border-radius:8px; color:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1)">' +
+                    '<div style="font-weight:700; margin-bottom:6px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:4px">' + data.name + '</div>' +
+                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Fatturato:</span> <span style="font-weight:600; color:#fbbf24">€ ' + fmtNum.format(data.y) + '</span></div>' +
+                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Clienti:</span> <span style="font-weight:600">' + data.x + '</span></div>' +
+                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:11px; margin-top:4px; color:#94a3b8"><span>Avg/Cli:</span> <span>€ ' + fmtNum.format(avg.toFixed(0)) + '</span></div>' +
+                    '</div>';
+                }
+            }
+        });
+        charts.scatter.render();
+
+        // --- NUOVO: HISTOGRAMMA ---
+        charts.histo = new ApexCharts(document.querySelector("#chartHisto"), {
+            series: [{ name: 'Agenti', data: [] }],
+            chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false} },
+            plotOptions: { 
+                bar: { 
+                    borderRadius: 6, 
+                    columnWidth: '50%', 
+                    distributed: true, 
+                    dataLabels: { position: 'top' }
+                } 
+            },
+            dataLabels: { 
+                enabled: true, 
+                offsetY: -20,
+                style: { fontSize: '12px', colors: ["#334155"] } 
+            },
+            legend: { show: false },
+            colors: ['#ef4444', '#f97316', '#84cc16', '#15803d'], 
+            xaxis: { 
+                categories: ['Critico (<50%)', 'Ritardo (50-80%)', 'Target (80-100%)', 'Star (>100%)'],
+                labels: { style: { fontSize: '11px', fontWeight: 600 } }
+            },
+            yaxis: { show: false }, 
+            grid: { show: false },
+            tooltip: { theme: 'dark', y: { formatter: undefined, title: { formatter: (s) => "Agenti in fascia:" } } }
+        });
+        charts.histo.render();
     }
 
     function updateTable(data) {
