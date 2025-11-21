@@ -137,23 +137,28 @@
     
     .kpi-body { margin-top: auto; display: flex; flex-direction: column; justify-content: flex-end; }
 
-    .kpi-val-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    /* KPI Values & Trends */
+    .kpi-val-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
     .kpi-val { 
       font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; 
-      color: var(--text-main); letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 6px; 
+      color: var(--text-main); letter-spacing: -1.5px; line-height: 1; 
     }
     .kpi-sub { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
     /* TREND BADGES */
     .trend-badge {
-        display: inline-flex; align-items: center; gap: 4px;
+        display: inline-flex; align-items: center; gap: 6px;
         padding: 4px 10px; border-radius: 20px;
-        font-size: 13px; font-weight: 700; letter-spacing: -0.5px;
-        transform: translateY(-4px);
+        font-size: 12px; font-weight: 700; letter-spacing: -0.3px;
+        transform: translateY(-3px);
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .trend-up { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .trend-down { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .trend-neutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    
+    .trend-val-abs { opacity: 0.9; } /* Valore assoluto (es € 500) */
+    .trend-sep { opacity: 0.4; font-weight: 400; margin: 0 2px; } /* Separatore | */
 
     /* Special Card: Top Performer */
     .card-dark {
@@ -260,8 +265,7 @@
         <div class="kpi-body">
             <div class="kpi-val-row">
                 <div class="kpi-val" id="kpiFatturato">€ 0</div>
-                <div id="kpiTrend" class="trend-badge trend-neutral" style="display:none">
-                   </div>
+                <div id="kpiTrendFatt" class="trend-badge trend-neutral" style="display:none"></div>
             </div>
             <div class="kpi-sub">vs Anno Precedente</div>
         </div>
@@ -273,8 +277,11 @@
           <div class="kpi-icon-wrap"><i class="ri-building-2-line"></i></div>
         </div>
         <div class="kpi-body">
-            <div class="kpi-val" id="kpiClienti">0</div>
-            <div class="kpi-sub">Aziende in portafoglio</div>
+            <div class="kpi-val-row">
+                <div class="kpi-val" id="kpiClienti">0</div>
+                <div id="kpiTrendCli" class="trend-badge trend-neutral" style="display:none"></div>
+            </div>
+            <div class="kpi-sub">Confronto su Anno Prec.</div>
         </div>
       </div>
 
@@ -358,6 +365,9 @@
   <script>
     // --- CONFIGURAZIONE ---
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    // Formatter compatto per i badge (es. € 12k) se servisse, ma usiamo quello esteso per chiarezza
+    const fmtNum = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 }); 
+
     const asNum = v => (typeof v === 'number') ? v : Number((v||"0").toString().replace(/\./g, '').replace(',', '.') || 0);
 
     const GEO_DATA = {
@@ -408,17 +418,16 @@
                 // Normalizza Provincia
                 if(r.Provincia) {
                     const code = r.Provincia.trim().toUpperCase();
-                    // Caso speciale: 'Generale' nei dati Obiettivi resta tale, altrimenti decodifica
+                    // Caso speciale: 'Generale' nei dati Obiettivi resta tale
                     if(code === 'GENERALE') {
                         r.Provincia = 'Generale';
-                        r.Regione = 'Altro'; // o null, serve per i filtri
+                        r.Regione = 'Altro'; 
                     } else {
                         const geo = GEO_DATA[code];
                         if(geo) {
                             r.Provincia = geo.n;
                             r.Regione = geo.r;
                         } else {
-                            // Se la provincia è già un nome esteso o sconosciuto
                             r.Regione = 'Altro';
                         }
                     }
@@ -431,7 +440,6 @@
             
             if(data.updatedAt) document.getElementById('lastUpdate').textContent = new Date(data.updatedAt).toLocaleString();
             
-            // Nascondi loader
             const loader = document.getElementById('loading');
             loader.style.opacity = '0';
             setTimeout(()=>loader.remove(), 500);
@@ -476,7 +484,6 @@
     }
 
     function applyFilters() {
-        // I filtri vengono applicati dinamicamente in updateDashboard per gestire diversamente VENDITE vs OBIETTIVI
         updateDashboard();
     }
 
@@ -485,31 +492,25 @@
         const reg = document.getElementById('selRegione').value;
         const pr = document.getElementById('selProvincia').value;
 
-        // 1. Filtro Dati Vendite (per tabelle e grafici dettaglio)
+        // 1. Filtro Dati Vendite
         const venditeData = state.all.filter(r => {
-            if (r.Tipo_Dato !== 'VENDITE_CLIENTE') return false; // Assumiamo che le vendite abbiano questo tipo
+            if (r.Tipo_Dato !== 'VENDITE_CLIENTE') return false;
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
             return (!ag || rAg === ag) && 
                    (!reg || r.Regione === reg) && 
                    (!pr || (r.Provincia||'').trim() === pr);
         });
 
-        // 2. Filtro Dati Obiettivi (per KPI Fatturato e Confronto Anno)
-        // Logica: Se non c'è filtro Geo, usiamo i record 'Generale' (totali agenti) per evitare duplicati.
-        // Se c'è filtro Geo, usiamo i record specifici provinciali escludendo 'Generale'.
+        // 2. Filtro Dati Obiettivi
         const hasGeoFilter = reg || pr;
-        
         const obiettiviData = state.all.filter(r => {
             if (r.Tipo_Dato !== 'OBIETTIVI') return false;
-            
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
             if (ag && rAg !== ag) return false;
 
             if (!hasGeoFilter) {
-                // Se non filtro per area, prendo solo i totali generali
                 return r.Provincia === 'Generale';
             } else {
-                // Se filtro per area, escludo i generali e cerco match specifici
                 if (r.Provincia === 'Generale') return false;
                 if (reg && r.Regione !== reg) return false;
                 if (pr && (r.Provincia||'').trim() !== pr) return false;
@@ -517,76 +518,92 @@
             }
         });
 
-        // --- CALCOLO KPI ---
-        
-        // Totali dal file OBIETTIVI (più precisi per i macro numeri)
+        // --- CALCOLI ---
         let fatturatoCorrente = 0;
         let fatturatoPrecedente = 0;
         let targetTotale = 0;
+        
+        let cliCorrente = 0;
+        let cliPrecedente = 0;
 
         obiettiviData.forEach(r => {
             fatturatoCorrente += asNum(r.Anno_Corrente);
             fatturatoPrecedente += asNum(r.Anno_Precedente);
             targetTotale += asNum(r.Obiettivo);
+            
+            // Nuovi calcoli per i clienti dai dati OBIETTIVI
+            cliCorrente += asNum(r.Clienti_Anno_Corrente);
+            cliPrecedente += asNum(r.Clienti_Anno_Precedente);
         });
 
-        // Se per qualche motivo obiettiviData è vuoto (es. filtri troppo stretti), fallback su venditeData
+        // Fallback se Obiettivi vuoto
         if (obiettiviData.length === 0 && venditeData.length > 0) {
              fatturatoCorrente = venditeData.reduce((a,b) => a + asNum(b.Fatturato), 0);
-             // Non abbiamo storico sulle righe vendite, quindi niente confronto
-             fatturatoPrecedente = 0;
+             // Qui non abbiamo lo storico clienti dai dati vendita raw, usiamo count attuale
+             cliCorrente = new Set(venditeData.map(r => r.Ragione_Sociale_Cliente)).size;
         }
 
-        // UI KPI Fatturato
+        // --- UI KPI FATTURATO (Valore + % e Delta €) ---
         document.getElementById('kpiFatturato').textContent = fmtEUR.format(fatturatoCorrente);
         
-        // UI KPI Trend
-        const kpiTrend = document.getElementById('kpiTrend');
+        const kpiTrendFatt = document.getElementById('kpiTrendFatt');
         if (fatturatoPrecedente > 0) {
-            const delta = ((fatturatoCorrente - fatturatoPrecedente) / fatturatoPrecedente) * 100;
-            const isPositive = delta >= 0;
-            kpiTrend.style.display = 'inline-flex';
-            kpiTrend.className = `trend-badge ${isPositive ? 'trend-up' : 'trend-down'}`;
-            kpiTrend.innerHTML = `
-                <i class="${isPositive ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i>
-                ${Math.abs(delta).toFixed(1)}%
+            const deltaEur = fatturatoCorrente - fatturatoPrecedente;
+            const deltaPct = ((deltaEur) / fatturatoPrecedente) * 100;
+            const isPos = deltaEur >= 0;
+            
+            kpiTrendFatt.style.display = 'inline-flex';
+            kpiTrendFatt.className = `trend-badge ${isPos ? 'trend-up' : 'trend-down'}`;
+            kpiTrendFatt.innerHTML = `
+                <i class="${isPos ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i>
+                <span class="trend-val-abs">${isPos?'+':''}€ ${fmtNum.format(deltaEur)}</span>
+                <span class="trend-sep">|</span>
+                <span>${Math.abs(deltaPct).toFixed(1)}%</span>
             `;
         } else {
-            kpiTrend.style.display = 'none';
+            kpiTrendFatt.style.display = 'none';
         }
 
-        // KPI Clienti (usiamo venditeData per contare i clienti attivi reali)
-        const totCli = new Set(venditeData.map(r => r.Ragione_Sociale_Cliente)).size;
-        document.getElementById('kpiClienti').textContent = totCli;
+        // --- UI KPI CLIENTI (Valore + % e Delta numerico) ---
+        document.getElementById('kpiClienti').textContent = cliCorrente;
+        
+        const kpiTrendCli = document.getElementById('kpiTrendCli');
+        if (cliPrecedente > 0) {
+            const deltaCli = cliCorrente - cliPrecedente;
+            const deltaCliPct = ((deltaCli) / cliPrecedente) * 100;
+            const isPosCli = deltaCli >= 0;
 
-        // KPI Target
+            kpiTrendCli.style.display = 'inline-flex';
+            kpiTrendCli.className = `trend-badge ${isPosCli ? 'trend-up' : 'trend-down'}`;
+            kpiTrendCli.innerHTML = `
+                <i class="${isPosCli ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i>
+                <span class="trend-val-abs">${isPosCli?'+':''}${deltaCli}</span>
+                <span class="trend-sep">|</span>
+                <span>${Math.abs(deltaCliPct).toFixed(1)}%</span>
+            `;
+        } else {
+            // Se non ho storico, nascondo badge
+            kpiTrendCli.style.display = 'none';
+        }
+
+        // --- ALTRI KPI ---
         let pctTarget = 0;
         if(targetTotale > 0) pctTarget = (fatturatoCorrente / targetTotale) * 100;
-        else if (obiettiviData.length > 0) {
-            // Fallback: media delle percentuali se non posso sommare gli obiettivi
-            // (utile se obiettivi sono null ma percentuale c'è)
-            // Qui semplifichiamo: se targetTotale è 0, 0%
-        }
         
         charts.radial.updateSeries([pctTarget]);
         document.getElementById('kpiTargetVal').textContent = pctTarget.toFixed(1) + "%";
 
-        // Top Performer (calcolato su obiettiviData è più veloce)
-        // Raggruppa per agente dai dati Obiettivi filtrati
         const agMap = {};
         obiettiviData.forEach(r => {
              const k = r.Agente_Nome || 'N/D';
              agMap[k] = (agMap[k]||0) + asNum(r.Anno_Corrente);
         });
-        
-        // Se obiettiviData è vuoto, usiamo venditeData
         if (Object.keys(agMap).length === 0) {
             venditeData.forEach(r => {
                 const k = r.Agente_Nome || 'N/D';
                 agMap[k] = (agMap[k]||0) + asNum(r.Fatturato);
             });
         }
-
         const top = Object.entries(agMap).sort((a,b)=>b[1]-a[1])[0];
         if(top) {
             document.getElementById('kpiTopAgent').textContent = top[0];
@@ -596,53 +613,28 @@
             document.getElementById('kpiTopAgentVal').textContent = "€ 0";
         }
 
-        // --- AGGIORNAMENTO GRAFICI (Usano sempre venditeData per il dettaglio o agMap per i totali) ---
-        
-        // Bar Chart (Agenti) - Meglio usare agMap derivata da Obiettivi (più completa)
+        // --- GRAFICI ---
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
 
-        // Donut (Macro Aree) & Polar (Province) - Usiamo VenditeData per spaccato preciso
-        // (Perché Obiettivi ha solo 'Generale' se non filtro, perdendo il dettaglio regionale)
-        // Se voglio vedere il peso Regioni TOTALE senza filtri, devo usare venditeData o sommare Obiettivi NON-generali?
-        // Meglio venditeData per i grafici di ripartizione, è il venduto reale transazionale.
-        
-        const prMap = {};
-        const regMap = {};
-        
-        // Nota: Se venditeData è vuoto (perché il CSV non ha righe VENDITE_CLIENTE popolate?), 
-        // potremmo dover usare state.all filtrato per OBIETTIVI e Provincia != Generale.
-        // Controllo robustezza:
         let sourceDataForCharts = venditeData;
         if (sourceDataForCharts.length < 5) {
-            // Fallback su obiettivi provinciali se mancano le vendite
              sourceDataForCharts = state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI' && r.Provincia !== 'Generale');
-             // Applica filtri correnti anche qui
              if(ag) sourceDataForCharts = sourceDataForCharts.filter(r=>(r.Agente_Nome||'').trim()===ag);
-             // (altri filtri geo già impliciti nel concetto di fallback)
         }
 
+        const prMap = {};
+        const regMap = {};
         sourceDataForCharts.forEach(r => {
             const p = (r.Provincia||'?').trim();
-            const val = asNum(r.Fatturato || r.Anno_Corrente); // Fatturato per vendite, Anno_Corrente per obiettivi
+            const val = asNum(r.Fatturato || r.Anno_Corrente); 
             prMap[p] = (prMap[p]||0) + val;
-        });
-        
-        // Per regione, meglio ricalcolare dai dati filtrati
-        sourceDataForCharts.forEach(r => {
-             const reg = r.Regione || 'Altro';
-             const val = asNum(r.Fatturato || r.Anno_Corrente);
-             regMap[reg] = (regMap[reg]||0) + val;
+            
+            const reg = r.Regione || 'Altro';
+            regMap[reg] = (regMap[reg]||0) + val;
         });
 
-        const prSorted = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
-        charts.donut.updateOptions({ labels: prSorted.map(x=>x[0]) });
-        charts.donut.updateSeries(prSorted.map(x=>x[1])); // Donut ora mostra province top (come richiesto da codice originale) o Regioni?
-        // Il codice originale usava prSorted per Donut ma con labels? No, aspetta.
-        // Codice originale: Donut label=prSorted.map(x=>x[0]). Ah, usava province per il Donut "Macro Aree"? 
-        // Correggiamo: Donut = Macro Aree (Regioni), Polar = Province.
-        
         const regSorted = Object.entries(regMap).sort((a,b)=>b[1]-a[1]);
         charts.donut.updateOptions({ labels: regSorted.map(x=>x[0]) });
         charts.donut.updateSeries(regSorted.map(x=>x[1]));
@@ -651,7 +643,6 @@
         charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) });
         charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
 
-        // Top Clienti (solo se ho VENDITE_CLIENTE)
         const clMap = {};
         venditeData.forEach(r => { const k = r.Ragione_Sociale_Cliente||'N/D'; clMap[k] = (clMap[k]||0) + asNum(r.Fatturato); });
         const clSorted = Object.entries(clMap).sort((a,b)=>b[1]-a[1]).slice(0,5); 
