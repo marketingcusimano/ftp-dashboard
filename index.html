@@ -18,12 +18,12 @@
   <style>
     :root {
       /* --- PALETTE PREMIUM --- */
-      --primary: #c2410c;         /* Terracotta Vibrante */
+      --primary: #c2410c;         
       --primary-gradient: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
-      --secondary: #1e293b;       /* Ardesia Scuro */
+      --secondary: #1e293b;       
       
       /* Backgrounds */
-      --bg-body: #fffaf5;         /* Crema caldo */
+      --bg-body: #fffaf5;         
       --bg-card: #ffffff;
       --bg-glass: rgba(255, 255, 255, 0.8);
       
@@ -168,27 +168,37 @@
 
     /* --- MODAL (POP UP) STYLES --- */
     .modal-overlay {
-        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
-        z-index: 9999; display: none; justify-content: center; align-items: center; padding: 20px;
-        animation: fadeIn 0.3s ease;
+        position: fixed; inset: 0; 
+        background: rgba(15, 23, 42, 0.6); /* Sfondo scuro */
+        backdrop-filter: blur(4px);
+        z-index: 99999; /* Z-index altissimo per stare sopra a tutto */
+        display: none; /* Nascosto di base */
+        justify-content: center; align-items: center; padding: 20px;
+        animation: fadeIn 0.2s ease;
     }
+    
     .modal-content {
         background: #fff; width: 100%; max-width: 600px; max-height: 85vh;
         border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         display: flex; flex-direction: column; overflow: hidden;
-        animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     .modal-header {
         padding: 20px 24px; border-bottom: 1px solid #e2e8f0;
         display: flex; justify-content: space-between; align-items: center; background: #f8fafc;
     }
+    
     .modal-title { font-size: 16px; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Tasto X */
     .btn-close-modal {
-        background: transparent; border: none; font-size: 24px; color: var(--text-muted);
-        cursor: pointer; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px;
+        background: #e2e8f0; border: none; font-size: 20px; color: var(--text-muted);
+        cursor: pointer; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
         transition: 0.2s;
     }
-    .btn-close-modal:hover { background: #e2e8f0; color: var(--primary); }
+    .btn-close-modal:hover { background: #cbd5e1; color: #b91c1c; }
     
     .modal-body { padding: 24px; overflow-y: auto; background: #fff; }
 
@@ -202,7 +212,6 @@
     
     .agent-row-main { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px; }
     .agent-name { font-weight: 700; font-size: 14px; color: var(--text-main); }
-    .agent-badge { font-size: 10px; font-weight: 700; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #475569; text-transform: uppercase; }
     .agent-val-highlight { font-size: 13px; font-weight: 800; color: var(--primary); }
 
     .agent-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; }
@@ -681,8 +690,7 @@
         });
         charts.histo.updateSeries([{ data: histoCounts }]);
 
-        // 2. TREEMAP (MAPPA A BLOCCHI) - Usiamo regMap che è già calcolato
-        // Ordina per valore decrescente e prendi top 5
+        // 2. TREEMAP (Top 5 Regioni)
         const regionList = Object.entries(regMap).map(([r, val]) => ({ x: r, y: val })).sort((a,b) => b.y - a.y).slice(0, 5);
         charts.map.updateSeries([{ data: regionList }]);
 
@@ -736,7 +744,7 @@
             colors: ['#c2410c'], stroke: { lineCap:'round' }
         }); charts.radial.render();
 
-        // --- TREEMAP (Top 5 Regioni) ---
+        // --- TREEMAP ---
         charts.map = new ApexCharts(document.querySelector("#chartMap"), {
             series: [],
             chart: { type: 'treemap', height: 320, fontFamily: font, toolbar: {show: false} },
@@ -756,7 +764,7 @@
         });
         charts.map.render();
 
-        // --- INTERACTIVE HISTO ---
+        // --- HISTO ---
         charts.histo = new ApexCharts(document.querySelector("#chartHisto"), {
             series: [{ name: 'Agenti', data: [] }],
             chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false}, events: { dataPointSelection: (e, c, cfg) => openModal(cfg.dataPointIndex) } },
