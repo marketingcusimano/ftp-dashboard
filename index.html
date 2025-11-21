@@ -161,22 +161,45 @@
     .chart-title { font-size: 18px; font-weight: 700; margin: 0; }
     .chart-badge { background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Descrizioni grafici strategici */
-    .chart-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 3px solid var(--primary); }
+    /* Descrizioni grafici strategici - SENZA BORDO */
+    .chart-desc { 
+        font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; 
+        padding: 0; /* Rimosso padding e border */
+    }
     
     /* Lista Agenti Drill-down */
     #agentListContainer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px; display: none; animation: slideDown 0.3s ease-out; }
-    .agent-list-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; display:flex; justify-content:space-between; }
+    .agent-list-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; }
+    
     .agent-list-item { 
-      display: flex; justify-content: space-between; align-items: center; 
-      padding: 8px 12px; background: #fff; border: 1px solid #f1f5f9; margin-bottom: 6px; border-radius: 8px; 
-      font-size: 13px; font-weight: 600; transition: transform 0.2s;
+      display: flex; flex-direction: column; gap:8px;
+      padding: 16px; background: #fff; border: 1px solid #e2e8f0; margin-bottom: 12px; border-radius: 12px; 
+      transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     }
-    .agent-list-item:hover { transform: translateX(4px); border-color: var(--primary); }
-    .tag-pct { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .agent-list-item:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 8px 16px rgba(194, 65, 12, 0.1); }
+    
+    .agent-row-main { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px; }
+    .agent-name { font-weight: 700; font-size: 14px; color: var(--text-main); }
+    .agent-badge { font-size: 10px; font-weight: 700; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #475569; text-transform: uppercase; }
+
+    .agent-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; }
+    .det-label { color: var(--text-muted); font-weight: 500; }
+    .det-val { color: var(--text-main); font-weight: 700; }
+    
+    .tag-pct { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 800; }
     .tag-crit { background: #fee2e2; color: #b91c1c; }
     .tag-warn { background: #ffedd5; color: #c2410c; }
     .tag-ok { background: #dcfce7; color: #15803d; }
+
+    /* Pulsante Chiudi in basso */
+    .btn-close-panel {
+        display: block; width: 100%; padding: 12px; 
+        margin-top: 16px; background: #f1f5f9; color: #475569; 
+        border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-close-panel:hover { background: #e2e8f0; color: var(--text-main); }
+
     @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 
     /* --- TABLE --- */
@@ -345,15 +368,16 @@
       <div class="card">
         <div class="chart-header">
           <div>
-            <h3 class="chart-title">Analisi Ponte (Waterfall)</h3>
-            <div style="font-size:12px; color:var(--text-muted); font-weight:500">Driver di crescita Anno su Anno</div>
+            <h3 class="chart-title">Efficienza Rete</h3>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:500">Fatturato vs N. Clienti</div>
           </div>
-          <span class="chart-badge" style="background:#eff6ff; color:#1e40af">Trend</span>
+          <span class="chart-badge" style="background:#f1f5f9; color:#475569">Qualità</span>
         </div>
         <div class="chart-desc">
-          Spiega <strong>"Perché"</strong> il fatturato è cambiato. Parte dal totale Anno Precedente (Grigio), somma le regioni in crescita (Verde) e sottrae quelle in calo (Rosso) fino al totale Attuale.
+            Analisi <strong>Cacciatori vs Coltivatori</strong>. Chi ha tanti clienti (Destra) e chi fa alto fatturato (Alto). <br>
+            Puntini in alto a destra = Agenti più efficienti.
         </div>
-        <div id="chartWaterfall"></div>
+        <div id="chartScatter"></div>
       </div>
 
       <div class="card">
@@ -366,16 +390,18 @@
         </div>
         <div class="chart-desc">
           Mostra la <strong>qualità</strong> del risultato. Evita che i "Top Performer" nascondano le difficoltà della massa. <br>
-          <span style="font-weight:600; color:var(--primary)"><i class="ri-cursor-line"></i> Clicca su una colonna per vedere i nomi.</span>
+          <span style="font-weight:600; color:var(--primary)"><i class="ri-cursor-line"></i> Clicca su una colonna per vedere i dettagli completi.</span>
         </div>
         <div id="chartHisto"></div>
         
         <div id="agentListContainer">
             <div class="agent-list-title">
                 <span id="listCatName">Agenti Selezionati</span>
-                <button onclick="document.getElementById('agentListContainer').style.display='none'" style="border:none; background:none; cursor:pointer; color:#94a3b8"><i class="ri-close-line"></i></button>
             </div>
             <div id="agentListBody"></div>
+            <button class="btn-close-panel" onclick="document.getElementById('agentListContainer').style.display='none'">
+                <i class="ri-arrow-up-s-line"></i> CHIUDI PANNELLO DETTAGLI
+            </button>
         </div>
       </div>
   
@@ -434,7 +460,7 @@
 
     // --- STATE ---
     let state = { all: [], rows: [] };
-    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, waterfall: null, histo: null };
+    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, scatter: null, histo: null };
     let dataTable = null;
     let agentPerformanceData = []; // Dati per drill-down
 
@@ -610,56 +636,71 @@
 
         // --- STRATEGIC CHARTS CALCULATIONS ---
         
-        // 1. HISTOGRAMMA (Salute Obiettivi)
+        // 1. HISTOGRAMMA (Salute Obiettivi) - RICCO DI DATI
         agentPerformanceData = []; 
         let histoCounts = [0, 0, 0, 0]; 
         const objMap = {};
-        // Usa dati obiettivi globali per avere la visione completa
         let objSource = obiettiviData.length > 0 ? obiettiviData : state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI');
+        
         objSource.forEach(r => {
             if(r.Provincia === 'Generale' && r.Agente_Nome === 'N/D') return;
             const agName = (r.Agente_Nome || r.Agente_Codice || 'N/D').trim();
-            if(!objMap[agName]) objMap[agName] = { curr: 0, target: 0 };
+            if(!objMap[agName]) objMap[agName] = { curr: 0, target: 0, reg: r.Regione, prov: r.Provincia, cli: asNum(r.Clienti_Anno_Corrente) };
             objMap[agName].curr += asNum(r.Anno_Corrente);
             objMap[agName].target += asNum(r.Obiettivo);
+            // Se c'è più di una riga per agente, prendiamo i dati geo della prima o sommiamo se necessario
+            // Qui assumiamo che l'agente sia in una zona principale o prendiamo l'ultima
+            if(r.Regione && r.Regione !== 'Altro') objMap[agName].reg = r.Regione;
         });
+
         Object.entries(objMap).forEach(([name, data]) => {
             if(data.target > 0) {
                 const pct = (data.curr / data.target) * 100;
                 let bucket = 0;
                 if(pct >= 100) bucket = 3; else if(pct >= 80) bucket = 2; else if(pct >= 50) bucket = 1;
                 histoCounts[bucket]++;
-                agentPerformanceData.push({ name: name, pct: pct, bucket: bucket, val: data.curr, target: data.target });
+                
+                // Calcolo Scontrino Medio
+                let avgOrder = data.cli > 0 ? (data.curr / data.cli) : 0;
+
+                agentPerformanceData.push({ 
+                    name: name, 
+                    pct: pct, 
+                    bucket: bucket, 
+                    val: data.curr, 
+                    target: data.target,
+                    reg: data.reg || 'N/D',
+                    prov: data.prov || 'Generale',
+                    cli: data.cli,
+                    avg: avgOrder
+                });
             }
         });
         charts.histo.updateSeries([{ data: histoCounts }]);
         document.getElementById('agentListContainer').style.display = 'none';
 
-        // 2. WATERFALL (Ponte)
-        const waterfallMap = {}; let totalPrevWF = 0; let totalCurrWF = 0;
-        let wfSource = obiettiviData.length > 0 ? obiettiviData : state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI');
-        wfSource.forEach(r => {
-            let key = r.Regione || 'Altro'; if(key === 'N/D') key = 'Altro';
-            if(!waterfallMap[key]) waterfallMap[key] = { prev: 0, curr: 0 };
-            waterfallMap[key].prev += asNum(r.Anno_Precedente);
-            waterfallMap[key].curr += asNum(r.Anno_Corrente);
-            totalPrevWF += asNum(r.Anno_Precedente); totalCurrWF += asNum(r.Anno_Corrente);
+        // 2. SCATTER PLOT (Efficienza) - SOSTITUTO WATERFALL
+        const scatterMap = {};
+        // Usiamo venditeData se possibile per granularità clienti, altrimenti objMap
+        if(venditeData.length > 0) {
+            venditeData.forEach(r => {
+                const agName = (r.Agente_Nome || r.Agente_Codice || 'N/D').trim();
+                if(!scatterMap[agName]) scatterMap[agName] = { val: 0, cli: new Set() };
+                scatterMap[agName].val += asNum(r.Fatturato);
+                scatterMap[agName].cli.add(r.Ragione_Sociale_Cliente);
+            });
+        } else {
+            // Fallback su objMap
+             Object.entries(objMap).forEach(([name, d]) => {
+                 scatterMap[name] = { val: d.curr, cli: { size: d.cli } }; // Mock Set interface
+             });
+        }
+        
+        const scatterSeriesData = Object.keys(scatterMap).map(k => {
+            let cSize = (scatterMap[k].cli instanceof Set) ? scatterMap[k].cli.size : scatterMap[k].cli.size;
+            return { name: k, x: cSize, y: scatterMap[k].val };
         });
-        let wfItems = Object.entries(waterfallMap).map(([key, val]) => ({ name: key, delta: val.curr - val.prev }));
-        wfItems.sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta));
-        const topDrivers = wfItems.slice(0, 5);
-        const others = wfItems.slice(5);
-        if(others.length > 0) topDrivers.push({ name: 'Altri', delta: others.reduce((s,i)=>s+i.delta,0) });
-
-        let currentY = totalPrevWF; const wfSeriesData = [];
-        wfSeriesData.push({ x: 'Anno Prec.', y: [0, totalPrevWF], fillColor: '#cbd5e1' });
-        topDrivers.forEach(d => {
-            let newY = currentY + d.delta;
-            wfSeriesData.push({ x: d.name, y: [currentY, newY], fillColor: d.delta >= 0 ? '#22c55e' : '#ef4444' });
-            currentY = newY;
-        });
-        wfSeriesData.push({ x: 'Anno Corr.', y: [0, totalCurrWF], fillColor: '#c2410c' });
-        charts.waterfall.updateSeries([{ data: wfSeriesData }]);
+        charts.scatter.updateSeries([{ name: "Agenti", data: scatterSeriesData }]);
 
         updateTable(venditeData);
     }
@@ -711,27 +752,39 @@
             colors: ['#c2410c'], stroke: { lineCap:'round' }
         }); charts.radial.render();
 
-        // --- NEW: WATERFALL CHART ---
-        charts.waterfall = new ApexCharts(document.querySelector("#chartWaterfall"), {
-            series: [], chart: { type: 'rangeBar', height: 320, fontFamily: font, toolbar: {show: false} },
-            plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 4 } },
-            colors: ['#cbd5e1', '#22c55e', '#ef4444', '#c2410c'], 
-            dataLabels: { enabled: true, formatter: function(val, opts) {
-                let i = opts.dataPointIndex; let s = opts.w.config.series[0].data;
-                if(i === 0 || i === s.length - 1) return (val[1]/1000).toFixed(0) + "k";
-                let d = val[1] - val[0]; return (d > 0 ? '+' : '') + (d/1000).toFixed(0) + "k";
-            }, style: { fontWeight: 'bold', colors: ['#334155'] } },
-            xaxis: { type: 'category', labels: { style: { fontSize: '11px', fontWeight: 600 }, rotate: -45 } },
-            yaxis: { labels: { formatter: v => "€ " + (v/1000).toFixed(0) + "k" } },
-            tooltip: { custom: function({ seriesIndex, dataPointIndex, w }) {
-                let d = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                let val = d.y[1] - d.y[0]; let label = d.x;
-                if(dataPointIndex === 0 || dataPointIndex === w.globals.initialSeries[seriesIndex].data.length - 1) val = d.y[1];
-                return `<div style="padding:10px; background:#1e293b; color:#fff; border-radius:6px;"><div style="font-weight:bold; margin-bottom:4px">${label}</div><div>Valore: € ${fmtNum.format(val)}</div></div>`;
-            }}, grid: { strokeDashArray: 4, yaxis: { lines: { show: true } } }
-        }); charts.waterfall.render();
+        // --- NEW: SCATTER PLOT (EFFICIENZA) ---
+        charts.scatter = new ApexCharts(document.querySelector("#chartScatter"), {
+            series: [],
+            chart: { type: 'scatter', height: 320, fontFamily: font, toolbar: {show: false}, zoom: {enabled: false} },
+            colors: ['#ea580c'], 
+            xaxis: { 
+                tickAmount: 8, 
+                labels: { formatter: val => parseFloat(val).toFixed(0) },
+                title: { text: 'Numero Clienti Attivi', style: {fontSize:'11px', color:'#94a3b8'} }
+            },
+            yaxis: { 
+                tickAmount: 5,
+                labels: { formatter: val => "€ " + (val/1000).toFixed(0) + "k" },
+                title: { text: 'Fatturato Generato', style: {fontSize:'11px', color:'#94a3b8'} }
+            },
+            grid: { borderColor: '#f1f5f9', xaxis: {lines: {show: true}}, yaxis: {lines: {show: true}} },
+            markers: { size: 6, strokeColors: '#fff', strokeWidth: 2, hover: {size: 9} },
+            tooltip: {
+                custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                    var data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                    var avg = data.x > 0 ? (data.y / data.x) : 0;
+                    return '<div style="background:#1e293b; padding:12px; border-radius:8px; color:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1)">' +
+                    '<div style="font-weight:700; margin-bottom:6px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:4px">' + data.name + '</div>' +
+                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Fatturato:</span> <span style="font-weight:600; color:#fbbf24">€ ' + fmtNum.format(data.y) + '</span></div>' +
+                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Clienti:</span> <span style="font-weight:600">' + data.x + '</span></div>' +
+                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:11px; margin-top:4px; color:#94a3b8"><span>Avg/Cli:</span> <span>€ ' + fmtNum.format(avg.toFixed(0)) + '</span></div>' +
+                    '</div>';
+                }
+            }
+        });
+        charts.scatter.render();
 
-        // --- NEW: INTERACTIVE HISTO ---
+        // --- INTERACTIVE HISTO ---
         charts.histo = new ApexCharts(document.querySelector("#chartHisto"), {
             series: [{ name: 'Agenti', data: [] }],
             chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false}, events: { dataPointSelection: (e, c, cfg) => showAgentList(cfg.dataPointIndex) } },
@@ -765,19 +818,40 @@
         const title = document.getElementById('listCatName');
         const bucketsNames = ['Critico (<50%)', 'In Ritardo (50-80%)', 'In Target (80-100%)', 'Star (>100%)'];
         const bucketColors = ['tag-crit', 'tag-warn', 'tag-ok', 'tag-ok']; 
+        
+        // Ordina agenti dal peggiore al migliore in quella fascia
         const agents = agentPerformanceData.filter(a => a.bucket === bucketIndex).sort((a,b) => a.pct - b.pct);
-        title.textContent = `Agenti: ${bucketsNames[bucketIndex]} (${agents.length})`;
+        
+        title.textContent = `Agenti in fascia: ${bucketsNames[bucketIndex]} (${agents.length})`;
         body.innerHTML = '';
-        if(agents.length === 0) { body.innerHTML = '<div style="padding:10px; text-align:center; font-style:italic; color:#94a3b8">Nessun agente in questa fascia</div>'; } 
-        else {
+        
+        if(agents.length === 0) { 
+            body.innerHTML = '<div style="padding:20px; text-align:center; font-style:italic; color:#94a3b8">Nessun agente presente in questa fascia.</div>'; 
+        } else {
             agents.forEach(a => {
                 const diff = a.val - a.target;
                 const div = document.createElement('div'); div.className = 'agent-list-item';
-                div.innerHTML = `<div><div style="color:var(--text-main)">${a.name}</div><div style="font-size:11px; color:var(--text-muted)">Target: € ${fmtNum.format(a.target)}</div></div><div style="text-align:right"><div class="tag-pct ${bucketColors[bucketIndex]}">${a.pct.toFixed(1)}%</div><div style="font-size:10px; margin-top:2px; color:${diff >= 0 ? '#15803d' : '#b91c1c'}">${diff > 0 ? '+' : ''}€ ${fmtNum.format(diff)}</div></div>`;
+                
+                div.innerHTML = `
+                    <div class="agent-row-main">
+                        <span class="agent-name">${a.name}</span>
+                        <span class="agent-badge">${a.reg} • ${a.prov}</span>
+                    </div>
+                    <div class="agent-details-grid">
+                        <div class="det-label">Obiettivo:</div> <div class="det-val">€ ${fmtNum.format(a.target)}</div>
+                        <div class="det-label">Raggiunto:</div> <div class="det-val">€ ${fmtNum.format(a.val)}</div>
+                        <div class="det-label">Differenza:</div> <div class="det-val" style="color:${diff>=0?'#15803d':'#b91c1c'}">${diff>0?'+':''}€ ${fmtNum.format(diff)}</div>
+                        <div class="det-label">Performance:</div> <div><span class="tag-pct ${bucketColors[bucketIndex]}">${a.pct.toFixed(1)}%</span></div>
+                        <div class="det-label">Clienti Attivi:</div> <div class="det-val">${a.cli}</div>
+                        <div class="det-label">Scontrino Medio:</div> <div class="det-val">€ ${fmtNum.format(a.avg.toFixed(0))}</div>
+                    </div>
+                `;
                 body.appendChild(div);
             });
         }
         container.style.display = 'block';
+        // Auto-scroll leggero verso la lista per UX
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   </script>
 </body>
