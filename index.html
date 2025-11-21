@@ -9,13 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
   <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.dataTables.min.css">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/2.0.6/js/dataTables.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
-
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
   <style>
@@ -106,7 +103,7 @@
     }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
 
-    /* --- CARDS UNIFORMI --- */
+    /* --- CARDS --- */
     .card {
       background: linear-gradient(180deg, #ffffff 0%, #fffbf8 100%);
       border-radius: var(--radius); padding: 32px;
@@ -118,11 +115,8 @@
 
     /* LAYOUT GRIDS */
     .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 32px; }
-    
     .grid-charts { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
     .grid-charts-rev { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 32px; }
-    
-    /* --- NUOVA GRID 50/50 PER STRATEGIA --- */
     .grid-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
 
     @media (max-width: 1200px) { 
@@ -130,32 +124,18 @@
     }
 
     /* --- KPI DESIGN --- */
-    .kpi-head { 
-      display: flex; justify-content: space-between; align-items: flex-start; 
-      margin-bottom: 24px; min-height: 48px;
-    }
+    .kpi-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; min-height: 48px; }
     .kpi-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-    
     .kpi-icon-wrap {
       width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
       background: linear-gradient(135deg, #fff5eb 0%, #fff0e0 100%);
       color: var(--primary); display: grid; place-items: center; font-size: 22px;
       box-shadow: inset 0 0 0 1px rgba(194, 65, 12, 0.05);
     }
-    
     .kpi-body { margin-top: auto; display: flex; flex-direction: column; justify-content: flex-end; }
-
-    /* KPI Values & Trends */
     .kpi-val-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
-    .kpi-val { 
-      font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; 
-      color: var(--text-main); letter-spacing: -1.5px; line-height: 1; 
-    }
-    
-    .kpi-prev-row {
-        font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 12px;
-        display: flex; align-items: center; gap: 6px;
-    }
+    .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; color: var(--text-main); letter-spacing: -1.5px; line-height: 1; }
+    .kpi-prev-row { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
     .kpi-prev-num { font-family: 'JetBrains Mono', monospace; color: #334155; font-weight: 700; }
 
     /* TREND BADGES */
@@ -163,64 +143,59 @@
         display: inline-flex; align-items: center; gap: 6px;
         padding: 4px 10px; border-radius: 20px;
         font-size: 12px; font-weight: 700; letter-spacing: -0.3px;
-        transform: translateY(-3px);
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        transform: translateY(-3px); font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .trend-up { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .trend-down { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .trend-neutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
-    
-    .trend-val-abs { opacity: 0.9; } 
-    .trend-sep { opacity: 0.4; font-weight: 400; margin: 0 2px; }
+    .trend-val-abs { opacity: 0.9; } .trend-sep { opacity: 0.4; font-weight: 400; margin: 0 2px; }
 
-    /* Special Card: Top Performer */
-    .card-dark {
-      background: radial-gradient(circle at top right, #334155 0%, #0f172a 100%);
-      color: white; border: 1px solid rgba(255,255,255,0.1);
-    }
+    .card-dark { background: radial-gradient(circle at top right, #334155 0%, #0f172a 100%); color: white; border: 1px solid rgba(255,255,255,0.1); }
     .card-dark .kpi-label { color: rgba(255,255,255,0.5); }
     .card-dark .kpi-icon-wrap { background: rgba(255,255,255,0.1); color: #fbbf24; border:none; }
     .card-dark .kpi-val { color: #fff; font-size:18px; font-family:'Plus Jakarta Sans', sans-serif; letter-spacing: 0; margin-bottom: 4px; }
     .card-dark .money-gold { color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.4); font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 24px; }
 
-    /* --- CHART STYLES --- */
+    /* --- CHART STYLES & EXTRAS --- */
     .chart-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .chart-title { font-size: 18px; font-weight: 700; margin: 0; }
-    .chart-badge { 
-      background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; 
-      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    .chart-badge { background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Descrizioni grafici strategici */
+    .chart-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 3px solid var(--primary); }
+    
+    /* Lista Agenti Drill-down */
+    #agentListContainer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px; display: none; animation: slideDown 0.3s ease-out; }
+    .agent-list-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; display:flex; justify-content:space-between; }
+    .agent-list-item { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 8px 12px; background: #fff; border: 1px solid #f1f5f9; margin-bottom: 6px; border-radius: 8px; 
+      font-size: 13px; font-weight: 600; transition: transform 0.2s;
     }
+    .agent-list-item:hover { transform: translateX(4px); border-color: var(--primary); }
+    .tag-pct { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .tag-crit { background: #fee2e2; color: #b91c1c; }
+    .tag-warn { background: #ffedd5; color: #c2410c; }
+    .tag-ok { background: #dcfce7; color: #15803d; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 
     /* --- TABLE --- */
     table.dataTable { width: 100% !important; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
-    table.dataTable thead th { 
-      background: transparent; padding: 16px; font-size: 11px; 
-      text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;
-      border-bottom: 2px solid var(--border) !important; text-align: left;
-    }
+    table.dataTable thead th { background: transparent; padding: 16px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; border-bottom: 2px solid var(--border) !important; text-align: left; }
     table.dataTable tbody td { padding: 20px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 500; }
     table.dataTable tbody tr:hover { background-color: #fff7ed !important; transform: scale(1.005); box-shadow: 0 4px 12px rgba(0,0,0,0.03); border-radius: 8px; }
-    
     .badge-pill { padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
     .badge-geo { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
     .badge-prov { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
     .money-cell { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary); font-size: 15px; }
 
-    /* --- LOADING SCREEN --- */
-    #loading { 
-      position: fixed; inset: 0; background: #fffaf5; z-index: 9999; 
-      display: flex; justify-content: center; align-items: center; flex-direction: column;
-      transition: opacity 0.5s ease;
-    }
+    /* --- LOADING --- */
+    #loading { position: fixed; inset: 0; background: #fffaf5; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; transition: opacity 0.5s ease; }
     .loader-container { position: relative; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; }
-    .loader-ring {
-      position: absolute; inset: 0; border: 4px solid rgba(194, 65, 12, 0.1);
-      border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;
-    }
+    .loader-ring { position: absolute; inset: 0; border: 4px solid rgba(194, 65, 12, 0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
     .loader-icon { font-size: 32px; color: var(--primary); animation: pulseIcon 2s infinite ease-in-out; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pulseIcon { 0%, 100% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
-
   </style>
 </head>
 <body>
@@ -269,7 +244,6 @@
   <div class="container">
     
     <div class="grid-kpi animate-in" style="animation-delay: 0.1s">
-      
       <div class="card">
         <div class="kpi-head">
           <span class="kpi-label">Fatturato Totale</span>
@@ -357,7 +331,6 @@
         </div>
         <div id="chartPolar" style="display:flex; justify-content:center"></div>
       </div>
-      
       <div class="card">
         <div class="chart-header">
           <h3 class="chart-title">Top 5 Clienti</h3>
@@ -369,27 +342,42 @@
 
     <div class="grid-split animate-in" style="animation-delay: 0.35s">
       
-        <div class="card">
-          <div class="chart-header">
-            <div>
-              <h3 class="chart-title">Efficienza Rete</h3>
-              <div style="font-size:12px; color:var(--text-muted); font-weight:500">Fatturato vs N. Clienti</div>
-            </div>
-            <span class="chart-badge" style="background:#f1f5f9; color:#475569">Posizionamento</span>
+      <div class="card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Analisi Ponte (Waterfall)</h3>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:500">Driver di crescita Anno su Anno</div>
           </div>
-          <div id="chartScatter"></div>
+          <span class="chart-badge" style="background:#eff6ff; color:#1e40af">Trend</span>
         </div>
-  
-        <div class="card">
-          <div class="chart-header">
-            <div>
-              <h3 class="chart-title">Salute Obiettivi</h3>
-              <div style="font-size:12px; color:var(--text-muted); font-weight:500">Distribuzione % Performance</div>
-            </div>
-            <span class="chart-badge" style="background:#ecfccb; color:#3f6212">Target</span>
+        <div class="chart-desc">
+          Spiega <strong>"Perché"</strong> il fatturato è cambiato. Parte dal totale Anno Precedente (Grigio), somma le regioni in crescita (Verde) e sottrae quelle in calo (Rosso) fino al totale Attuale.
+        </div>
+        <div id="chartWaterfall"></div>
+      </div>
+
+      <div class="card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Salute Obiettivi</h3>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:500">Distribuzione Performance Rete</div>
           </div>
-          <div id="chartHisto"></div>
+          <span class="chart-badge" style="background:#ecfccb; color:#3f6212">Target</span>
         </div>
+        <div class="chart-desc">
+          Mostra la <strong>qualità</strong> del risultato. Evita che i "Top Performer" nascondano le difficoltà della massa. <br>
+          <span style="font-weight:600; color:var(--primary)"><i class="ri-cursor-line"></i> Clicca su una colonna per vedere i nomi.</span>
+        </div>
+        <div id="chartHisto"></div>
+        
+        <div id="agentListContainer">
+            <div class="agent-list-title">
+                <span id="listCatName">Agenti Selezionati</span>
+                <button onclick="document.getElementById('agentListContainer').style.display='none'" style="border:none; background:none; cursor:pointer; color:#94a3b8"><i class="ri-close-line"></i></button>
+            </div>
+            <div id="agentListBody"></div>
+        </div>
+      </div>
   
     </div>
 
@@ -411,7 +399,6 @@
     // --- CONFIGURAZIONE ---
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
     const fmtNum = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 }); 
-
     const asNum = v => (typeof v === 'number') ? v : Number((v||"0").toString().replace(/\./g, '').replace(',', '.') || 0);
 
     const GEO_DATA = {
@@ -447,9 +434,9 @@
 
     // --- STATE ---
     let state = { all: [], rows: [] };
-    // Aggiunto 'scatter' e 'histo'
-    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, scatter: null, histo: null };
+    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, waterfall: null, histo: null };
     let dataTable = null;
+    let agentPerformanceData = []; // Dati per drill-down
 
     // --- INIT ---
     document.addEventListener("DOMContentLoaded", async () => {
@@ -460,24 +447,16 @@
 
             // NORMALIZZAZIONE DATI
             state.all = (data.rows || []).map(r => {
-                // Normalizza Provincia
                 if(r.Provincia) {
                     const code = r.Provincia.trim().toUpperCase();
                     if(code === 'GENERALE') {
-                        r.Provincia = 'Generale';
-                        r.Regione = 'Altro'; 
+                        r.Provincia = 'Generale'; r.Regione = 'Altro'; 
                     } else {
                         const geo = GEO_DATA[code];
-                        if(geo) {
-                            r.Provincia = geo.n;
-                            r.Regione = geo.r;
-                        } else {
-                            r.Regione = 'Altro';
-                        }
+                        if(geo) { r.Provincia = geo.n; r.Regione = geo.r; } 
+                        else { r.Regione = 'Altro'; }
                     }
-                } else {
-                    r.Regione = 'N/D';
-                }
+                } else { r.Regione = 'N/D'; }
                 return r;
             });
             state.rows = [...state.all];
@@ -496,11 +475,9 @@
             document.getElementById('loading').innerHTML = `<h3 style="color:#c2410c">Errore Connessione</h3><p>${err.message}</p>`;
         }
 
-        // Listeners
         document.getElementById('selAgente').addEventListener('change', applyFilters);
         document.getElementById('selRegione').addEventListener('change', applyFilters);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
-        
         document.getElementById('btnReset').addEventListener('click', () => {
             document.getElementById('selAgente').value = "";
             document.getElementById('selRegione').value = "";
@@ -527,9 +504,7 @@
         province.forEach(p => sP.add(new Option(p, p)));
     }
 
-    function applyFilters() {
-        updateDashboard();
-    }
+    function applyFilters() { updateDashboard(); }
 
     function updateDashboard() {
         const ag = document.getElementById('selAgente').value;
@@ -540,9 +515,7 @@
         const venditeData = state.all.filter(r => {
             if (r.Tipo_Dato !== 'VENDITE_CLIENTE') return false;
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
-            return (!ag || rAg === ag) && 
-                   (!reg || r.Regione === reg) && 
-                   (!pr || (r.Provincia||'').trim() === pr);
+            return (!ag || rAg === ag) && (!reg || r.Regione === reg) && (!pr || (r.Provincia||'').trim() === pr);
         });
 
         // 2. Filtro Dati Obiettivi
@@ -551,10 +524,8 @@
             if (r.Tipo_Dato !== 'OBIETTIVI') return false;
             const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
             if (ag && rAg !== ag) return false;
-
-            if (!hasGeoFilter) {
-                return r.Provincia === 'Generale';
-            } else {
+            if (!hasGeoFilter) return r.Provincia === 'Generale';
+            else {
                 if (r.Provincia === 'Generale') return false;
                 if (reg && r.Regione !== reg) return false;
                 if (pr && (r.Provincia||'').trim() !== pr) return false;
@@ -562,99 +533,56 @@
             }
         });
 
-        // --- CALCOLI KPI ---
-        let fatturatoCorrente = 0;
-        let fatturatoPrecedente = 0;
-        let targetTotale = 0;
-        
-        let cliCorrente = 0;
-        let cliPrecedente = 0;
-
+        // KPI Calculations
+        let fatturatoCorrente = 0, fatturatoPrecedente = 0, targetTotale = 0, cliCorrente = 0, cliPrecedente = 0;
         obiettiviData.forEach(r => {
             fatturatoCorrente += asNum(r.Anno_Corrente);
             fatturatoPrecedente += asNum(r.Anno_Precedente);
             targetTotale += asNum(r.Obiettivo);
-            
             cliCorrente += asNum(r.Clienti_Anno_Corrente);
             cliPrecedente += asNum(r.Clienti_Anno_Precedente);
         });
-
-        // Fallback se Obiettivi vuoto
         if (obiettiviData.length === 0 && venditeData.length > 0) {
              fatturatoCorrente = venditeData.reduce((a,b) => a + asNum(b.Fatturato), 0);
              cliCorrente = new Set(venditeData.map(r => r.Ragione_Sociale_Cliente)).size;
         }
 
-        // --- UI KPI AGGIORNAMENTO ---
         document.getElementById('kpiFatturato').textContent = fmtEUR.format(fatturatoCorrente);
         document.getElementById('kpiFatturatoPrev').textContent = fmtEUR.format(fatturatoPrecedente);
-
         const kpiTrendFatt = document.getElementById('kpiTrendFatt');
         if (fatturatoPrecedente > 0) {
             const deltaEur = fatturatoCorrente - fatturatoPrecedente;
             const deltaPct = ((deltaEur) / fatturatoPrecedente) * 100;
             const isPos = deltaEur >= 0;
-            
             kpiTrendFatt.style.display = 'inline-flex';
             kpiTrendFatt.className = `trend-badge ${isPos ? 'trend-up' : 'trend-down'}`;
-            kpiTrendFatt.innerHTML = `
-                <i class="${isPos ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i>
-                <span class="trend-val-abs">${isPos?'+':''}€ ${fmtNum.format(deltaEur)}</span>
-                <span class="trend-sep">|</span>
-                <span>${Math.abs(deltaPct).toFixed(1)}%</span>
-            `;
-        } else {
-            kpiTrendFatt.style.display = 'none';
-        }
+            kpiTrendFatt.innerHTML = `<i class="${isPos ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i><span class="trend-val-abs">${isPos?'+':''}€ ${fmtNum.format(deltaEur)}</span><span class="trend-sep">|</span><span>${Math.abs(deltaPct).toFixed(1)}%</span>`;
+        } else { kpiTrendFatt.style.display = 'none'; }
 
         document.getElementById('kpiClienti').textContent = cliCorrente;
         document.getElementById('kpiClientiPrev').textContent = cliPrecedente;
-
         const kpiTrendCli = document.getElementById('kpiTrendCli');
         if (cliPrecedente > 0) {
             const deltaCli = cliCorrente - cliPrecedente;
             const deltaCliPct = ((deltaCli) / cliPrecedente) * 100;
             const isPosCli = deltaCli >= 0;
-
             kpiTrendCli.style.display = 'inline-flex';
             kpiTrendCli.className = `trend-badge ${isPosCli ? 'trend-up' : 'trend-down'}`;
-            kpiTrendCli.innerHTML = `
-                <i class="${isPosCli ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i>
-                <span class="trend-val-abs">${isPosCli?'+':''}${deltaCli}</span>
-                <span class="trend-sep">|</span>
-                <span>${Math.abs(deltaCliPct).toFixed(1)}%</span>
-            `;
-        } else {
-            kpiTrendCli.style.display = 'none';
-        }
+            kpiTrendCli.innerHTML = `<i class="${isPosCli ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i><span class="trend-val-abs">${isPosCli?'+':''}${deltaCli}</span><span class="trend-sep">|</span><span>${Math.abs(deltaCliPct).toFixed(1)}%</span>`;
+        } else { kpiTrendCli.style.display = 'none'; }
 
-        let pctTarget = 0;
-        if(targetTotale > 0) pctTarget = (fatturatoCorrente / targetTotale) * 100;
-        
+        let pctTarget = 0; if(targetTotale > 0) pctTarget = (fatturatoCorrente / targetTotale) * 100;
         charts.radial.updateSeries([pctTarget]);
         document.getElementById('kpiTargetVal').textContent = pctTarget.toFixed(1) + "%";
 
         const agMap = {};
-        obiettiviData.forEach(r => {
-             const k = r.Agente_Nome || 'N/D';
-             agMap[k] = (agMap[k]||0) + asNum(r.Anno_Corrente);
-        });
-        if (Object.keys(agMap).length === 0) {
-            venditeData.forEach(r => {
-                const k = r.Agente_Nome || 'N/D';
-                agMap[k] = (agMap[k]||0) + asNum(r.Fatturato);
-            });
-        }
+        obiettiviData.forEach(r => { const k = r.Agente_Nome || 'N/D'; agMap[k] = (agMap[k]||0) + asNum(r.Anno_Corrente); });
+        if (Object.keys(agMap).length === 0) { venditeData.forEach(r => { const k = r.Agente_Nome || 'N/D'; agMap[k] = (agMap[k]||0) + asNum(r.Fatturato); }); }
         const top = Object.entries(agMap).sort((a,b)=>b[1]-a[1])[0];
-        if(top) {
-            document.getElementById('kpiTopAgent').textContent = top[0];
-            document.getElementById('kpiTopAgentVal').textContent = fmtEUR.format(top[1]);
-        } else {
-            document.getElementById('kpiTopAgent').textContent = "—";
-            document.getElementById('kpiTopAgentVal').textContent = "€ 0";
-        }
+        if(top) { document.getElementById('kpiTopAgent').textContent = top[0]; document.getElementById('kpiTopAgentVal').textContent = fmtEUR.format(top[1]); }
+        else { document.getElementById('kpiTopAgent').textContent = "—"; document.getElementById('kpiTopAgentVal').textContent = "€ 0"; }
 
-        // --- AGGIORNAMENTO GRAFICI STANDARD ---
+        // Standard Charts Updates
         const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
@@ -664,25 +592,15 @@
              sourceDataForCharts = state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI' && r.Provincia !== 'Generale');
              if(ag) sourceDataForCharts = sourceDataForCharts.filter(r=>(r.Agente_Nome||'').trim()===ag);
         }
-
-        const prMap = {};
-        const regMap = {};
+        const prMap = {}; const regMap = {};
         sourceDataForCharts.forEach(r => {
-            const p = (r.Provincia||'?').trim();
-            const val = asNum(r.Fatturato || r.Anno_Corrente); 
-            prMap[p] = (prMap[p]||0) + val;
-            
-            const reg = r.Regione || 'Altro';
-            regMap[reg] = (regMap[reg]||0) + val;
+            const p = (r.Provincia||'?').trim(); const val = asNum(r.Fatturato || r.Anno_Corrente); 
+            prMap[p] = (prMap[p]||0) + val; regMap[r.Regione||'Altro'] = (regMap[r.Regione||'Altro']||0) + val;
         });
-
         const regSorted = Object.entries(regMap).sort((a,b)=>b[1]-a[1]);
-        charts.donut.updateOptions({ labels: regSorted.map(x=>x[0]) });
-        charts.donut.updateSeries(regSorted.map(x=>x[1]));
-
+        charts.donut.updateOptions({ labels: regSorted.map(x=>x[0]) }); charts.donut.updateSeries(regSorted.map(x=>x[1]));
         const prSortedPolar = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-        charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) });
-        charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
+        charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) }); charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
 
         const clMap = {};
         venditeData.forEach(r => { const k = r.Ragione_Sociale_Cliente||'N/D'; clMap[k] = (clMap[k]||0) + asNum(r.Fatturato); });
@@ -690,54 +608,58 @@
         charts.clients.updateOptions({ xaxis: { categories: clSorted.map(x=>x[0]) } });
         charts.clients.updateSeries([{ data: clSorted.map(x=>x[1]) }]);
 
-        // --- NUOVO: CALCOLO SCATTER PLOT (EFFICIENZA) ---
-        const scatterMap = {};
-        venditeData.forEach(r => {
-            const agName = (r.Agente_Nome || r.Agente_Codice || 'N/D').trim();
-            if(!scatterMap[agName]) scatterMap[agName] = { val: 0, cli: new Set() };
-            scatterMap[agName].val += asNum(r.Fatturato);
-            scatterMap[agName].cli.add(r.Ragione_Sociale_Cliente);
-        });
+        // --- STRATEGIC CHARTS CALCULATIONS ---
         
-        const scatterSeriesData = Object.keys(scatterMap).map(k => {
-            return { name: k, x: scatterMap[k].cli.size, y: scatterMap[k].val };
-        });
-        charts.scatter.updateSeries([{ name: "Agenti", data: scatterSeriesData }]);
-
-        // --- NUOVO: CALCOLO ISTOGRAMMA (SALUTE OBIETTIVI) ---
-        let histoCounts = [0, 0, 0, 0]; // [Critico, Ritardo, Target, Star]
+        // 1. HISTOGRAMMA (Salute Obiettivi)
+        agentPerformanceData = []; 
+        let histoCounts = [0, 0, 0, 0]; 
         const objMap = {};
-        
-        // Filtriamo 'obiettiviData' per rimuovere righe generali se vogliamo dettaglio agenti
-        // Qui usiamo state.all filtrato solo per tipo obiettivo per avere tutti gli agenti
-        // Nota: usiamo 'obiettiviData' che è già filtrato, ma se il filtro cancella gli agenti non vediamo la rete globale
-        // Per vedere la "Salute Rete" meglio usare tutti gli agenti eccetto se filtrati esplicitamente
-        
-        let objSource = obiettiviData;
-        // Se non c'è filtro agente attivo, usiamo tutti gli obiettivi (eccetto generali) per vedere la distribuzione
-        if(!ag) {
-             objSource = state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI' && r.Provincia === 'Generale');
-             // Se 'Generale' è solo 1 riga totale, non va bene. Dobbiamo cercare le righe Agente su Provincia 'Generale'.
-             // Assumiamo che OBIETTIVI abbia una riga per Agente con Provincia='Generale' (Totale Agente)
-        }
-
+        // Usa dati obiettivi globali per avere la visione completa
+        let objSource = obiettiviData.length > 0 ? obiettiviData : state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI');
         objSource.forEach(r => {
-             const agName = (r.Agente_Nome || 'N/D').trim();
-             if(!objMap[agName]) objMap[agName] = { curr: 0, target: 0 };
-             objMap[agName].curr += asNum(r.Anno_Corrente);
-             objMap[agName].target += asNum(r.Obiettivo);
+            if(r.Provincia === 'Generale' && r.Agente_Nome === 'N/D') return;
+            const agName = (r.Agente_Nome || r.Agente_Codice || 'N/D').trim();
+            if(!objMap[agName]) objMap[agName] = { curr: 0, target: 0 };
+            objMap[agName].curr += asNum(r.Anno_Corrente);
+            objMap[agName].target += asNum(r.Obiettivo);
         });
-
-        Object.values(objMap).forEach(o => {
-            if(o.target > 0) {
-                const pct = (o.curr / o.target) * 100;
-                if(pct < 50) histoCounts[0]++;
-                else if(pct < 80) histoCounts[1]++;
-                else if(pct < 100) histoCounts[2]++;
-                else histoCounts[3]++;
+        Object.entries(objMap).forEach(([name, data]) => {
+            if(data.target > 0) {
+                const pct = (data.curr / data.target) * 100;
+                let bucket = 0;
+                if(pct >= 100) bucket = 3; else if(pct >= 80) bucket = 2; else if(pct >= 50) bucket = 1;
+                histoCounts[bucket]++;
+                agentPerformanceData.push({ name: name, pct: pct, bucket: bucket, val: data.curr, target: data.target });
             }
         });
         charts.histo.updateSeries([{ data: histoCounts }]);
+        document.getElementById('agentListContainer').style.display = 'none';
+
+        // 2. WATERFALL (Ponte)
+        const waterfallMap = {}; let totalPrevWF = 0; let totalCurrWF = 0;
+        let wfSource = obiettiviData.length > 0 ? obiettiviData : state.all.filter(r => r.Tipo_Dato === 'OBIETTIVI');
+        wfSource.forEach(r => {
+            let key = r.Regione || 'Altro'; if(key === 'N/D') key = 'Altro';
+            if(!waterfallMap[key]) waterfallMap[key] = { prev: 0, curr: 0 };
+            waterfallMap[key].prev += asNum(r.Anno_Precedente);
+            waterfallMap[key].curr += asNum(r.Anno_Corrente);
+            totalPrevWF += asNum(r.Anno_Precedente); totalCurrWF += asNum(r.Anno_Corrente);
+        });
+        let wfItems = Object.entries(waterfallMap).map(([key, val]) => ({ name: key, delta: val.curr - val.prev }));
+        wfItems.sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta));
+        const topDrivers = wfItems.slice(0, 5);
+        const others = wfItems.slice(5);
+        if(others.length > 0) topDrivers.push({ name: 'Altri', delta: others.reduce((s,i)=>s+i.delta,0) });
+
+        let currentY = totalPrevWF; const wfSeriesData = [];
+        wfSeriesData.push({ x: 'Anno Prec.', y: [0, totalPrevWF], fillColor: '#cbd5e1' });
+        topDrivers.forEach(d => {
+            let newY = currentY + d.delta;
+            wfSeriesData.push({ x: d.name, y: [currentY, newY], fillColor: d.delta >= 0 ? '#22c55e' : '#ef4444' });
+            currentY = newY;
+        });
+        wfSeriesData.push({ x: 'Anno Corr.', y: [0, totalCurrWF], fillColor: '#c2410c' });
+        charts.waterfall.updateSeries([{ data: wfSeriesData }]);
 
         updateTable(venditeData);
     }
@@ -751,25 +673,18 @@
             plotOptions: { bar: { horizontal:true, borderRadius:6, barHeight:'55%', distributed:true } },
             fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.85, opacityTo: 0.85, stops: [50, 0, 100] } },
             colors: ['#c2410c', '#ea580c', '#f97316', '#fdba74', '#94a3b8'],
-            legend: { show:false }, dataLabels: { enabled:false },
-            grid: { show:false },
+            legend: { show:false }, dataLabels: { enabled:false }, grid: { show:false },
             xaxis: { labels: { formatter: v => "€ " + (v/1000).toFixed(0) + "k" } },
             tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
-        });
-        charts.bar.render();
+        }); charts.bar.render();
 
         charts.donut = new ApexCharts(document.querySelector("#chartDonut"), {
             series: [], labels: [],
             chart: { type:'donut', height:340, fontFamily:font },
             colors: ['#c2410c', '#334155', '#64748b', '#94a3b8', '#cbd5e1'],
-            plotOptions: { pie: { donut: { size:'70%', labels:{show:true, name:{fontSize:'12px'}, value:{fontSize:'20px', fontWeight:700}, total:{show:true, label:'TOTALE', color:'#64748b', fontSize:'11px', formatter: w => {
-                const t = w.globals.seriesTotals.reduce((a,b)=>a+b,0);
-                return (t/1000).toFixed(0) + "k";
-            }}}}}},
-            legend: { position:'bottom', markers:{radius:12} }, dataLabels: { enabled:false },
-            tooltip: { theme:'dark' }
-        });
-        charts.donut.render();
+            plotOptions: { pie: { donut: { size:'70%', labels:{show:true, name:{fontSize:'12px'}, value:{fontSize:'20px', fontWeight:700}, total:{show:true, label:'TOTALE', color:'#64748b', fontSize:'11px', formatter: w => { const t = w.globals.seriesTotals.reduce((a,b)=>a+b,0); return (t/1000).toFixed(0) + "k"; }}}}} },
+            legend: { position:'bottom', markers:{radius:12} }, dataLabels: { enabled:false }, tooltip: { theme:'dark' }
+        }); charts.donut.render();
 
         charts.clients = new ApexCharts(document.querySelector("#chartClients"), {
             series: [{ name:'Acquisti', data:[] }],
@@ -778,90 +693,55 @@
             fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.9, opacityTo: 0.9, stops: [50, 0, 100] } },
             colors: ['#c2410c'], 
             dataLabels: { enabled:true, formatter: v => "€ " + (v/1000).toFixed(1) + "k", offsetX: 0, style: { colors: ['#fff'], fontSize:'11px', fontWeight:700 } },
-            xaxis: { show:false }, grid: { show:false }, 
-            tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
-        });
-        charts.clients.render();
+            xaxis: { show:false }, grid: { show:false }, tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
+        }); charts.clients.render();
 
         charts.polar = new ApexCharts(document.querySelector("#chartPolar"), {
             series: [], labels: [],
             chart: { type: 'polarArea', height: 340, fontFamily: font, toolbar:{show:false} },
             stroke: { colors: ['#fff'], width:1 }, fill: { opacity: 0.9 },
             colors: ['#78350f', '#9a3412', '#c2410c', '#d97706', '#475569', '#64748b', '#94a3b8', '#cbd5e1'],
-            legend: { position: 'bottom' }, yaxis: { show: false },
-            tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
-        });
-        charts.polar.render();
+            legend: { position: 'bottom' }, yaxis: { show: false }, tooltip: { theme:'dark', y: { formatter: v => fmtEUR.format(v) } }
+        }); charts.polar.render();
 
         charts.radial = new ApexCharts(document.querySelector("#miniRadial"), {
-            series: [0],
-            chart: { type:'radialBar', height:130, width:130, sparkline:{enabled:true} },
+            series: [0], chart: { type:'radialBar', height:130, width:130, sparkline:{enabled:true} },
             plotOptions: { radialBar: { hollow: { size: '50%' }, track: { background: '#ffedd5', strokeWidth: '100%' }, dataLabels: { show: false } } },
             fill: { type: "gradient", gradient: { shade: "dark", type: "horizontal", gradientToColors: ["#fbbf24"], stops: [0, 100] } },
             colors: ['#c2410c'], stroke: { lineCap:'round' }
-        });
-        charts.radial.render();
+        }); charts.radial.render();
 
-        // --- NUOVO: SCATTER PLOT ---
-        charts.scatter = new ApexCharts(document.querySelector("#chartScatter"), {
-            series: [],
-            chart: { type: 'scatter', height: 320, fontFamily: font, toolbar: {show: false}, zoom: {enabled: false} },
-            colors: ['#ea580c'], 
-            xaxis: { 
-                tickAmount: 8, 
-                labels: { formatter: val => parseFloat(val).toFixed(0) },
-                title: { text: 'Numero Clienti Attivi', style: {fontSize:'11px', color:'#94a3b8'} }
-            },
-            yaxis: { 
-                tickAmount: 5,
-                labels: { formatter: val => "€ " + (val/1000).toFixed(0) + "k" },
-                title: { text: 'Fatturato Generato', style: {fontSize:'11px', color:'#94a3b8'} }
-            },
-            grid: { borderColor: '#f1f5f9', xaxis: {lines: {show: true}}, yaxis: {lines: {show: true}} },
-            markers: { size: 6, strokeColors: '#fff', strokeWidth: 2, hover: {size: 9} },
-            tooltip: {
-                custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                    var data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                    var avg = data.x > 0 ? (data.y / data.x) : 0;
-                    return '<div style="background:#1e293b; padding:12px; border-radius:8px; color:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1)">' +
-                    '<div style="font-weight:700; margin-bottom:6px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:4px">' + data.name + '</div>' +
-                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Fatturato:</span> <span style="font-weight:600; color:#fbbf24">€ ' + fmtNum.format(data.y) + '</span></div>' +
-                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Clienti:</span> <span style="font-weight:600">' + data.x + '</span></div>' +
-                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:11px; margin-top:4px; color:#94a3b8"><span>Avg/Cli:</span> <span>€ ' + fmtNum.format(avg.toFixed(0)) + '</span></div>' +
-                    '</div>';
-                }
-            }
-        });
-        charts.scatter.render();
+        // --- NEW: WATERFALL CHART ---
+        charts.waterfall = new ApexCharts(document.querySelector("#chartWaterfall"), {
+            series: [], chart: { type: 'rangeBar', height: 320, fontFamily: font, toolbar: {show: false} },
+            plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 4 } },
+            colors: ['#cbd5e1', '#22c55e', '#ef4444', '#c2410c'], 
+            dataLabels: { enabled: true, formatter: function(val, opts) {
+                let i = opts.dataPointIndex; let s = opts.w.config.series[0].data;
+                if(i === 0 || i === s.length - 1) return (val[1]/1000).toFixed(0) + "k";
+                let d = val[1] - val[0]; return (d > 0 ? '+' : '') + (d/1000).toFixed(0) + "k";
+            }, style: { fontWeight: 'bold', colors: ['#334155'] } },
+            xaxis: { type: 'category', labels: { style: { fontSize: '11px', fontWeight: 600 }, rotate: -45 } },
+            yaxis: { labels: { formatter: v => "€ " + (v/1000).toFixed(0) + "k" } },
+            tooltip: { custom: function({ seriesIndex, dataPointIndex, w }) {
+                let d = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                let val = d.y[1] - d.y[0]; let label = d.x;
+                if(dataPointIndex === 0 || dataPointIndex === w.globals.initialSeries[seriesIndex].data.length - 1) val = d.y[1];
+                return `<div style="padding:10px; background:#1e293b; color:#fff; border-radius:6px;"><div style="font-weight:bold; margin-bottom:4px">${label}</div><div>Valore: € ${fmtNum.format(val)}</div></div>`;
+            }}, grid: { strokeDashArray: 4, yaxis: { lines: { show: true } } }
+        }); charts.waterfall.render();
 
-        // --- NUOVO: HISTOGRAMMA ---
+        // --- NEW: INTERACTIVE HISTO ---
         charts.histo = new ApexCharts(document.querySelector("#chartHisto"), {
             series: [{ name: 'Agenti', data: [] }],
-            chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false} },
-            plotOptions: { 
-                bar: { 
-                    borderRadius: 6, 
-                    columnWidth: '50%', 
-                    distributed: true, 
-                    dataLabels: { position: 'top' }
-                } 
-            },
-            dataLabels: { 
-                enabled: true, 
-                offsetY: -20,
-                style: { fontSize: '12px', colors: ["#334155"] } 
-            },
-            legend: { show: false },
-            colors: ['#ef4444', '#f97316', '#84cc16', '#15803d'], 
-            xaxis: { 
-                categories: ['Critico (<50%)', 'Ritardo (50-80%)', 'Target (80-100%)', 'Star (>100%)'],
-                labels: { style: { fontSize: '11px', fontWeight: 600 } }
-            },
-            yaxis: { show: false }, 
-            grid: { show: false },
-            tooltip: { theme: 'dark', y: { formatter: undefined, title: { formatter: (s) => "Agenti in fascia:" } } }
-        });
-        charts.histo.render();
+            chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false}, events: { dataPointSelection: (e, c, cfg) => showAgentList(cfg.dataPointIndex) } },
+            plotOptions: { bar: { borderRadius: 6, columnWidth: '50%', distributed: true, dataLabels: { position: 'top' } } },
+            dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#334155"] } },
+            legend: { show: false }, colors: ['#ef4444', '#f97316', '#84cc16', '#15803d'], 
+            xaxis: { categories: ['Critico (<50%)', 'Ritardo (50-80%)', 'Target (80-100%)', 'Star (>100%)'], labels: { style: { fontSize: '11px', fontWeight: 600 } } },
+            yaxis: { show: false }, grid: { show: false },
+            tooltip: { theme: 'dark', y: { formatter: undefined, title: { formatter: (s) => "Agenti:" } } }
+        }); charts.histo.render();
     }
 
     function updateTable(data) {
@@ -871,14 +751,33 @@
             `<div style="font-weight:600; color:#475569">${r.Ragione_Sociale_Cliente}</div>`,
             `<div class="money-cell">${fmtEUR.format(asNum(r.Fatturato))}</div>`
         ]);
-        
         if (dataTable) dataTable.destroy();
         dataTable = new DataTable('#tbl', {
-            data: body,
-            columns: [{title:"Agente"},{title:"Area Geografica"},{title:"Cliente"},{title:"Fatturato", className:"dt-right"}],
+            data: body, columns: [{title:"Agente"},{title:"Area Geografica"},{title:"Cliente"},{title:"Fatturato", className:"dt-right"}],
             order: [[3,'desc']], pageLength: 10, lengthChange: false,
             language: { search:"_INPUT_", searchPlaceholder:"Cerca cliente o agente...", paginate:{next:">", previous:"<"}, info:"_START_ - _END_ di _TOTAL_" }
         });
+    }
+
+    function showAgentList(bucketIndex) {
+        const container = document.getElementById('agentListContainer');
+        const body = document.getElementById('agentListBody');
+        const title = document.getElementById('listCatName');
+        const bucketsNames = ['Critico (<50%)', 'In Ritardo (50-80%)', 'In Target (80-100%)', 'Star (>100%)'];
+        const bucketColors = ['tag-crit', 'tag-warn', 'tag-ok', 'tag-ok']; 
+        const agents = agentPerformanceData.filter(a => a.bucket === bucketIndex).sort((a,b) => a.pct - b.pct);
+        title.textContent = `Agenti: ${bucketsNames[bucketIndex]} (${agents.length})`;
+        body.innerHTML = '';
+        if(agents.length === 0) { body.innerHTML = '<div style="padding:10px; text-align:center; font-style:italic; color:#94a3b8">Nessun agente in questa fascia</div>'; } 
+        else {
+            agents.forEach(a => {
+                const diff = a.val - a.target;
+                const div = document.createElement('div'); div.className = 'agent-list-item';
+                div.innerHTML = `<div><div style="color:var(--text-main)">${a.name}</div><div style="font-size:11px; color:var(--text-muted)">Target: € ${fmtNum.format(a.target)}</div></div><div style="text-align:right"><div class="tag-pct ${bucketColors[bucketIndex]}">${a.pct.toFixed(1)}%</div><div style="font-size:10px; margin-top:2px; color:${diff >= 0 ? '#15803d' : '#b91c1c'}">${diff > 0 ? '+' : ''}€ ${fmtNum.format(diff)}</div></div>`;
+                body.appendChild(div);
+            });
+        }
+        container.style.display = 'block';
     }
   </script>
 </body>
