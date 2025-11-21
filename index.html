@@ -165,11 +165,34 @@
     .chart-desc { 
         font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; padding: 0; 
     }
+
+    /* --- MODAL (POP UP) STYLES --- */
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+        z-index: 9999; display: none; justify-content: center; align-items: center; padding: 20px;
+        animation: fadeIn 0.3s ease;
+    }
+    .modal-content {
+        background: #fff; width: 100%; max-width: 600px; max-height: 85vh;
+        border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex; flex-direction: column; overflow: hidden;
+        animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-header {
+        padding: 20px 24px; border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center; background: #f8fafc;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-close-modal {
+        background: transparent; border: none; font-size: 24px; color: var(--text-muted);
+        cursor: pointer; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px;
+        transition: 0.2s;
+    }
+    .btn-close-modal:hover { background: #e2e8f0; color: var(--primary); }
     
-    /* Lista Agenti Drill-down */
-    #agentListContainer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px; display: none; animation: slideDown 0.3s ease-out; }
-    .agent-list-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; }
-    
+    .modal-body { padding: 24px; overflow-y: auto; background: #fff; }
+
+    /* LIST ITEMS IN MODAL */
     .agent-list-item { 
       display: flex; flex-direction: column; gap:8px;
       padding: 16px; background: #fff; border: 1px solid #e2e8f0; margin-bottom: 12px; border-radius: 12px; 
@@ -191,14 +214,8 @@
     .tag-warn { background: #ffedd5; color: #c2410c; }
     .tag-ok { background: #dcfce7; color: #15803d; }
 
-    .btn-close-panel {
-        display: block; width: 100%; padding: 12px; margin-top: 16px; 
-        background: #f1f5f9; color: #475569; border: none; border-radius: 12px; 
-        font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s;
-    }
-    .btn-close-panel:hover { background: #e2e8f0; color: var(--text-main); }
-
-    @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes slideUpModal { from { transform: translateY(40px); opacity:0; } to { transform: translateY(0); opacity:1; } }
 
     /* --- TABLE --- */
     table.dataTable { width: 100% !important; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
@@ -387,19 +404,9 @@
         </div>
         <div class="chart-desc">
           Mostra la <strong>qualità</strong> del risultato. Evita che i "Top Performer" nascondano le difficoltà della massa. <br>
-          <span style="font-weight:600; color:var(--primary)"><i class="ri-cursor-line"></i> Clicca su una colonna per vedere i dettagli completi.</span>
+          <span style="font-weight:600; color:var(--primary)"><i class="ri-cursor-line"></i> Clicca su una colonna per vedere i dettagli.</span>
         </div>
         <div id="chartHisto"></div>
-        
-        <div id="agentListContainer">
-            <div class="agent-list-title">
-                <span id="listCatName">Agenti Selezionati</span>
-            </div>
-            <div id="agentListBody"></div>
-            <button class="btn-close-panel" onclick="document.getElementById('agentListContainer').style.display='none'">
-                <i class="ri-arrow-up-s-line"></i> CHIUDI PANNELLO DETTAGLI
-            </button>
-        </div>
       </div>
   
     </div>
@@ -416,6 +423,17 @@
       Cotto Cusimano Analytics System • Aggiornato: <span id="lastUpdate" style="color:var(--primary)">--</span>
     </div>
 
+  </div>
+
+  <div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+          <div class="modal-header">
+              <div class="modal-title" id="modalTitle">Titolo</div>
+              <button class="btn-close-modal" onclick="forceCloseModal()"><i class="ri-close-line"></i></button>
+          </div>
+          <div class="modal-body" id="modalBody">
+              </div>
+      </div>
   </div>
 
   <script>
@@ -633,7 +651,7 @@
 
         // --- STRATEGIC CHARTS CALCULATIONS ---
         
-        // 1. HISTOGRAMMA (Salute Obiettivi) - RICCO DI DATI
+        // 1. HISTOGRAMMA (Salute Obiettivi)
         agentPerformanceData = []; 
         let histoCounts = [0, 0, 0, 0]; 
         const objMap = {};
@@ -645,8 +663,6 @@
             if(!objMap[agName]) objMap[agName] = { curr: 0, target: 0, reg: r.Regione, prov: r.Provincia, cli: asNum(r.Clienti_Anno_Corrente) };
             objMap[agName].curr += asNum(r.Anno_Corrente);
             objMap[agName].target += asNum(r.Obiettivo);
-            // Se c'è più di una riga per agente, prendiamo i dati geo della prima o sommiamo se necessario
-            // Qui assumiamo che l'agente sia in una zona principale o prendiamo l'ultima
             if(r.Regione && r.Regione !== 'Altro') objMap[agName].reg = r.Regione;
         });
 
@@ -656,32 +672,17 @@
                 let bucket = 0;
                 if(pct >= 100) bucket = 3; else if(pct >= 80) bucket = 2; else if(pct >= 50) bucket = 1;
                 histoCounts[bucket]++;
-                
-                // Calcolo Scontrino Medio
                 let avgOrder = data.cli > 0 ? (data.curr / data.cli) : 0;
-
                 agentPerformanceData.push({ 
-                    name: name, 
-                    pct: pct, 
-                    bucket: bucket, 
-                    val: data.curr, 
-                    target: data.target,
-                    reg: data.reg || 'N/D',
-                    prov: data.prov || 'Generale',
-                    cli: data.cli,
-                    avg: avgOrder
+                    name: name, pct: pct, bucket: bucket, val: data.curr, target: data.target,
+                    reg: data.reg || 'N/D', prov: data.prov || 'Generale', cli: data.cli, avg: avgOrder
                 });
             }
         });
         charts.histo.updateSeries([{ data: histoCounts }]);
-        document.getElementById('agentListContainer').style.display = 'none';
 
-        // 2. TOP 5 REGIONI (TREEMAP) - SOSTITUTO WATERFALL
-        // Calcolo Top 5 Regioni per Fatturato Totale (dai dati originali non filtrati per avere la mappa completa)
-        // Oppure filtrati se vogliamo che la mappa risponda ai filtri. Usiamo 'regMap' che è già calcolato sui dati filtrati.
-        // Nota: regMap contiene dati filtrati. Se vogliamo vedere "Tutta Italia" anche se filtro un agente, dobbiamo usare state.all
-        // Ma coerenza vuole che la dashboard risponda ai filtri. Usiamo regMap.
-        
+        // 2. TREEMAP (MAPPA A BLOCCHI) - Usiamo regMap che è già calcolato
+        // Ordina per valore decrescente e prendi top 5
         const regionList = Object.entries(regMap).map(([r, val]) => ({ x: r, y: val })).sort((a,b) => b.y - a.y).slice(0, 5);
         charts.map.updateSeries([{ data: regionList }]);
 
@@ -735,38 +736,30 @@
             colors: ['#c2410c'], stroke: { lineCap:'round' }
         }); charts.radial.render();
 
-        // --- NEW: TREEMAP (MAPPA REGIONI) ---
+        // --- TREEMAP (Top 5 Regioni) ---
         charts.map = new ApexCharts(document.querySelector("#chartMap"), {
             series: [],
             chart: { type: 'treemap', height: 320, fontFamily: font, toolbar: {show: false} },
-            colors: ['#c2410c'], // Colore base Terracotta
+            colors: ['#c2410c'], 
             plotOptions: { 
                 treemap: { 
-                    distributed: true, 
-                    enableShades: true, 
-                    shadeIntensity: 0.5, 
-                    reverseNegativeShade: true,
+                    distributed: true, enableShades: true, shadeIntensity: 0.5, reverseNegativeShade: true,
                     dataLabels: { format: 'scale' }
                 } 
             },
             dataLabels: { 
-                enabled: true, 
-                style: { fontSize: '14px', fontWeight: 'bold'}, 
-                formatter: function(text, op) {
-                    return [text, "€ " + (op.value/1000).toFixed(0) + "k"];
-                },
+                enabled: true, style: { fontSize: '14px', fontWeight: 'bold'}, 
+                formatter: function(text, op) { return [text, "€ " + (op.value/1000).toFixed(0) + "k"]; },
                 offsetY: -4
             },
-            tooltip: {
-                y: { formatter: v => fmtEUR.format(v) }
-            }
+            tooltip: { y: { formatter: v => fmtEUR.format(v) } }
         });
         charts.map.render();
 
         // --- INTERACTIVE HISTO ---
         charts.histo = new ApexCharts(document.querySelector("#chartHisto"), {
             series: [{ name: 'Agenti', data: [] }],
-            chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false}, events: { dataPointSelection: (e, c, cfg) => showAgentList(cfg.dataPointIndex) } },
+            chart: { type: 'bar', height: 320, fontFamily: font, toolbar: {show: false}, events: { dataPointSelection: (e, c, cfg) => openModal(cfg.dataPointIndex) } },
             plotOptions: { bar: { borderRadius: 6, columnWidth: '50%', distributed: true, dataLabels: { position: 'top' } } },
             dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#334155"] } },
             legend: { show: false }, colors: ['#ef4444', '#f97316', '#84cc16', '#15803d'], 
@@ -791,21 +784,21 @@
         });
     }
 
-    function showAgentList(bucketIndex) {
-        const container = document.getElementById('agentListContainer');
-        const body = document.getElementById('agentListBody');
-        const title = document.getElementById('listCatName');
+    // --- MODAL LOGIC ---
+    function openModal(bucketIndex) {
+        const modal = document.getElementById('detailModal');
+        const body = document.getElementById('modalBody');
+        const title = document.getElementById('modalTitle');
         const bucketsNames = ['Critico (<50%)', 'In Ritardo (50-80%)', 'In Target (80-100%)', 'Star (>100%)'];
         const bucketColors = ['tag-crit', 'tag-warn', 'tag-ok', 'tag-ok']; 
         
-        // Ordina agenti dal peggiore al migliore in quella fascia
         const agents = agentPerformanceData.filter(a => a.bucket === bucketIndex).sort((a,b) => a.pct - b.pct);
         
-        title.textContent = `Agenti in fascia: ${bucketsNames[bucketIndex]} (${agents.length})`;
+        title.textContent = `${bucketsNames[bucketIndex]} (${agents.length} Agenti)`;
         body.innerHTML = '';
         
         if(agents.length === 0) { 
-            body.innerHTML = '<div style="padding:20px; text-align:center; font-style:italic; color:#94a3b8">Nessun agente presente in questa fascia.</div>'; 
+            body.innerHTML = '<div style="padding:40px; text-align:center; font-style:italic; color:#94a3b8">Nessun agente in questa fascia.</div>'; 
         } else {
             agents.forEach(a => {
                 const diff = a.val - a.target;
@@ -814,11 +807,14 @@
                 div.innerHTML = `
                     <div class="agent-row-main">
                         <span class="agent-name">${a.name}</span>
-                        <span class="agent-val-highlight">€ ${fmtNum.format(a.val)}</span>
+                        <div style="text-align:right">
+                            <span style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:2px">FATTURATO FINORA</span>
+                            <span class="agent-val-highlight">€ ${fmtNum.format(a.val)}</span>
+                        </div>
                     </div>
                     <div class="agent-details-grid">
-                        <div class="det-label">Target:</div> <div class="det-val">€ ${fmtNum.format(a.target)}</div>
-                        <div class="det-label">Area:</div> <div class="det-val">${a.reg}</div>
+                        <div class="det-label">Obiettivo:</div> <div class="det-val">€ ${fmtNum.format(a.target)}</div>
+                        <div class="det-label">Area:</div> <div class="det-val">${a.reg} • ${a.prov}</div>
                         <div class="det-label">Differenza:</div> <div class="det-val" style="color:${diff>=0?'#15803d':'#b91c1c'}">${diff>0?'+':''}€ ${fmtNum.format(diff)}</div>
                         <div class="det-label">Performance:</div> <div><span class="tag-pct ${bucketColors[bucketIndex]}">${a.pct.toFixed(1)}%</span></div>
                         <div class="det-label">Clienti Attivi:</div> <div class="det-val">${a.cli}</div>
@@ -828,9 +824,16 @@
                 body.appendChild(div);
             });
         }
-        container.style.display = 'block';
-        // Auto-scroll leggero verso la lista per UX
-        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        modal.style.display = 'flex';
+    }
+
+    function closeModal(event) {
+        if (event.target.id === 'detailModal') {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+    }
+    function forceCloseModal() {
+        document.getElementById('detailModal').style.display = 'none';
     }
   </script>
 </body>
