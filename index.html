@@ -161,10 +161,9 @@
     .chart-title { font-size: 18px; font-weight: 700; margin: 0; }
     .chart-badge { background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Descrizioni grafici strategici - SENZA BORDO */
+    /* Descrizioni grafici */
     .chart-desc { 
-        font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; 
-        padding: 0; /* Rimosso padding e border */
+        font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; padding: 0; 
     }
     
     /* Lista Agenti Drill-down */
@@ -181,6 +180,7 @@
     .agent-row-main { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px; }
     .agent-name { font-weight: 700; font-size: 14px; color: var(--text-main); }
     .agent-badge { font-size: 10px; font-weight: 700; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #475569; text-transform: uppercase; }
+    .agent-val-highlight { font-size: 13px; font-weight: 800; color: var(--primary); }
 
     .agent-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; }
     .det-label { color: var(--text-muted); font-weight: 500; }
@@ -191,12 +191,10 @@
     .tag-warn { background: #ffedd5; color: #c2410c; }
     .tag-ok { background: #dcfce7; color: #15803d; }
 
-    /* Pulsante Chiudi in basso */
     .btn-close-panel {
-        display: block; width: 100%; padding: 12px; 
-        margin-top: 16px; background: #f1f5f9; color: #475569; 
-        border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer;
-        transition: all 0.2s;
+        display: block; width: 100%; padding: 12px; margin-top: 16px; 
+        background: #f1f5f9; color: #475569; border: none; border-radius: 12px; 
+        font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s;
     }
     .btn-close-panel:hover { background: #e2e8f0; color: var(--text-main); }
 
@@ -368,16 +366,15 @@
       <div class="card">
         <div class="chart-header">
           <div>
-            <h3 class="chart-title">Efficienza Rete</h3>
-            <div style="font-size:12px; color:var(--text-muted); font-weight:500">Fatturato vs N. Clienti</div>
+            <h3 class="chart-title">Top 5 Regioni</h3>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:500">Mappa Valore Geografico</div>
           </div>
-          <span class="chart-badge" style="background:#f1f5f9; color:#475569">Qualità</span>
+          <span class="chart-badge" style="background:#fff1f2; color:#e11d48">Leaderboard</span>
         </div>
         <div class="chart-desc">
-            Analisi <strong>Cacciatori vs Coltivatori</strong>. Chi ha tanti clienti (Destra) e chi fa alto fatturato (Alto). <br>
-            Puntini in alto a destra = Agenti più efficienti.
+            Visualizza le 5 regioni che guidano il fatturato. La dimensione dei blocchi indica il <strong>volume di affari</strong>.
         </div>
-        <div id="chartScatter"></div>
+        <div id="chartMap"></div>
       </div>
 
       <div class="card">
@@ -460,7 +457,7 @@
 
     // --- STATE ---
     let state = { all: [], rows: [] };
-    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, scatter: null, histo: null };
+    let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, map: null, histo: null };
     let dataTable = null;
     let agentPerformanceData = []; // Dati per drill-down
 
@@ -679,28 +676,14 @@
         charts.histo.updateSeries([{ data: histoCounts }]);
         document.getElementById('agentListContainer').style.display = 'none';
 
-        // 2. SCATTER PLOT (Efficienza) - SOSTITUTO WATERFALL
-        const scatterMap = {};
-        // Usiamo venditeData se possibile per granularità clienti, altrimenti objMap
-        if(venditeData.length > 0) {
-            venditeData.forEach(r => {
-                const agName = (r.Agente_Nome || r.Agente_Codice || 'N/D').trim();
-                if(!scatterMap[agName]) scatterMap[agName] = { val: 0, cli: new Set() };
-                scatterMap[agName].val += asNum(r.Fatturato);
-                scatterMap[agName].cli.add(r.Ragione_Sociale_Cliente);
-            });
-        } else {
-            // Fallback su objMap
-             Object.entries(objMap).forEach(([name, d]) => {
-                 scatterMap[name] = { val: d.curr, cli: { size: d.cli } }; // Mock Set interface
-             });
-        }
+        // 2. TOP 5 REGIONI (TREEMAP) - SOSTITUTO WATERFALL
+        // Calcolo Top 5 Regioni per Fatturato Totale (dai dati originali non filtrati per avere la mappa completa)
+        // Oppure filtrati se vogliamo che la mappa risponda ai filtri. Usiamo 'regMap' che è già calcolato sui dati filtrati.
+        // Nota: regMap contiene dati filtrati. Se vogliamo vedere "Tutta Italia" anche se filtro un agente, dobbiamo usare state.all
+        // Ma coerenza vuole che la dashboard risponda ai filtri. Usiamo regMap.
         
-        const scatterSeriesData = Object.keys(scatterMap).map(k => {
-            let cSize = (scatterMap[k].cli instanceof Set) ? scatterMap[k].cli.size : scatterMap[k].cli.size;
-            return { name: k, x: cSize, y: scatterMap[k].val };
-        });
-        charts.scatter.updateSeries([{ name: "Agenti", data: scatterSeriesData }]);
+        const regionList = Object.entries(regMap).map(([r, val]) => ({ x: r, y: val })).sort((a,b) => b.y - a.y).slice(0, 5);
+        charts.map.updateSeries([{ data: regionList }]);
 
         updateTable(venditeData);
     }
@@ -752,37 +735,33 @@
             colors: ['#c2410c'], stroke: { lineCap:'round' }
         }); charts.radial.render();
 
-        // --- NEW: SCATTER PLOT (EFFICIENZA) ---
-        charts.scatter = new ApexCharts(document.querySelector("#chartScatter"), {
+        // --- NEW: TREEMAP (MAPPA REGIONI) ---
+        charts.map = new ApexCharts(document.querySelector("#chartMap"), {
             series: [],
-            chart: { type: 'scatter', height: 320, fontFamily: font, toolbar: {show: false}, zoom: {enabled: false} },
-            colors: ['#ea580c'], 
-            xaxis: { 
-                tickAmount: 8, 
-                labels: { formatter: val => parseFloat(val).toFixed(0) },
-                title: { text: 'Numero Clienti Attivi', style: {fontSize:'11px', color:'#94a3b8'} }
+            chart: { type: 'treemap', height: 320, fontFamily: font, toolbar: {show: false} },
+            colors: ['#c2410c'], // Colore base Terracotta
+            plotOptions: { 
+                treemap: { 
+                    distributed: true, 
+                    enableShades: true, 
+                    shadeIntensity: 0.5, 
+                    reverseNegativeShade: true,
+                    dataLabels: { format: 'scale' }
+                } 
             },
-            yaxis: { 
-                tickAmount: 5,
-                labels: { formatter: val => "€ " + (val/1000).toFixed(0) + "k" },
-                title: { text: 'Fatturato Generato', style: {fontSize:'11px', color:'#94a3b8'} }
+            dataLabels: { 
+                enabled: true, 
+                style: { fontSize: '14px', fontWeight: 'bold'}, 
+                formatter: function(text, op) {
+                    return [text, "€ " + (op.value/1000).toFixed(0) + "k"];
+                },
+                offsetY: -4
             },
-            grid: { borderColor: '#f1f5f9', xaxis: {lines: {show: true}}, yaxis: {lines: {show: true}} },
-            markers: { size: 6, strokeColors: '#fff', strokeWidth: 2, hover: {size: 9} },
             tooltip: {
-                custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                    var data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                    var avg = data.x > 0 ? (data.y / data.x) : 0;
-                    return '<div style="background:#1e293b; padding:12px; border-radius:8px; color:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1)">' +
-                    '<div style="font-weight:700; margin-bottom:6px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:4px">' + data.name + '</div>' +
-                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Fatturato:</span> <span style="font-weight:600; color:#fbbf24">€ ' + fmtNum.format(data.y) + '</span></div>' +
-                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-bottom:2px"><span style="opacity:0.7">Clienti:</span> <span style="font-weight:600">' + data.x + '</span></div>' +
-                    '<div style="display:flex; justify-content:space-between; gap:16px; font-size:11px; margin-top:4px; color:#94a3b8"><span>Avg/Cli:</span> <span>€ ' + fmtNum.format(avg.toFixed(0)) + '</span></div>' +
-                    '</div>';
-                }
+                y: { formatter: v => fmtEUR.format(v) }
             }
         });
-        charts.scatter.render();
+        charts.map.render();
 
         // --- INTERACTIVE HISTO ---
         charts.histo = new ApexCharts(document.querySelector("#chartHisto"), {
@@ -835,11 +814,11 @@
                 div.innerHTML = `
                     <div class="agent-row-main">
                         <span class="agent-name">${a.name}</span>
-                        <span class="agent-badge">${a.reg} • ${a.prov}</span>
+                        <span class="agent-val-highlight">€ ${fmtNum.format(a.val)}</span>
                     </div>
                     <div class="agent-details-grid">
-                        <div class="det-label">Obiettivo:</div> <div class="det-val">€ ${fmtNum.format(a.target)}</div>
-                        <div class="det-label">Raggiunto:</div> <div class="det-val">€ ${fmtNum.format(a.val)}</div>
+                        <div class="det-label">Target:</div> <div class="det-val">€ ${fmtNum.format(a.target)}</div>
+                        <div class="det-label">Area:</div> <div class="det-val">${a.reg}</div>
                         <div class="det-label">Differenza:</div> <div class="det-val" style="color:${diff>=0?'#15803d':'#b91c1c'}">${diff>0?'+':''}€ ${fmtNum.format(diff)}</div>
                         <div class="det-label">Performance:</div> <div><span class="tag-pct ${bucketColors[bucketIndex]}">${a.pct.toFixed(1)}%</span></div>
                         <div class="det-label">Clienti Attivi:</div> <div class="det-val">${a.cli}</div>
