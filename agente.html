@@ -1549,6 +1549,7 @@
 
     function initCharts() {
       const font = "'Plus Jakarta Sans', sans-serif";
+      const isMobile = window.innerWidth < 768;
       
       // ========== TOP 10 CLIENTI ==========
       const clientiMap = {};
@@ -1560,14 +1561,51 @@
       
       new ApexCharts(document.querySelector("#chartClienti"), {
         series: [{ name: 'Fatturato', data: clientiSorted.map(x => x[1]) }],
-        chart: { type: 'bar', height: 320, fontFamily: font, toolbar: { show: false } },
-        plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%' } },
+        chart: { 
+          type: 'bar', 
+          height: isMobile ? 350 : 320, 
+          fontFamily: font, 
+          toolbar: { show: false } 
+        },
+        plotOptions: { 
+          bar: { 
+            horizontal: true, 
+            borderRadius: isMobile ? 4 : 6, 
+            barHeight: isMobile ? '50%' : '60%'
+          } 
+        },
         colors: ['#c2410c'],
         fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.85, opacityTo: 0.85, stops: [50, 0, 100] } },
-        dataLabels: { enabled: false },
+        dataLabels: { 
+          enabled: true,
+          formatter: v => '€' + (v/1000).toFixed(0) + 'k',
+          style: { fontSize: isMobile ? '10px' : '11px', fontWeight: 600, colors: ['#fff'] },
+          offsetX: isMobile ? -5 : 0
+        },
         xaxis: { 
-          categories: clientiSorted.map(x => x[0].length > 22 ? x[0].substring(0, 22) + '...' : x[0]),
-          labels: { formatter: v => '€' + (v/1000).toFixed(0) + 'k' }
+          categories: clientiSorted.map(x => {
+            const maxLen = isMobile ? 16 : 22;
+            return x[0].length > maxLen ? x[0].substring(0, maxLen) + '...' : x[0];
+          }),
+          labels: { 
+            show: !isMobile,
+            formatter: v => '€' + (v/1000).toFixed(0) + 'k',
+            style: { fontSize: '11px' }
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            style: { fontSize: isMobile ? '10px' : '12px' },
+            maxWidth: isMobile ? 120 : 180
+          }
+        },
+        grid: { 
+          show: !isMobile,
+          borderColor: '#f1f5f9',
+          xaxis: { lines: { show: true } },
+          yaxis: { lines: { show: false } }
         },
         tooltip: { theme: 'dark', y: { formatter: v => fmtEUR.format(v) } }
       }).render();
@@ -1586,12 +1624,17 @@
           name: 'Crescita %', 
           data: crescitaData.map(x => x.growth)
         }],
-        chart: { type: 'bar', height: 320, fontFamily: font, toolbar: { show: false } },
+        chart: { 
+          type: 'bar', 
+          height: isMobile ? 280 : 320, 
+          fontFamily: font, 
+          toolbar: { show: false } 
+        },
         plotOptions: { 
           bar: { 
             horizontal: true, 
-            borderRadius: 6, 
-            barHeight: '60%',
+            borderRadius: isMobile ? 4 : 6, 
+            barHeight: isMobile ? '50%' : '60%',
             colors: {
               ranges: [
                 { from: -100, to: 0, color: '#ef4444' },
@@ -1603,13 +1646,26 @@
         dataLabels: { 
           enabled: true, 
           formatter: v => (v > 0 ? '+' : '') + v + '%',
-          style: { colors: ['#fff'], fontSize: '11px', fontWeight: 700 }
+          style: { colors: ['#fff'], fontSize: isMobile ? '10px' : '11px', fontWeight: 700 }
         },
         xaxis: { 
-          categories: crescitaData.map(x => x.name.length > 20 ? x.name.substring(0, 20) + '...' : x.name),
-          labels: { formatter: v => v + '%' }
+          categories: crescitaData.map(x => {
+            const maxLen = isMobile ? 14 : 20;
+            return x.name.length > maxLen ? x.name.substring(0, maxLen) + '...' : x.name;
+          }),
+          labels: { 
+            show: !isMobile,
+            formatter: v => v + '%' 
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
         },
-        yaxis: { labels: { style: { fontSize: '11px' } } },
+        yaxis: { 
+          labels: { 
+            style: { fontSize: isMobile ? '10px' : '11px' },
+            maxWidth: isMobile ? 100 : 160
+          } 
+        },
         grid: { show: false },
         tooltip: { 
           theme: 'dark', 
@@ -1627,15 +1683,42 @@
       
       new ApexCharts(document.querySelector("#chartProvince"), {
         series: [{ name: 'Fatturato', data: provSorted.map(x => x[1]) }],
-        chart: { type: 'bar', height: 320, fontFamily: font, toolbar: { show: false } },
-        plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '65%', distributed: true } },
+        chart: { 
+          type: 'bar', 
+          height: isMobile ? Math.max(200, provSorted.length * 40) : 320, 
+          fontFamily: font, 
+          toolbar: { show: false } 
+        },
+        plotOptions: { 
+          bar: { 
+            horizontal: true, 
+            borderRadius: isMobile ? 4 : 6, 
+            barHeight: isMobile ? '50%' : '65%', 
+            distributed: true 
+          } 
+        },
         colors: ['#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1'],
-        dataLabels: { enabled: false },
+        dataLabels: { 
+          enabled: true,
+          formatter: v => '€' + (v/1000).toFixed(0) + 'k',
+          style: { fontSize: isMobile ? '9px' : '11px', fontWeight: 600, colors: ['#fff'] }
+        },
         legend: { show: false },
         xaxis: { 
           categories: provSorted.map(x => x[0]),
-          labels: { formatter: v => '€' + (v/1000).toFixed(0) + 'k' }
+          labels: { 
+            show: !isMobile,
+            formatter: v => '€' + (v/1000).toFixed(0) + 'k' 
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
         },
+        yaxis: {
+          labels: {
+            style: { fontSize: isMobile ? '10px' : '12px' }
+          }
+        },
+        grid: { show: false },
         tooltip: { theme: 'dark', y: { formatter: v => fmtEUR.format(v) } }
       }).render();
 
@@ -1643,20 +1726,28 @@
       new ApexCharts(document.querySelector("#chartProvinceDonut"), {
         series: provSorted.map(x => x[1]),
         labels: provSorted.map(x => x[0]),
-        chart: { type: 'donut', height: 320, fontFamily: font },
+        chart: { 
+          type: 'donut', 
+          height: isMobile ? 280 : 320, 
+          fontFamily: font 
+        },
         colors: ['#c2410c', '#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa', '#fef3c7'],
         plotOptions: { 
           pie: { 
             donut: { 
-              size: '68%',
+              size: isMobile ? '60%' : '68%',
               labels: {
                 show: true,
-                name: { fontSize: '12px' },
-                value: { fontSize: '18px', fontWeight: 700, formatter: v => fmtEUR.format(v) },
+                name: { fontSize: isMobile ? '10px' : '12px' },
+                value: { 
+                  fontSize: isMobile ? '14px' : '18px', 
+                  fontWeight: 700, 
+                  formatter: v => '€' + (v/1000).toFixed(0) + 'k'
+                },
                 total: {
                   show: true,
                   label: 'Totale',
-                  fontSize: '11px',
+                  fontSize: isMobile ? '9px' : '11px',
                   color: '#64748b',
                   formatter: w => fmtEUR.format(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
                 }
@@ -1664,7 +1755,12 @@
             } 
           } 
         },
-        legend: { position: 'bottom', markers: { radius: 12 } },
+        legend: { 
+          position: 'bottom', 
+          markers: { radius: isMobile ? 6 : 12 },
+          fontSize: isMobile ? '10px' : '12px',
+          itemMargin: { horizontal: isMobile ? 8 : 12, vertical: 4 }
+        },
         dataLabels: { enabled: false },
         tooltip: { theme: 'dark', y: { formatter: v => fmtEUR.format(v) } }
       }).render();
