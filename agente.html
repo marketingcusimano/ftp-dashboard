@@ -661,7 +661,124 @@
       .charts-grid { grid-template-columns: 1fr; }
     }
 
-    .chart-card { 
+    /* =====================================================
+       MOBILE RESPONSIVE
+       ===================================================== */
+    @media (max-width: 768px) {
+      .container { padding: 0 16px; }
+      
+      /* Header mobile */
+      .agent-header { padding: 20px 0; }
+      .agent-header-inner { 
+        flex-direction: column; 
+        text-align: center; 
+        gap: 12px;
+      }
+      .agent-avatar { width: 60px; height: 60px; font-size: 22px; border-radius: 16px; }
+      .agent-info h1 { font-size: 20px; }
+      .agent-meta { justify-content: center; flex-wrap: wrap; gap: 8px; font-size: 11px; }
+      .rank-badge-header { position: static; margin-top: 8px; }
+      .logo-small { display: none; }
+      
+      /* KPI Grid - tutte le card in colonna singola */
+      .kpi-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      /* Card base */
+      .card { padding: 16px; border-radius: 16px; }
+      .kpi-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+      .kpi-label { font-size: 10px; }
+      .kpi-value { font-size: 26px; margin-bottom: 8px; }
+      .kpi-footer { font-size: 11px; }
+      .kpi-trend { font-size: 10px; padding: 3px 8px; }
+      
+      /* YoY Bar mobile */
+      .yoy-bar-container { margin-top: 12px; }
+      .yoy-bar-wrapper { height: 16px; }
+      .yoy-bar-curr span { font-size: 9px; }
+      .yoy-legend { font-size: 9px; gap: 8px; }
+      .yoy-legend .dot { width: 6px; height: 6px; }
+      
+      /* Media Comparison mobile */
+      .media-comparison { padding: 10px; margin-top: 12px; }
+      .media-bar-container { height: 24px; }
+      .media-marker::after { font-size: 8px; top: -14px; }
+      .media-labels { font-size: 9px; }
+      .media-diff { font-size: 11px; padding: 6px 10px; margin-top: 10px; }
+      
+      /* Goal card mobile */
+      .goal-progress { margin-top: 12px; }
+      .goal-bar-track { height: 10px; }
+      .goal-labels { font-size: 10px; }
+      .goal-status { font-size: 11px; padding: 6px 10px; margin-top: 10px; }
+      
+      /* Countdown card mobile */
+      .countdown-content { 
+        flex-direction: column; 
+        gap: 12px; 
+        text-align: center;
+      }
+      .countdown-amount { text-align: center; }
+      .countdown-value { font-size: 20px; }
+      .countdown-label { font-size: 10px; }
+      .days-circle { width: 60px; height: 60px; margin: 0 auto 6px; }
+      .days-number { font-size: 18px; }
+      .days-label { font-size: 8px; }
+      .countdown-end { font-size: 9px; }
+      .countdown-daily { font-size: 11px; padding: 8px 12px; margin-top: 12px; }
+      .countdown-daily i { font-size: 14px; }
+      
+      /* Next goal card mobile */
+      .next-goal-amount { font-size: 22px; }
+      .next-goal-desc { font-size: 11px; }
+      .next-goal-agent { padding: 10px 12px; }
+      .agent-rank { width: 28px; height: 28px; font-size: 12px; border-radius: 8px; }
+      .agent-name { font-size: 12px; }
+      .next-goal-message { font-size: 11px; padding: 6px 10px; margin-top: 10px; }
+      
+      /* Rank card mobile */
+      .rank-display { justify-content: center; }
+      .rank-number { font-size: 38px; }
+      .rank-total { font-size: 14px; }
+      .rank-message { font-size: 11px; justify-content: center; text-align: center; }
+      
+      /* Charts mobile */
+      .chart-card { padding: 16px; }
+      .chart-title { font-size: 14px; margin-bottom: 16px; }
+      .chart-title i { font-size: 16px; }
+      
+      /* Table mobile */
+      .table-card { padding: 12px; overflow-x: auto; }
+      table.dataTable thead th { padding: 10px 8px; font-size: 9px; }
+      table.dataTable tbody td { padding: 10px 8px; font-size: 12px; }
+      .dataTables_wrapper .dataTables_length,
+      .dataTables_wrapper .dataTables_filter { 
+        float: none; 
+        text-align: center;
+        margin-bottom: 12px;
+      }
+      .dataTables_wrapper .dataTables_filter input { width: 100%; max-width: 200px; }
+      .dataTables_wrapper .dataTables_info { font-size: 11px; text-align: center; }
+      .dataTables_wrapper .dataTables_paginate { text-align: center; margin-top: 12px; }
+      
+      /* Footer mobile */
+      .footer { padding: 20px; font-size: 10px; }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 380px) {
+      .kpi-value { font-size: 22px; }
+      .countdown-value { font-size: 18px; }
+      .next-goal-amount { font-size: 18px; }
+      .rank-number { font-size: 32px; }
+      .days-circle { width: 50px; height: 50px; }
+      .days-number { font-size: 16px; }
+    }
+
+    .chart-card {  
       padding: 24px; 
       animation: fadeInUp 0.5s ease forwards;
       animation-delay: 0.3s;
