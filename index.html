@@ -191,6 +191,20 @@
     .chart-title { font-size: 18px; font-weight: 700; margin: 0; }
     .chart-badge { background: #fff7ed; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     
+    /* Expand button */
+    .chart-header-right { display: flex; align-items: center; gap: 10px; }
+    .btn-expand {
+      background: transparent; border: 1px solid #e2e8f0;
+      width: 32px; height: 32px; border-radius: 8px;
+      display: grid; place-items: center; cursor: pointer;
+      color: var(--text-muted); font-size: 16px;
+      transition: all 0.2s ease;
+    }
+    .btn-expand:hover {
+      background: var(--primary); border-color: var(--primary);
+      color: white; transform: scale(1.1);
+    }
+    
     /* Descrizioni grafici */
     .chart-desc { 
         font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; font-style: italic; padding: 0; 
@@ -255,6 +269,134 @@
 
     @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
     @keyframes slideUpModal { from { transform: translateY(40px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+    /* --- EXPANDED DATA MODAL --- */
+    .modal-lg .modal-content {
+      max-width: 900px;
+    }
+    .data-table-modal {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table-modal thead th {
+      background: #f8fafc;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+    }
+    .data-table-modal tbody tr {
+      transition: background 0.2s;
+    }
+    .data-table-modal tbody tr:hover {
+      background: #fff7ed;
+    }
+    .data-table-modal tbody td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+    }
+    .data-table-modal .rank-cell {
+      width: 50px;
+      text-align: center;
+    }
+    .data-table-modal .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .rank-gold { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; }
+    .rank-silver { background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); color: white; }
+    .rank-bronze { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: white; }
+    .rank-default { background: #f1f5f9; color: #64748b; }
+    
+    .data-table-modal .name-cell {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .data-table-modal .value-cell {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .data-table-modal .pct-cell {
+      font-weight: 600;
+    }
+    .pct-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pct-bar-track {
+      flex: 1;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .pct-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ea580c 0%, #c2410c 100%);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .pct-bar-label {
+      min-width: 45px;
+      text-align: right;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    
+    /* Color dot for regions */
+    .region-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    /* Modal summary stats */
+    .modal-summary {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 12px;
+      flex-wrap: wrap;
+    }
+    .modal-stat {
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+      padding: 8px;
+    }
+    .modal-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .modal-stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
 
     /* --- TABLE --- */
     table.dataTable { width: 100% !important; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
@@ -510,14 +652,24 @@
       <div class="card">
         <div class="chart-header">
           <h3 class="chart-title">Classifica Agenti</h3>
-          <span class="chart-badge">Fatturato</span>
+          <div class="chart-header-right">
+            <span class="chart-badge">Fatturato</span>
+            <button class="btn-expand" onclick="openAgentiModal()" title="Espandi tutti i dati">
+              <i class="ri-fullscreen-line"></i>
+            </button>
+          </div>
         </div>
         <div id="chartBar"></div>
       </div>
       <div class="card">
         <div class="chart-header">
           <h3 class="chart-title">Macro Aree</h3>
-          <span class="chart-badge">Geografia</span>
+          <div class="chart-header-right">
+            <span class="chart-badge">Geografia</span>
+            <button class="btn-expand" onclick="openRegioniModal()" title="Espandi tutti i dati">
+              <i class="ri-fullscreen-line"></i>
+            </button>
+          </div>
         </div>
         <div id="chartDonut" style="display:flex; justify-content:center; align-items:center; height:100%"></div>
       </div>
@@ -598,6 +750,18 @@
       </div>
   </div>
 
+  <!-- Modal Espanso per Dati Completi -->
+  <div id="expandedModal" class="modal-overlay modal-lg" onclick="closeExpandedModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+          <div class="modal-header">
+              <div class="modal-title" id="expandedModalTitle">Dati Completi</div>
+              <button class="btn-close-modal" onclick="forceCloseExpandedModal()"><i class="ri-close-line"></i></button>
+          </div>
+          <div class="modal-body" id="expandedModalBody" style="max-height: 70vh; overflow-y: auto;">
+          </div>
+      </div>
+  </div>
+
   <script>
     // --- CONFIGURAZIONE ---
     const fmtEUR = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -644,6 +808,10 @@
     // Mappa regione -> province (per filtri a cascata)
     let regioneProvinceMap = {};
     let allProvince = [];
+    
+    // Dati completi per modal espansi
+    let fullAgentiData = [];
+    let fullRegioniData = [];
 
     // --- INIT ---
     document.addEventListener("DOMContentLoaded", async () => {
@@ -937,8 +1105,11 @@
         if(top) { document.getElementById('kpiTopAgent').textContent = top[0]; document.getElementById('kpiTopAgentVal').textContent = fmtEUR.format(top[1]); }
         else { document.getElementById('kpiTopAgent').textContent = "—"; document.getElementById('kpiTopAgentVal').textContent = "€ 0"; }
 
-        // Standard Charts Updates
-        const agSorted = Object.entries(agMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        // Standard Charts Updates - SALVA DATI COMPLETI PER MODAL
+        const agSortedFull = Object.entries(agMap).sort((a,b)=>b[1]-a[1]);
+        fullAgentiData = agSortedFull.map(([name, val], idx) => ({ rank: idx + 1, name, value: val }));
+        
+        const agSorted = agSortedFull.slice(0,10);
         charts.bar.updateOptions({ xaxis: { categories: agSorted.map(x=>x[0]) } });
         charts.bar.updateSeries([{ data: agSorted.map(x=>x[1]) }]);
 
@@ -952,7 +1123,18 @@
             const p = (r.Provincia||'?').trim(); const val = asNum(r.Fatturato || r.Anno_Corrente); 
             prMap[p] = (prMap[p]||0) + val; regMap[r.Regione||'Altro'] = (regMap[r.Regione||'Altro']||0) + val;
         });
-        const regSorted = Object.entries(regMap).sort((a,b)=>b[1]-a[1]);
+        
+        // SALVA DATI COMPLETI REGIONI PER MODAL
+        const regSortedFull = Object.entries(regMap).sort((a,b)=>b[1]-a[1]);
+        const totalRegioni = regSortedFull.reduce((sum, [,val]) => sum + val, 0);
+        fullRegioniData = regSortedFull.map(([name, val], idx) => ({ 
+            rank: idx + 1, 
+            name, 
+            value: val, 
+            pct: totalRegioni > 0 ? (val / totalRegioni * 100) : 0 
+        }));
+        
+        const regSorted = regSortedFull;
         charts.donut.updateOptions({ labels: regSorted.map(x=>x[0]) }); charts.donut.updateSeries(regSorted.map(x=>x[1]));
         const prSortedPolar = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
         charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) }); charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
@@ -1175,6 +1357,155 @@
     }
     function forceCloseModal() {
         document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // --- MODAL ESPANSI PER DATI COMPLETI ---
+    function closeExpandedModal(event) {
+        if (event.target.id === 'expandedModal') {
+            document.getElementById('expandedModal').style.display = 'none';
+        }
+    }
+    function forceCloseExpandedModal() {
+        document.getElementById('expandedModal').style.display = 'none';
+    }
+
+    // Colori per le regioni nel modal
+    const regionColors = ['#c2410c', '#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0'];
+
+    function openAgentiModal() {
+        const modal = document.getElementById('expandedModal');
+        const body = document.getElementById('expandedModalBody');
+        const title = document.getElementById('expandedModalTitle');
+        
+        title.textContent = `Classifica Completa Agenti (${fullAgentiData.length})`;
+        
+        const totalFatt = fullAgentiData.reduce((sum, a) => sum + a.value, 0);
+        const avgFatt = fullAgentiData.length > 0 ? totalFatt / fullAgentiData.length : 0;
+        const maxVal = fullAgentiData.length > 0 ? fullAgentiData[0].value : 1;
+        
+        let html = `
+            <div class="modal-summary">
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fullAgentiData.length}</div>
+                    <div class="modal-stat-label">Agenti Totali</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fmtEUR.format(totalFatt)}</div>
+                    <div class="modal-stat-label">Fatturato Totale</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fmtEUR.format(avgFatt)}</div>
+                    <div class="modal-stat-label">Media per Agente</div>
+                </div>
+            </div>
+            <table class="data-table-modal">
+                <thead>
+                    <tr>
+                        <th class="rank-cell">#</th>
+                        <th>Agente</th>
+                        <th>Fatturato</th>
+                        <th style="width:35%">% sul Totale</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        fullAgentiData.forEach((agent, idx) => {
+            const pct = totalFatt > 0 ? (agent.value / totalFatt * 100) : 0;
+            const barPct = maxVal > 0 ? (agent.value / maxVal * 100) : 0;
+            let rankClass = 'rank-default';
+            if(idx === 0) rankClass = 'rank-gold';
+            else if(idx === 1) rankClass = 'rank-silver';
+            else if(idx === 2) rankClass = 'rank-bronze';
+            
+            html += `
+                <tr>
+                    <td class="rank-cell"><span class="rank-badge ${rankClass}">${agent.rank}</span></td>
+                    <td class="name-cell">${agent.name}</td>
+                    <td class="value-cell">${fmtEUR.format(agent.value)}</td>
+                    <td>
+                        <div class="pct-bar-container">
+                            <div class="pct-bar-track">
+                                <div class="pct-bar-fill" style="width: ${barPct}%"></div>
+                            </div>
+                            <span class="pct-bar-label">${pct.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        body.innerHTML = html;
+        modal.style.display = 'flex';
+    }
+
+    function openRegioniModal() {
+        const modal = document.getElementById('expandedModal');
+        const body = document.getElementById('expandedModalBody');
+        const title = document.getElementById('expandedModalTitle');
+        
+        title.textContent = `Dettaglio Macro Aree (${fullRegioniData.length} Regioni)`;
+        
+        const totalFatt = fullRegioniData.reduce((sum, r) => sum + r.value, 0);
+        const maxVal = fullRegioniData.length > 0 ? fullRegioniData[0].value : 1;
+        
+        let html = `
+            <div class="modal-summary">
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fullRegioniData.length}</div>
+                    <div class="modal-stat-label">Regioni Attive</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fmtEUR.format(totalFatt)}</div>
+                    <div class="modal-stat-label">Fatturato Totale</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fullRegioniData.length > 0 ? fullRegioniData[0].name : '-'}</div>
+                    <div class="modal-stat-label">Top Regione</div>
+                </div>
+            </div>
+            <table class="data-table-modal">
+                <thead>
+                    <tr>
+                        <th class="rank-cell">#</th>
+                        <th>Regione</th>
+                        <th>Fatturato</th>
+                        <th style="width:35%">Quota di Mercato</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        fullRegioniData.forEach((reg, idx) => {
+            const barPct = maxVal > 0 ? (reg.value / maxVal * 100) : 0;
+            let rankClass = 'rank-default';
+            if(idx === 0) rankClass = 'rank-gold';
+            else if(idx === 1) rankClass = 'rank-silver';
+            else if(idx === 2) rankClass = 'rank-bronze';
+            
+            const dotColor = regionColors[idx % regionColors.length];
+            
+            html += `
+                <tr>
+                    <td class="rank-cell"><span class="rank-badge ${rankClass}">${reg.rank}</span></td>
+                    <td class="name-cell"><span class="region-dot" style="background:${dotColor}"></span>${reg.name}</td>
+                    <td class="value-cell">${fmtEUR.format(reg.value)}</td>
+                    <td>
+                        <div class="pct-bar-container">
+                            <div class="pct-bar-track">
+                                <div class="pct-bar-fill" style="width: ${barPct}%"></div>
+                            </div>
+                            <span class="pct-bar-label">${reg.pct.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        body.innerHTML = html;
+        modal.style.display = 'flex';
     }
   </script>
 </body>
