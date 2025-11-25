@@ -99,6 +99,159 @@
     .btn-reset { color: #ef4444; border-color: #fee2e2; background: #fef2f2; }
     .btn-reset:hover { background: #fee2e2; border-color: #fecaca; box-shadow: 0 8px 16px rgba(239, 68, 68, 0.1); }
 
+    /* Action buttons group */
+    .btn-group-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-action {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 18px;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+    .btn-action:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(194, 65, 12, 0.2);
+    }
+    #btnExport:hover { background: #16a34a; border-color: #16a34a; }
+    #btnPrint:hover { background: #2563eb; border-color: #2563eb; }
+
+    /* --- PRINT STYLES --- */
+    @media print {
+      body {
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      header {
+        position: relative !important;
+        background: white !important;
+        backdrop-filter: none !important;
+        border-bottom: 2px solid #e2e8f0 !important;
+        padding: 10px 0 !important;
+        margin-bottom: 20px !important;
+      }
+      
+      .controls, .btn-group-actions, #btnReset, #btnExport, #btnPrint {
+        display: none !important;
+      }
+      
+      .brand {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .container {
+        max-width: 100% !important;
+        padding: 0 15px !important;
+      }
+      
+      .card {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0 !important;
+        page-break-inside: avoid;
+      }
+      
+      .grid-kpi, .grid-charts, .grid-charts-rev, .grid-split {
+        gap: 15px !important;
+      }
+      
+      .animate-in {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      
+      .alerts-container {
+        display: none !important;
+      }
+      
+      /* Hide interactive elements */
+      .btn-expand, .chart-badge {
+        display: none !important;
+      }
+      
+      /* Ensure charts print */
+      .apexcharts-canvas {
+        max-width: 100% !important;
+      }
+      
+      /* Table styling for print */
+      table.dataTable {
+        font-size: 11px !important;
+      }
+      table.dataTable thead th {
+        background: #f8fafc !important;
+        padding: 8px !important;
+      }
+      table.dataTable tbody td {
+        padding: 8px !important;
+      }
+      
+      /* Footer for print */
+      .print-footer {
+        display: block !important;
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 10px;
+        color: #64748b;
+      }
+      
+      /* Page breaks */
+      .grid-charts, .grid-charts-rev, .grid-split {
+        page-break-before: auto;
+      }
+      
+      .card:last-child {
+        page-break-after: auto;
+      }
+    }
+    
+    .print-footer {
+      display: none;
+    }
+    
+    /* Print header info */
+    .print-header-info {
+      display: none;
+    }
+    @media print {
+      .print-header-info {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+      .print-header-info h2 {
+        margin: 0 0 5px 0;
+        font-size: 16px;
+        color: var(--primary);
+      }
+      .print-header-info p {
+        margin: 0;
+        font-size: 11px;
+        color: #64748b;
+      }
+    }
+
     /* Filter hint badge */
     .filter-hint {
       font-size: 10px;
@@ -614,11 +767,22 @@
         </div>
 
         <button class="btn btn-reset" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
+        
+        <div class="btn-group-actions">
+          <button class="btn btn-action" id="btnExport" title="Esporta Excel"><i class="ri-file-excel-2-line"></i></button>
+          <button class="btn btn-action" id="btnPrint" title="Stampa Report"><i class="ri-printer-line"></i></button>
+        </div>
       </div>
     </div>
   </header>
 
   <div class="container">
+    
+    <!-- Print-only header info -->
+    <div class="print-header-info">
+      <h2>Report Performance Commerciale</h2>
+      <p id="printDateInfo">Generato il: --</p>
+    </div>
     
     <!-- ALERT SECTION - Minimal pills -->
     <div id="alertsSection" class="alerts-container animate-in" style="animation-delay: 0.05s;">
@@ -804,6 +968,11 @@
     <div style="text-align:center; margin-top:60px; font-size:12px; color:var(--text-muted); font-weight:500">
       Cotto Cusimano Analytics System • Aggiornato: <span id="lastUpdate" style="color:var(--primary)">--</span>
     </div>
+    
+    <!-- Print-only footer -->
+    <div class="print-footer">
+      <p>Cotto Cusimano Analytics System • Report generato automaticamente • Dati riservati ad uso interno</p>
+    </div>
 
   </div>
 
@@ -926,6 +1095,8 @@
         document.getElementById('selRegione').addEventListener('change', handleRegioneChange);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
         document.getElementById('btnReset').addEventListener('click', resetFilters);
+        document.getElementById('btnExport').addEventListener('click', exportToExcel);
+        document.getElementById('btnPrint').addEventListener('click', printReport);
     });
 
     // Mappa agente -> { regioni: [], province: [] }
@@ -1488,6 +1659,130 @@
                 ${a.text}
             </span>
         `).join('');
+    }
+
+    // --- EXPORT EXCEL ---
+    function exportToExcel() {
+        const ag = document.getElementById('selAgente').value;
+        const reg = document.getElementById('selRegione').value;
+        const prov = document.getElementById('selProvincia').value;
+        
+        // Prepara dati per export
+        const wb = XLSX.utils.book_new();
+        
+        // Sheet 1: Riepilogo KPI
+        const kpiData = [
+            ['RIEPILOGO PERFORMANCE', ''],
+            ['', ''],
+            ['Filtri Applicati', ''],
+            ['Agente', ag || 'Tutti'],
+            ['Regione', reg || 'Tutte'],
+            ['Provincia', prov || 'Tutte'],
+            ['', ''],
+            ['KPI', 'Valore'],
+            ['Fatturato Anno Corrente', document.getElementById('kpiFatturato').textContent],
+            ['Fatturato Anno Precedente', document.getElementById('kpiFatturatoPrev').textContent],
+            ['Clienti Attivi', document.getElementById('kpiClienti').textContent],
+            ['Clienti Anno Precedente', document.getElementById('kpiClientiPrev').textContent],
+            ['Completamento Obiettivo', document.getElementById('kpiTargetVal').textContent],
+            ['Top Performer', document.getElementById('kpiTopAgent').textContent],
+            ['Fatturato Top Performer', document.getElementById('kpiTopAgentVal').textContent],
+        ];
+        const wsKpi = XLSX.utils.aoa_to_sheet(kpiData);
+        wsKpi['!cols'] = [{ wch: 30 }, { wch: 25 }];
+        XLSX.utils.book_append_sheet(wb, wsKpi, 'Riepilogo');
+        
+        // Sheet 2: Classifica Agenti
+        const agentiHeaders = ['Posizione', 'Agente', 'Fatturato', '% sul Totale'];
+        const agentiRows = fullAgentiData.map(a => {
+            const total = fullAgentiData.reduce((s, x) => s + x.value, 0);
+            return [a.rank, a.name, a.value, ((a.value / total) * 100).toFixed(1) + '%'];
+        });
+        const wsAgenti = XLSX.utils.aoa_to_sheet([agentiHeaders, ...agentiRows]);
+        wsAgenti['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 15 }, { wch: 12 }];
+        XLSX.utils.book_append_sheet(wb, wsAgenti, 'Classifica Agenti');
+        
+        // Sheet 3: Regioni
+        const regioniHeaders = ['Posizione', 'Regione', 'Fatturato', 'Quota %'];
+        const regioniRows = fullRegioniData.map(r => [r.rank, r.name, r.value, r.pct.toFixed(1) + '%']);
+        const wsRegioni = XLSX.utils.aoa_to_sheet([regioniHeaders, ...regioniRows]);
+        wsRegioni['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, wsRegioni, 'Regioni');
+        
+        // Sheet 4: Province
+        const provinceHeaders = ['Posizione', 'Provincia', 'Fatturato', 'Quota %'];
+        const provinceRows = fullProvinceData.map(p => [p.rank, p.name, p.value, p.pct.toFixed(1) + '%']);
+        const wsProvince = XLSX.utils.aoa_to_sheet([provinceHeaders, ...provinceRows]);
+        wsProvince['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, wsProvince, 'Province');
+        
+        // Sheet 5: Dettaglio Transazioni (dalla tabella visibile)
+        const transHeaders = ['Agente', 'Regione', 'Provincia', 'Cliente', 'Fatturato'];
+        const transRows = [];
+        
+        // Prendi dati filtrati
+        const filteredData = state.all.filter(r => {
+            if (r.Tipo_Dato !== 'VENDITE_CLIENTE') return false;
+            const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
+            return (!ag || rAg === ag) && (!reg || r.Regione === reg) && (!prov || (r.Provincia||'').trim() === prov);
+        });
+        
+        filteredData.forEach(r => {
+            transRows.push([
+                r.Agente_Nome || '—',
+                r.Regione || '—',
+                r.Provincia || '—',
+                r.Ragione_Sociale_Cliente || '—',
+                asNum(r.Fatturato)
+            ]);
+        });
+        
+        const wsTrans = XLSX.utils.aoa_to_sheet([transHeaders, ...transRows]);
+        wsTrans['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 18 }, { wch: 35 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(wb, wsTrans, 'Transazioni');
+        
+        // Genera filename con data
+        const today = new Date().toISOString().split('T')[0];
+        let filename = `CottoCusimano_Report_${today}`;
+        if(ag) filename += `_${ag.replace(/\s+/g, '_')}`;
+        filename += '.xlsx';
+        
+        // Download
+        XLSX.writeFile(wb, filename);
+    }
+
+    // --- PRINT REPORT ---
+    function printReport() {
+        // Aggiorna info per la stampa
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('it-IT', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        document.getElementById('printDateInfo').textContent = `Generato il: ${dateStr}`;
+        
+        // Aggiungi info filtri se presenti
+        const ag = document.getElementById('selAgente').value;
+        const reg = document.getElementById('selRegione').value;
+        const prov = document.getElementById('selProvincia').value;
+        
+        let filterInfo = '';
+        if(ag) filterInfo += `Agente: ${ag}`;
+        if(reg) filterInfo += (filterInfo ? ' • ' : '') + `Regione: ${reg}`;
+        if(prov) filterInfo += (filterInfo ? ' • ' : '') + `Provincia: ${prov}`;
+        
+        if(filterInfo) {
+            document.getElementById('printDateInfo').textContent += ` | Filtri: ${filterInfo}`;
+        }
+        
+        // Piccolo delay per permettere ai grafici di renderizzare
+        setTimeout(() => {
+            window.print();
+        }, 300);
     }
 
     function initCharts() {
