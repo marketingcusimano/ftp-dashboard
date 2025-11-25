@@ -1663,92 +1663,125 @@
 
     // --- EXPORT EXCEL ---
     function exportToExcel() {
-        const ag = document.getElementById('selAgente').value;
-        const reg = document.getElementById('selRegione').value;
-        const prov = document.getElementById('selProvincia').value;
-        
-        // Prepara dati per export
-        const wb = XLSX.utils.book_new();
-        
-        // Sheet 1: Riepilogo KPI
-        const kpiData = [
-            ['RIEPILOGO PERFORMANCE', ''],
-            ['', ''],
-            ['Filtri Applicati', ''],
-            ['Agente', ag || 'Tutti'],
-            ['Regione', reg || 'Tutte'],
-            ['Provincia', prov || 'Tutte'],
-            ['', ''],
-            ['KPI', 'Valore'],
-            ['Fatturato Anno Corrente', document.getElementById('kpiFatturato').textContent],
-            ['Fatturato Anno Precedente', document.getElementById('kpiFatturatoPrev').textContent],
-            ['Clienti Attivi', document.getElementById('kpiClienti').textContent],
-            ['Clienti Anno Precedente', document.getElementById('kpiClientiPrev').textContent],
-            ['Completamento Obiettivo', document.getElementById('kpiTargetVal').textContent],
-            ['Top Performer', document.getElementById('kpiTopAgent').textContent],
-            ['Fatturato Top Performer', document.getElementById('kpiTopAgentVal').textContent],
-        ];
-        const wsKpi = XLSX.utils.aoa_to_sheet(kpiData);
-        wsKpi['!cols'] = [{ wch: 30 }, { wch: 25 }];
-        XLSX.utils.book_append_sheet(wb, wsKpi, 'Riepilogo');
-        
-        // Sheet 2: Classifica Agenti
-        const agentiHeaders = ['Posizione', 'Agente', 'Fatturato', '% sul Totale'];
-        const agentiRows = fullAgentiData.map(a => {
-            const total = fullAgentiData.reduce((s, x) => s + x.value, 0);
-            return [a.rank, a.name, a.value, ((a.value / total) * 100).toFixed(1) + '%'];
-        });
-        const wsAgenti = XLSX.utils.aoa_to_sheet([agentiHeaders, ...agentiRows]);
-        wsAgenti['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 15 }, { wch: 12 }];
-        XLSX.utils.book_append_sheet(wb, wsAgenti, 'Classifica Agenti');
-        
-        // Sheet 3: Regioni
-        const regioniHeaders = ['Posizione', 'Regione', 'Fatturato', 'Quota %'];
-        const regioniRows = fullRegioniData.map(r => [r.rank, r.name, r.value, r.pct.toFixed(1) + '%']);
-        const wsRegioni = XLSX.utils.aoa_to_sheet([regioniHeaders, ...regioniRows]);
-        wsRegioni['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
-        XLSX.utils.book_append_sheet(wb, wsRegioni, 'Regioni');
-        
-        // Sheet 4: Province
-        const provinceHeaders = ['Posizione', 'Provincia', 'Fatturato', 'Quota %'];
-        const provinceRows = fullProvinceData.map(p => [p.rank, p.name, p.value, p.pct.toFixed(1) + '%']);
-        const wsProvince = XLSX.utils.aoa_to_sheet([provinceHeaders, ...provinceRows]);
-        wsProvince['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
-        XLSX.utils.book_append_sheet(wb, wsProvince, 'Province');
-        
-        // Sheet 5: Dettaglio Transazioni (dalla tabella visibile)
-        const transHeaders = ['Agente', 'Regione', 'Provincia', 'Cliente', 'Fatturato'];
-        const transRows = [];
-        
-        // Prendi dati filtrati
-        const filteredData = state.all.filter(r => {
-            if (r.Tipo_Dato !== 'VENDITE_CLIENTE') return false;
-            const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
-            return (!ag || rAg === ag) && (!reg || r.Regione === reg) && (!prov || (r.Provincia||'').trim() === prov);
-        });
-        
-        filteredData.forEach(r => {
-            transRows.push([
-                r.Agente_Nome || '—',
-                r.Regione || '—',
-                r.Provincia || '—',
-                r.Ragione_Sociale_Cliente || '—',
-                asNum(r.Fatturato)
-            ]);
-        });
-        
-        const wsTrans = XLSX.utils.aoa_to_sheet([transHeaders, ...transRows]);
-        wsTrans['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 18 }, { wch: 35 }, { wch: 15 }];
-        XLSX.utils.book_append_sheet(wb, wsTrans, 'Transazioni');
-        
-        // Genera filename con data
-        const today = new Date().toISOString().split('T')[0];
-        let filename = `CottoCusimano_Report_${today}`;
-        if(ag) filename += `_${ag.replace(/\s+/g, '_')}`;
-        filename += '.xlsx';
-        
-        // Download
-        XLSX.writeFile(wb, filename);
+        try {
+            const ag = document.getElementById('selAgente').value;
+            const reg = document.getElementById('selRegione').value;
+            const prov = document.getElementById('selProvincia').value;
+            
+            // Verifica che XLSX sia caricato
+            if(typeof XLSX === 'undefined') {
+                alert('Errore: libreria Excel non caricata. Ricarica la pagina.');
+                return;
+            }
+            
+            // Prepara dati per export
+            const wb = XLSX.utils.book_new();
+            
+            // Sheet 1: Riepilogo KPI
+            const kpiData = [
+                ['RIEPILOGO PERFORMANCE COTTO CUSIMANO', ''],
+                ['', ''],
+                ['Filtri Applicati', ''],
+                ['Agente', ag || 'Tutti'],
+                ['Regione', reg || 'Tutte'],
+                ['Provincia', prov || 'Tutte'],
+                ['Data Export', new Date().toLocaleString('it-IT')],
+                ['', ''],
+                ['KPI', 'Valore'],
+                ['Fatturato Anno Corrente', document.getElementById('kpiFatturato').textContent],
+                ['Fatturato Anno Precedente', document.getElementById('kpiFatturatoPrev').textContent],
+                ['Clienti Attivi', document.getElementById('kpiClienti').textContent],
+                ['Clienti Anno Precedente', document.getElementById('kpiClientiPrev').textContent],
+                ['Completamento Obiettivo', document.getElementById('kpiTargetVal').textContent],
+                ['Top Performer', document.getElementById('kpiTopAgent').textContent],
+                ['Fatturato Top Performer', document.getElementById('kpiTopAgentVal').textContent],
+            ];
+            const wsKpi = XLSX.utils.aoa_to_sheet(kpiData);
+            wsKpi['!cols'] = [{ wch: 35 }, { wch: 30 }];
+            XLSX.utils.book_append_sheet(wb, wsKpi, 'Riepilogo');
+            
+            // Sheet 2: Classifica Agenti
+            if(fullAgentiData && fullAgentiData.length > 0) {
+                const agentiHeaders = ['Posizione', 'Agente', 'Fatturato', '% sul Totale'];
+                const total = fullAgentiData.reduce((s, x) => s + x.value, 0);
+                const agentiRows = fullAgentiData.map(a => [
+                    a.rank, 
+                    a.name, 
+                    a.value, 
+                    total > 0 ? ((a.value / total) * 100).toFixed(1) + '%' : '0%'
+                ]);
+                const wsAgenti = XLSX.utils.aoa_to_sheet([agentiHeaders, ...agentiRows]);
+                wsAgenti['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 15 }, { wch: 12 }];
+                XLSX.utils.book_append_sheet(wb, wsAgenti, 'Classifica Agenti');
+            }
+            
+            // Sheet 3: Regioni
+            if(fullRegioniData && fullRegioniData.length > 0) {
+                const regioniHeaders = ['Posizione', 'Regione', 'Fatturato', 'Quota %'];
+                const regioniRows = fullRegioniData.map(r => [
+                    r.rank, 
+                    r.name, 
+                    r.value, 
+                    (r.pct || 0).toFixed(1) + '%'
+                ]);
+                const wsRegioni = XLSX.utils.aoa_to_sheet([regioniHeaders, ...regioniRows]);
+                wsRegioni['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
+                XLSX.utils.book_append_sheet(wb, wsRegioni, 'Regioni');
+            }
+            
+            // Sheet 4: Province
+            if(fullProvinceData && fullProvinceData.length > 0) {
+                const provinceHeaders = ['Posizione', 'Provincia', 'Fatturato', 'Quota %'];
+                const provinceRows = fullProvinceData.map(p => [
+                    p.rank, 
+                    p.name, 
+                    p.value, 
+                    (p.pct || 0).toFixed(1) + '%'
+                ]);
+                const wsProvince = XLSX.utils.aoa_to_sheet([provinceHeaders, ...provinceRows]);
+                wsProvince['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
+                XLSX.utils.book_append_sheet(wb, wsProvince, 'Province');
+            }
+            
+            // Sheet 5: Dettaglio Transazioni
+            const transHeaders = ['Agente', 'Regione', 'Provincia', 'Cliente', 'Fatturato'];
+            const transRows = [];
+            
+            const filteredData = state.all.filter(r => {
+                if (r.Tipo_Dato !== 'VENDITE_CLIENTE') return false;
+                const rAg = (r.Agente_Nome || r.Agente_Codice || '').trim();
+                return (!ag || rAg === ag) && (!reg || r.Regione === reg) && (!prov || (r.Provincia||'').trim() === prov);
+            });
+            
+            filteredData.forEach(r => {
+                transRows.push([
+                    r.Agente_Nome || '—',
+                    r.Regione || '—',
+                    r.Provincia || '—',
+                    r.Ragione_Sociale_Cliente || '—',
+                    asNum(r.Fatturato)
+                ]);
+            });
+            
+            if(transRows.length > 0) {
+                const wsTrans = XLSX.utils.aoa_to_sheet([transHeaders, ...transRows]);
+                wsTrans['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 18 }, { wch: 35 }, { wch: 15 }];
+                XLSX.utils.book_append_sheet(wb, wsTrans, 'Transazioni');
+            }
+            
+            // Genera filename con data
+            const today = new Date().toISOString().split('T')[0];
+            let filename = `CottoCusimano_Report_${today}`;
+            if(ag) filename += `_${ag.replace(/\s+/g, '_')}`;
+            filename += '.xlsx';
+            
+            // Download
+            XLSX.writeFile(wb, filename);
+            
+        } catch(err) {
+            console.error('Errore export Excel:', err);
+            alert('Errore durante l\'export: ' + err.message);
+        }
     }
 
     // --- PRINT REPORT ---
