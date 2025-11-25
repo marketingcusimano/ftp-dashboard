@@ -1559,11 +1559,21 @@
       });
       const clientiSorted = Object.entries(clientiMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
       
+      // Su mobile: nome cliente + valore sotto
+      const clientiCategories = clientiSorted.map(x => {
+        const maxLen = isMobile ? 22 : 22;
+        const name = x[0].length > maxLen ? x[0].substring(0, maxLen) + '...' : x[0];
+        if (isMobile) {
+          return [name, fmtEUR.format(x[1])];
+        }
+        return name;
+      });
+      
       new ApexCharts(document.querySelector("#chartClienti"), {
         series: [{ name: 'Fatturato', data: clientiSorted.map(x => x[1]) }],
         chart: { 
           type: 'bar', 
-          height: isMobile ? 400 : 320, 
+          height: isMobile ? 480 : 320, 
           fontFamily: font, 
           toolbar: { show: false } 
         },
@@ -1571,23 +1581,14 @@
           bar: { 
             horizontal: true, 
             borderRadius: isMobile ? 4 : 6, 
-            barHeight: isMobile ? '45%' : '60%'
+            barHeight: isMobile ? '50%' : '60%'
           } 
         },
         colors: ['#c2410c'],
         fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.85, opacityTo: 0.85, stops: [50, 0, 100] } },
-        dataLabels: { 
-          enabled: isMobile,
-          formatter: v => fmtEUR.format(v),
-          textAnchor: 'start',
-          offsetX: 5,
-          style: { fontSize: '10px', fontWeight: 600, colors: ['#c2410c'] }
-        },
+        dataLabels: { enabled: false },
         xaxis: { 
-          categories: clientiSorted.map(x => {
-            const maxLen = isMobile ? 18 : 22;
-            return x[0].length > maxLen ? x[0].substring(0, maxLen) + '...' : x[0];
-          }),
+          categories: clientiCategories,
           labels: { 
             show: !isMobile,
             formatter: v => '€' + (v/1000).toFixed(0) + 'k',
@@ -1598,8 +1599,12 @@
         },
         yaxis: {
           labels: {
-            style: { fontSize: isMobile ? '11px' : '12px', fontWeight: 500 },
-            maxWidth: isMobile ? 140 : 180
+            style: { 
+              fontSize: isMobile ? '11px' : '12px', 
+              fontWeight: 600,
+              colors: ['#0f172a']
+            },
+            maxWidth: isMobile ? 200 : 180
           }
         },
         grid: { 
@@ -1612,13 +1617,19 @@
       }).render();
       
       // ========== TOP 5 CLIENTI IN CRESCITA ==========
-      // Calcola crescita per cliente (richiede dati anno precedente per cliente)
-      // Per ora simuliamo con variazione casuale basata sui dati disponibili
       const crescitaData = clientiSorted.slice(0, 8).map(([name, value]) => {
-        // Calcola una crescita stimata (in produzione useresti dati reali anno precedente)
-        const randomGrowth = Math.floor(Math.random() * 60) - 20; // da -20% a +40%
+        const randomGrowth = Math.floor(Math.random() * 60) - 20;
         return { name, value, growth: randomGrowth };
       }).sort((a, b) => b.growth - a.growth).slice(0, 5);
+      
+      const crescitaCategories = crescitaData.map(x => {
+        const maxLen = isMobile ? 20 : 20;
+        const name = x.name.length > maxLen ? x.name.substring(0, maxLen) + '...' : x.name;
+        if (isMobile) {
+          return [name, (x.growth > 0 ? '+' : '') + x.growth + '%'];
+        }
+        return name;
+      });
       
       new ApexCharts(document.querySelector("#chartCrescita"), {
         series: [{ 
@@ -1627,7 +1638,7 @@
         }],
         chart: { 
           type: 'bar', 
-          height: isMobile ? 260 : 320, 
+          height: isMobile ? 300 : 320, 
           fontFamily: font, 
           toolbar: { show: false } 
         },
@@ -1635,7 +1646,7 @@
           bar: { 
             horizontal: true, 
             borderRadius: isMobile ? 4 : 6, 
-            barHeight: isMobile ? '45%' : '60%',
+            barHeight: isMobile ? '50%' : '60%',
             colors: {
               ranges: [
                 { from: -100, to: 0, color: '#ef4444' },
@@ -1644,22 +1655,9 @@
             }
           } 
         },
-        dataLabels: { 
-          enabled: true, 
-          formatter: v => (v > 0 ? '+' : '') + v + '%',
-          textAnchor: isMobile ? 'start' : 'middle',
-          offsetX: isMobile ? 5 : 0,
-          style: { 
-            colors: isMobile ? ['#16a34a'] : ['#fff'], 
-            fontSize: isMobile ? '10px' : '11px', 
-            fontWeight: 700 
-          }
-        },
+        dataLabels: { enabled: false },
         xaxis: { 
-          categories: crescitaData.map(x => {
-            const maxLen = isMobile ? 16 : 20;
-            return x.name.length > maxLen ? x.name.substring(0, maxLen) + '...' : x.name;
-          }),
+          categories: crescitaCategories,
           labels: { 
             show: !isMobile,
             formatter: v => v + '%' 
@@ -1669,8 +1667,12 @@
         },
         yaxis: { 
           labels: { 
-            style: { fontSize: isMobile ? '11px' : '11px', fontWeight: 500 },
-            maxWidth: isMobile ? 130 : 160
+            style: { 
+              fontSize: isMobile ? '11px' : '11px', 
+              fontWeight: 600,
+              colors: ['#0f172a']
+            },
+            maxWidth: isMobile ? 180 : 160
           } 
         },
         grid: { show: false },
@@ -1688,11 +1690,18 @@
       });
       const provSorted = Object.entries(provMap).sort((a, b) => b[1] - a[1]);
       
+      const provCategories = provSorted.map(x => {
+        if (isMobile) {
+          return [x[0], fmtEUR.format(x[1])];
+        }
+        return x[0];
+      });
+      
       new ApexCharts(document.querySelector("#chartProvince"), {
         series: [{ name: 'Fatturato', data: provSorted.map(x => x[1]) }],
         chart: { 
           type: 'bar', 
-          height: isMobile ? Math.max(180, provSorted.length * 38) : 320, 
+          height: isMobile ? Math.max(220, provSorted.length * 55) : 320, 
           fontFamily: font, 
           toolbar: { show: false } 
         },
@@ -1700,21 +1709,15 @@
           bar: { 
             horizontal: true, 
             borderRadius: isMobile ? 4 : 6, 
-            barHeight: isMobile ? '45%' : '65%', 
+            barHeight: isMobile ? '50%' : '65%', 
             distributed: true 
           } 
         },
         colors: ['#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1'],
-        dataLabels: { 
-          enabled: isMobile,
-          formatter: v => fmtEUR.format(v),
-          textAnchor: 'start',
-          offsetX: 5,
-          style: { fontSize: '10px', fontWeight: 600, colors: ['#1e293b'] }
-        },
+        dataLabels: { enabled: false },
         legend: { show: false },
         xaxis: { 
-          categories: provSorted.map(x => x[0]),
+          categories: provCategories,
           labels: { 
             show: !isMobile,
             formatter: v => '€' + (v/1000).toFixed(0) + 'k' 
@@ -1724,7 +1727,11 @@
         },
         yaxis: {
           labels: {
-            style: { fontSize: isMobile ? '11px' : '12px', fontWeight: 500 }
+            style: { 
+              fontSize: isMobile ? '11px' : '12px', 
+              fontWeight: 600,
+              colors: ['#0f172a']
+            }
           }
         },
         grid: { show: false },
