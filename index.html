@@ -418,6 +418,115 @@
 
     /* --- YOY COMPARISON BAR --- */
     .yoy-bar-container {
+
+    /* --- ALERTS SECTION --- */
+    .alerts-container {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 1px solid #fde047;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(250, 204, 21, 0.15);
+    }
+    .alerts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: rgba(250, 204, 21, 0.2);
+      border-bottom: 1px solid rgba(250, 204, 21, 0.3);
+    }
+    .alerts-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #854d0e;
+    }
+    .alerts-title i {
+      font-size: 20px;
+      color: #ca8a04;
+    }
+    .alerts-toggle {
+      background: white;
+      border: 1px solid #fde047;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #854d0e;
+      transition: all 0.2s;
+    }
+    .alerts-toggle:hover {
+      background: #fef08a;
+    }
+    .alerts-body {
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+    .alerts-body.collapsed {
+      display: none;
+    }
+    
+    /* Alert Items */
+    .alert-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .alert-item i {
+      font-size: 16px;
+    }
+    
+    /* Alert Types */
+    .alert-critical {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .alert-critical i { color: #dc2626; }
+    
+    .alert-warning {
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+    }
+    .alert-warning i { color: #ea580c; }
+    
+    .alert-success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .alert-success i { color: #16a34a; }
+    
+    .alert-info {
+      background: #e0f2fe;
+      color: #075985;
+      border: 1px solid #bae6fd;
+    }
+    .alert-info i { color: #0284c7; }
+    
+    .alert-neutral {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .alert-neutral i { color: #64748b; }
+
+    /* --- YOY COMPARISON BAR (original) --- */
+    .yoy-bar-container {
       margin-top: 8px;
       padding: 12px;
       background: #f8fafc;
@@ -564,6 +673,22 @@
 
   <div class="container">
     
+    <!-- ALERT SECTION -->
+    <div id="alertsSection" class="alerts-container animate-in" style="animation-delay: 0.05s; display: none;">
+      <div class="alerts-header">
+        <div class="alerts-title">
+          <i class="ri-alarm-warning-line"></i>
+          <span>Insights & Alert</span>
+        </div>
+        <button class="alerts-toggle" onclick="toggleAlerts()">
+          <i class="ri-arrow-up-s-line" id="alertsToggleIcon"></i>
+        </button>
+      </div>
+      <div class="alerts-body" id="alertsBody">
+        <!-- Alerts will be injected here -->
+      </div>
+    </div>
+
     <div class="grid-kpi animate-in" style="animation-delay: 0.1s">
       <div class="card">
         <div class="kpi-head">
@@ -849,6 +974,7 @@
             setTimeout(()=>loader.remove(), 500);
 
             buildRegionProvinceMap();
+            buildAgenteAreasMap();
             populateFilters();
             initCharts();
             updateDashboard();
@@ -858,11 +984,14 @@
         }
 
         // Event Listeners
-        document.getElementById('selAgente').addEventListener('change', applyFilters);
+        document.getElementById('selAgente').addEventListener('change', handleAgenteChange);
         document.getElementById('selRegione').addEventListener('change', handleRegioneChange);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
         document.getElementById('btnReset').addEventListener('click', resetFilters);
     });
+
+    // Mappa agente -> { regioni: [], province: [] }
+    let agenteAreasMap = {};
 
     // --- FILTRI A CASCATA ---
     function buildRegionProvinceMap() {
@@ -887,6 +1016,35 @@
         allProvince.sort();
     }
 
+    function buildAgenteAreasMap() {
+        agenteAreasMap = {};
+        
+        state.all.forEach(r => {
+            const agente = (r.Agente_Nome || r.Agente_Codice || '').trim();
+            const prov = (r.Provincia || '').trim();
+            const reg = r.Regione;
+            
+            if(!agente) return;
+            
+            if(!agenteAreasMap[agente]) {
+                agenteAreasMap[agente] = { regioni: new Set(), province: new Set() };
+            }
+            
+            if(reg && reg !== 'N/D' && reg !== 'Altro') {
+                agenteAreasMap[agente].regioni.add(reg);
+            }
+            if(prov && prov !== 'Generale') {
+                agenteAreasMap[agente].province.add(prov);
+            }
+        });
+        
+        // Converti Set in Array ordinati
+        Object.keys(agenteAreasMap).forEach(ag => {
+            agenteAreasMap[ag].regioni = [...agenteAreasMap[ag].regioni].sort();
+            agenteAreasMap[ag].province = [...agenteAreasMap[ag].province].sort();
+        });
+    }
+
     function populateFilters() {
         const agenti = [...new Set(state.all.map(r => (r.Agente_Nome || r.Agente_Codice || '').trim()))].filter(Boolean).sort();
         const regioni = Object.keys(regioneProvinceMap).sort();
@@ -902,27 +1060,87 @@
         
         // Popola province iniziali (tutte)
         updateProvinceDropdown();
+        updateRegioneDropdown();
     }
 
-    function updateProvinceDropdown(selectedRegione = '') {
+    function handleAgenteChange() {
+        const ag = document.getElementById('selAgente').value;
+        
+        // Reset regione e provincia quando cambia agente
+        document.getElementById('selRegione').value = '';
+        document.getElementById('selProvincia').value = '';
+        document.getElementById('hintRegione').classList.remove('visible');
+        document.getElementById('hintProvincia').classList.remove('visible');
+        
+        // Aggiorna i dropdown in base all'agente selezionato
+        updateRegioneDropdown(ag);
+        updateProvinceDropdown('', ag);
+        
+        applyFilters();
+    }
+
+    function updateRegioneDropdown(selectedAgente = '') {
+        const sR = document.getElementById('selRegione');
+        const currentVal = sR.value;
+        
+        sR.innerHTML = '<option value="">Filtra Regione</option>';
+        
+        let regioniToShow = [];
+        
+        if(selectedAgente && agenteAreasMap[selectedAgente]) {
+            regioniToShow = agenteAreasMap[selectedAgente].regioni;
+        } else {
+            regioniToShow = Object.keys(regioneProvinceMap).sort();
+        }
+        
+        regioniToShow.forEach(r => sR.add(new Option(r, r)));
+        
+        // Se la regione precedente è ancora valida, mantienila
+        if(currentVal && regioniToShow.includes(currentVal)) {
+            sR.value = currentVal;
+        }
+    }
+
+    function updateProvinceDropdown(selectedRegione = '', selectedAgente = '') {
         const sP = document.getElementById('selProvincia');
         const hintProv = document.getElementById('hintProvincia');
         const currentVal = sP.value;
+        
+        // Se non passiamo l'agente, prendiamolo dal dropdown
+        if(!selectedAgente) {
+            selectedAgente = document.getElementById('selAgente').value;
+        }
         
         sP.innerHTML = '<option value="">Tutte le Province</option>';
         
         let provinceToShow = [];
         
-        if(selectedRegione && regioneProvinceMap[selectedRegione]) {
+        // Prima filtro per agente se selezionato
+        if(selectedAgente && agenteAreasMap[selectedAgente]) {
+            provinceToShow = [...agenteAreasMap[selectedAgente].province];
+            
+            // Poi filtro ulteriormente per regione se selezionata
+            if(selectedRegione && regioneProvinceMap[selectedRegione]) {
+                const provinceRegione = regioneProvinceMap[selectedRegione];
+                provinceToShow = provinceToShow.filter(p => provinceRegione.includes(p));
+            }
+        } else if(selectedRegione && regioneProvinceMap[selectedRegione]) {
+            // Solo filtro regione
             provinceToShow = regioneProvinceMap[selectedRegione];
+        } else {
+            // Tutte le province
+            provinceToShow = allProvince;
+        }
+        
+        // Hint
+        if(provinceToShow.length < allProvince.length && provinceToShow.length > 0) {
             hintProv.textContent = `${provinceToShow.length} province`;
             hintProv.classList.add('visible');
         } else {
-            provinceToShow = allProvince;
             hintProv.classList.remove('visible');
         }
         
-        provinceToShow.forEach(p => sP.add(new Option(p, p)));
+        provinceToShow.sort().forEach(p => sP.add(new Option(p, p)));
         
         // Se la provincia precedente è ancora valida, mantienila
         if(currentVal && provinceToShow.includes(currentVal)) {
@@ -932,25 +1150,31 @@
 
     function handleRegioneChange() {
         const reg = document.getElementById('selRegione').value;
+        const ag = document.getElementById('selAgente').value;
         const hintReg = document.getElementById('hintRegione');
         
         // Aggiorna hint regione
         if(reg && regioneProvinceMap[reg]) {
-            const numProv = regioneProvinceMap[reg].length;
+            let numProv = regioneProvinceMap[reg].length;
+            // Se c'è un agente selezionato, conta solo le sue province in quella regione
+            if(ag && agenteAreasMap[ag]) {
+                const agenteProv = agenteAreasMap[ag].province;
+                numProv = regioneProvinceMap[reg].filter(p => agenteProv.includes(p)).length;
+            }
             hintReg.textContent = `${numProv} prov.`;
             hintReg.classList.add('visible');
         } else {
             hintReg.classList.remove('visible');
         }
         
-        // Aggiorna dropdown province
-        updateProvinceDropdown(reg);
+        // Aggiorna dropdown province (considera anche agente)
+        updateProvinceDropdown(reg, ag);
         
         // Reset provincia se non più valida
         const sP = document.getElementById('selProvincia');
-        if(reg && sP.value) {
-            const validProvince = regioneProvinceMap[reg] || [];
-            if(!validProvince.includes(sP.value)) {
+        if(sP.value) {
+            const options = Array.from(sP.options).map(o => o.value);
+            if(!options.includes(sP.value)) {
                 sP.value = '';
             }
         }
@@ -964,7 +1188,11 @@
         document.getElementById('selProvincia').value = "";
         document.getElementById('hintRegione').classList.remove('visible');
         document.getElementById('hintProvincia').classList.remove('visible');
+        
+        // Ripopola i dropdown con tutti i valori
+        updateRegioneDropdown();
         updateProvinceDropdown();
+        
         applyFilters();
     }
 
@@ -1199,6 +1427,9 @@
         charts.map.updateSeries([{ data: regionList }]);
 
         updateTable(venditeData);
+        
+        // 3. GENERA ALERT AUTOMATICI
+        generateAlerts(fatturatoCorrente, fatturatoPrecedente, targetTotale, histoCounts, fullRegioniData);
     }
 
     // --- YOY BAR UPDATE ---
@@ -1226,6 +1457,129 @@
         setTimeout(() => {
             document.getElementById('yoyBarTarget').style.left = `calc(${targetPct}% - 1.5px)`;
         }, 500);
+    }
+
+    // --- ALERT AUTOMATICI ---
+    function generateAlerts(fattCorr, fattPrev, target, histoCounts, regioniData) {
+        const alerts = [];
+        
+        // 1. Alert agenti critici (sotto 50%)
+        const critici = histoCounts[0];
+        if(critici > 0) {
+            alerts.push({
+                type: 'critical',
+                icon: 'ri-error-warning-fill',
+                text: `${critici} agent${critici > 1 ? 'i' : 'e'} sotto il 50% dell'obiettivo`
+            });
+        }
+        
+        // 2. Alert agenti in ritardo (50-80%)
+        const inRitardo = histoCounts[1];
+        if(inRitardo >= 3) {
+            alerts.push({
+                type: 'warning',
+                icon: 'ri-time-line',
+                text: `${inRitardo} agenti in ritardo (50-80%)`
+            });
+        }
+        
+        // 3. Alert star performers (>100%)
+        const stars = histoCounts[3];
+        if(stars > 0) {
+            alerts.push({
+                type: 'success',
+                icon: 'ri-star-fill',
+                text: `${stars} agent${stars > 1 ? 'i' : 'e'} ha${stars > 1 ? 'nno' : ''} superato l'obiettivo!`
+            });
+        }
+        
+        // 4. Confronto YoY
+        if(fattPrev > 0) {
+            const deltaYoY = ((fattCorr - fattPrev) / fattPrev) * 100;
+            if(deltaYoY < -10) {
+                alerts.push({
+                    type: 'critical',
+                    icon: 'ri-arrow-down-circle-fill',
+                    text: `Fatturato in calo del ${Math.abs(deltaYoY).toFixed(1)}% vs anno precedente`
+                });
+            } else if(deltaYoY > 15) {
+                alerts.push({
+                    type: 'success',
+                    icon: 'ri-arrow-up-circle-fill',
+                    text: `Fatturato in crescita del ${deltaYoY.toFixed(1)}% vs anno precedente`
+                });
+            }
+        }
+        
+        // 5. Avanzamento obiettivo
+        if(target > 0) {
+            const pctTarget = (fattCorr / target) * 100;
+            if(pctTarget < 50) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'ri-focus-3-line',
+                    text: `Solo ${pctTarget.toFixed(0)}% dell'obiettivo raggiunto`
+                });
+            } else if(pctTarget >= 90 && pctTarget < 100) {
+                alerts.push({
+                    type: 'info',
+                    icon: 'ri-checkbox-circle-line',
+                    text: `Quasi al traguardo! ${pctTarget.toFixed(1)}% dell'obiettivo`
+                });
+            } else if(pctTarget >= 100) {
+                alerts.push({
+                    type: 'success',
+                    icon: 'ri-trophy-fill',
+                    text: `Obiettivo raggiunto! ${pctTarget.toFixed(1)}%`
+                });
+            }
+        }
+        
+        // 6. Concentrazione geografica (top regione > 40%)
+        if(regioniData.length > 0 && regioniData[0].pct > 40) {
+            alerts.push({
+                type: 'info',
+                icon: 'ri-map-pin-2-fill',
+                text: `${regioniData[0].name} rappresenta il ${regioniData[0].pct.toFixed(0)}% del fatturato`
+            });
+        }
+        
+        // 7. Poche regioni attive
+        if(regioniData.length > 0 && regioniData.length <= 3) {
+            alerts.push({
+                type: 'neutral',
+                icon: 'ri-map-2-line',
+                text: `Presenza in sole ${regioniData.length} region${regioniData.length > 1 ? 'i' : 'e'}`
+            });
+        }
+        
+        // Render alerts
+        renderAlerts(alerts);
+    }
+    
+    function renderAlerts(alerts) {
+        const section = document.getElementById('alertsSection');
+        const body = document.getElementById('alertsBody');
+        
+        if(alerts.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        section.style.display = 'block';
+        body.innerHTML = alerts.map(a => `
+            <div class="alert-item alert-${a.type}">
+                <i class="${a.icon}"></i>
+                <span>${a.text}</span>
+            </div>
+        `).join('');
+    }
+    
+    function toggleAlerts() {
+        const body = document.getElementById('alertsBody');
+        const icon = document.getElementById('alertsToggleIcon');
+        body.classList.toggle('collapsed');
+        icon.className = body.classList.contains('collapsed') ? 'ri-arrow-down-s-line' : 'ri-arrow-up-s-line';
     }
 
     function initCharts() {
