@@ -679,7 +679,12 @@
       <div class="card">
         <div class="chart-header">
           <h3 class="chart-title">Peso Province</h3>
-          <span class="chart-badge">Impatto %</span>
+          <div class="chart-header-right">
+            <span class="chart-badge">Impatto %</span>
+            <button class="btn-expand" onclick="openProvinceModal()" title="Espandi tutti i dati">
+              <i class="ri-fullscreen-line"></i>
+            </button>
+          </div>
         </div>
         <div id="chartPolar" style="display:flex; justify-content:center"></div>
       </div>
@@ -812,6 +817,7 @@
     // Dati completi per modal espansi
     let fullAgentiData = [];
     let fullRegioniData = [];
+    let fullProvinceData = [];
 
     // --- INIT ---
     document.addEventListener("DOMContentLoaded", async () => {
@@ -1136,7 +1142,18 @@
         
         const regSorted = regSortedFull;
         charts.donut.updateOptions({ labels: regSorted.map(x=>x[0]) }); charts.donut.updateSeries(regSorted.map(x=>x[1]));
-        const prSortedPolar = Object.entries(prMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+        
+        // SALVA DATI COMPLETI PROVINCE PER MODAL
+        const prSortedFull = Object.entries(prMap).sort((a,b)=>b[1]-a[1]);
+        const totalProvince = prSortedFull.reduce((sum, [,val]) => sum + val, 0);
+        fullProvinceData = prSortedFull.map(([name, val], idx) => ({ 
+            rank: idx + 1, 
+            name, 
+            value: val, 
+            pct: totalProvince > 0 ? (val / totalProvince * 100) : 0 
+        }));
+        
+        const prSortedPolar = prSortedFull.slice(0,8);
         charts.polar.updateOptions({ labels: prSortedPolar.map(x=>x[0]) }); charts.polar.updateSeries(prSortedPolar.map(x=>x[1]));
 
         const clMap = {};
@@ -1497,6 +1514,79 @@
                                 <div class="pct-bar-fill" style="width: ${barPct}%"></div>
                             </div>
                             <span class="pct-bar-label">${reg.pct.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        body.innerHTML = html;
+        modal.style.display = 'flex';
+    }
+
+    function openProvinceModal() {
+        const modal = document.getElementById('expandedModal');
+        const body = document.getElementById('expandedModalBody');
+        const title = document.getElementById('expandedModalTitle');
+        
+        title.textContent = `Dettaglio Province (${fullProvinceData.length} Province)`;
+        
+        const totalFatt = fullProvinceData.reduce((sum, p) => sum + p.value, 0);
+        const maxVal = fullProvinceData.length > 0 ? fullProvinceData[0].value : 1;
+        const avgFatt = fullProvinceData.length > 0 ? totalFatt / fullProvinceData.length : 0;
+        
+        let html = `
+            <div class="modal-summary">
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fullProvinceData.length}</div>
+                    <div class="modal-stat-label">Province Attive</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fmtEUR.format(totalFatt)}</div>
+                    <div class="modal-stat-label">Fatturato Totale</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fullProvinceData.length > 0 ? fullProvinceData[0].name : '-'}</div>
+                    <div class="modal-stat-label">Top Provincia</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${fmtEUR.format(avgFatt)}</div>
+                    <div class="modal-stat-label">Media per Provincia</div>
+                </div>
+            </div>
+            <table class="data-table-modal">
+                <thead>
+                    <tr>
+                        <th class="rank-cell">#</th>
+                        <th>Provincia</th>
+                        <th>Fatturato</th>
+                        <th style="width:35%">Quota %</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        fullProvinceData.forEach((prov, idx) => {
+            const barPct = maxVal > 0 ? (prov.value / maxVal * 100) : 0;
+            let rankClass = 'rank-default';
+            if(idx === 0) rankClass = 'rank-gold';
+            else if(idx === 1) rankClass = 'rank-silver';
+            else if(idx === 2) rankClass = 'rank-bronze';
+            
+            const dotColor = regionColors[idx % regionColors.length];
+            
+            html += `
+                <tr>
+                    <td class="rank-cell"><span class="rank-badge ${rankClass}">${prov.rank}</span></td>
+                    <td class="name-cell"><span class="region-dot" style="background:${dotColor}"></span>${prov.name}</td>
+                    <td class="value-cell">${fmtEUR.format(prov.value)}</td>
+                    <td>
+                        <div class="pct-bar-container">
+                            <div class="pct-bar-track">
+                                <div class="pct-bar-fill" style="width: ${barPct}%"></div>
+                            </div>
+                            <span class="pct-bar-label">${prov.pct.toFixed(1)}%</span>
                         </div>
                     </td>
                 </tr>
