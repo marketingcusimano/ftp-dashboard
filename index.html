@@ -83,6 +83,7 @@
     }
     select:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); border-color: var(--primary); }
     select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.1); }
+    select:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     
     .sel-arrow { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 18px; transition: 0.2s; }
     .select-wrapper:hover .sel-arrow { color: var(--primary); transform: translateY(-50%) rotate(180deg); }
@@ -97,6 +98,27 @@
     
     .btn-reset { color: #ef4444; border-color: #fee2e2; background: #fef2f2; }
     .btn-reset:hover { background: #fee2e2; border-color: #fecaca; box-shadow: 0 8px 16px rgba(239, 68, 68, 0.1); }
+
+    /* Filter hint badge */
+    .filter-hint {
+      font-size: 10px;
+      color: var(--primary);
+      background: #fff7ed;
+      padding: 2px 8px;
+      border-radius: 10px;
+      position: absolute;
+      top: -8px;
+      right: 10px;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(5px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .filter-hint.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
     /* --- CARDS --- */
     .card {
@@ -135,6 +157,16 @@
     .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; color: var(--text-main); letter-spacing: -1.5px; line-height: 1; }
     .kpi-prev-row { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
     .kpi-prev-num { font-family: 'JetBrains Mono', monospace; color: #334155; font-weight: 700; }
+
+    /* KPI Animation */
+    .kpi-val.animating {
+      animation: kpiPulse 0.4s ease-out;
+    }
+    @keyframes kpiPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); color: var(--primary); }
+      100% { transform: scale(1); }
+    }
 
     /* TREND BADGES */
     .trend-badge {
@@ -241,6 +273,106 @@
     .loader-icon { font-size: 32px; color: var(--primary); animation: pulseIcon 2s infinite ease-in-out; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pulseIcon { 0%, 100% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
+
+    /* --- YOY COMPARISON BAR --- */
+    .yoy-bar-container {
+      margin-top: 8px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .yoy-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .yoy-bar-track {
+      position: relative;
+      height: 24px;
+      background: #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .yoy-bar-prev {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #94a3b8 0%, #64748b 100%);
+      border-radius: 12px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+    }
+    .yoy-bar-curr {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #ea580c 0%, #c2410c 100%);
+      border-radius: 12px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transition-delay: 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      box-shadow: 2px 0 8px rgba(194, 65, 12, 0.3);
+    }
+    .yoy-bar-target {
+      position: absolute;
+      top: -4px;
+      bottom: -4px;
+      width: 3px;
+      background: #15803d;
+      border-radius: 2px;
+      transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 8px rgba(21, 128, 61, 0.4);
+    }
+    .yoy-bar-target::after {
+      content: 'OBJ';
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      color: #15803d;
+      white-space: nowrap;
+    }
+    .yoy-bar-value {
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .yoy-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    .yoy-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .yoy-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .yoy-dot-prev { background: #64748b; }
+    .yoy-dot-curr { background: #c2410c; }
+    .yoy-dot-target { background: #15803d; }
   </style>
 </head>
 <body>
@@ -274,11 +406,13 @@
                 <option value="">Filtra Regione</option> 
             </select>
             <i class="ri-map-2-line sel-arrow"></i>
+            <span id="hintRegione" class="filter-hint"></span>
         </div>
 
         <div class="select-wrapper">
             <select id="selProvincia"><option value="">Tutte le Province</option></select>
             <i class="ri-map-pin-range-line sel-arrow"></i>
+            <span id="hintProvincia" class="filter-hint"></span>
         </div>
 
         <button class="btn btn-reset" id="btnReset"><i class="ri-refresh-line"></i> Reset</button>
@@ -302,6 +436,27 @@
             <div class="kpi-prev-row">
                 <span>Anno Prec:</span>
                 <span id="kpiFatturatoPrev" class="kpi-prev-num">€ 0</span>
+            </div>
+            <!-- YOY Comparison Bar -->
+            <div class="yoy-bar-container" id="yoyBarFatt">
+              <div class="yoy-bar-labels">
+                <span>0</span>
+                <span id="yoyMaxLabel">€ 0</span>
+              </div>
+              <div class="yoy-bar-track">
+                <div class="yoy-bar-prev" id="yoyBarPrev" style="width: 0%">
+                  <span class="yoy-bar-value" id="yoyValPrev"></span>
+                </div>
+                <div class="yoy-bar-curr" id="yoyBarCurr" style="width: 0%">
+                  <span class="yoy-bar-value" id="yoyValCurr"></span>
+                </div>
+                <div class="yoy-bar-target" id="yoyBarTarget" style="left: 0%"></div>
+              </div>
+              <div class="yoy-legend">
+                <div class="yoy-legend-item"><div class="yoy-dot yoy-dot-prev"></div><span>Anno Prec.</span></div>
+                <div class="yoy-legend-item"><div class="yoy-dot yoy-dot-curr"></div><span>Anno Corr.</span></div>
+                <div class="yoy-legend-item"><div class="yoy-dot yoy-dot-target"></div><span>Obiettivo</span></div>
+              </div>
             </div>
         </div>
       </div>
@@ -484,7 +639,11 @@
     let state = { all: [], rows: [] };
     let charts = { bar: null, donut: null, radial: null, clients: null, polar: null, map: null, histo: null };
     let dataTable = null;
-    let agentPerformanceData = []; // Dati per drill-down
+    let agentPerformanceData = [];
+    
+    // Mappa regione -> province (per filtri a cascata)
+    let regioneProvinceMap = {};
+    let allProvince = [];
 
     // --- INIT ---
     document.addEventListener("DOMContentLoaded", async () => {
@@ -515,6 +674,7 @@
             loader.style.opacity = '0';
             setTimeout(()=>loader.remove(), 500);
 
+            buildRegionProvinceMap();
             populateFilters();
             initCharts();
             updateDashboard();
@@ -523,36 +683,159 @@
             document.getElementById('loading').innerHTML = `<h3 style="color:#c2410c">Errore Connessione</h3><p>${err.message}</p>`;
         }
 
+        // Event Listeners
         document.getElementById('selAgente').addEventListener('change', applyFilters);
-        document.getElementById('selRegione').addEventListener('change', applyFilters);
+        document.getElementById('selRegione').addEventListener('change', handleRegioneChange);
         document.getElementById('selProvincia').addEventListener('change', applyFilters);
-        document.getElementById('btnReset').addEventListener('click', () => {
-            document.getElementById('selAgente').value = "";
-            document.getElementById('selRegione').value = "";
-            document.getElementById('selProvincia').value = "";
-            applyFilters();
-        });
+        document.getElementById('btnReset').addEventListener('click', resetFilters);
     });
+
+    // --- FILTRI A CASCATA ---
+    function buildRegionProvinceMap() {
+        regioneProvinceMap = {};
+        allProvince = [];
+        
+        state.all.forEach(r => {
+            const prov = (r.Provincia || '').trim();
+            const reg = r.Regione;
+            
+            if(prov && prov !== 'Generale' && reg && reg !== 'N/D' && reg !== 'Altro') {
+                if(!regioneProvinceMap[reg]) regioneProvinceMap[reg] = new Set();
+                regioneProvinceMap[reg].add(prov);
+                if(!allProvince.includes(prov)) allProvince.push(prov);
+            }
+        });
+        
+        // Converti Set in Array ordinati
+        Object.keys(regioneProvinceMap).forEach(reg => {
+            regioneProvinceMap[reg] = [...regioneProvinceMap[reg]].sort();
+        });
+        allProvince.sort();
+    }
 
     function populateFilters() {
         const agenti = [...new Set(state.all.map(r => (r.Agente_Nome || r.Agente_Codice || '').trim()))].filter(Boolean).sort();
-        const regioni = [...new Set(state.all.map(r => r.Regione))].filter(x => x && x!=='N/D' && x!=='Altro').sort();
-        const province = [...new Set(state.all.map(r => (r.Provincia || '').trim()))].filter(x => x && x!=='Generale').sort();
+        const regioni = Object.keys(regioneProvinceMap).sort();
         
         const sA = document.getElementById('selAgente');
         const sR = document.getElementById('selRegione');
-        const sP = document.getElementById('selProvincia');
         
         sA.innerHTML='<option value="">Tutti gli Agenti</option>';
         sR.innerHTML='<option value="">Filtra Regione</option>';
-        sP.innerHTML='<option value="">Tutte le Province</option>';
 
         agenti.forEach(a => sA.add(new Option(a, a)));
         regioni.forEach(r => sR.add(new Option(r, r)));
-        province.forEach(p => sP.add(new Option(p, p)));
+        
+        // Popola province iniziali (tutte)
+        updateProvinceDropdown();
+    }
+
+    function updateProvinceDropdown(selectedRegione = '') {
+        const sP = document.getElementById('selProvincia');
+        const hintProv = document.getElementById('hintProvincia');
+        const currentVal = sP.value;
+        
+        sP.innerHTML = '<option value="">Tutte le Province</option>';
+        
+        let provinceToShow = [];
+        
+        if(selectedRegione && regioneProvinceMap[selectedRegione]) {
+            provinceToShow = regioneProvinceMap[selectedRegione];
+            hintProv.textContent = `${provinceToShow.length} province`;
+            hintProv.classList.add('visible');
+        } else {
+            provinceToShow = allProvince;
+            hintProv.classList.remove('visible');
+        }
+        
+        provinceToShow.forEach(p => sP.add(new Option(p, p)));
+        
+        // Se la provincia precedente è ancora valida, mantienila
+        if(currentVal && provinceToShow.includes(currentVal)) {
+            sP.value = currentVal;
+        }
+    }
+
+    function handleRegioneChange() {
+        const reg = document.getElementById('selRegione').value;
+        const hintReg = document.getElementById('hintRegione');
+        
+        // Aggiorna hint regione
+        if(reg && regioneProvinceMap[reg]) {
+            const numProv = regioneProvinceMap[reg].length;
+            hintReg.textContent = `${numProv} prov.`;
+            hintReg.classList.add('visible');
+        } else {
+            hintReg.classList.remove('visible');
+        }
+        
+        // Aggiorna dropdown province
+        updateProvinceDropdown(reg);
+        
+        // Reset provincia se non più valida
+        const sP = document.getElementById('selProvincia');
+        if(reg && sP.value) {
+            const validProvince = regioneProvinceMap[reg] || [];
+            if(!validProvince.includes(sP.value)) {
+                sP.value = '';
+            }
+        }
+        
+        applyFilters();
+    }
+
+    function resetFilters() {
+        document.getElementById('selAgente').value = "";
+        document.getElementById('selRegione').value = "";
+        document.getElementById('selProvincia').value = "";
+        document.getElementById('hintRegione').classList.remove('visible');
+        document.getElementById('hintProvincia').classList.remove('visible');
+        updateProvinceDropdown();
+        applyFilters();
     }
 
     function applyFilters() { updateDashboard(); }
+
+    // --- ANIMAZIONE COUNT-UP KPI ---
+    function animateValue(element, start, end, duration = 600, formatter = null) {
+        const startTime = performance.now();
+        const diff = end - start;
+        
+        element.classList.add('animating');
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing: easeOutCubic
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const current = start + (diff * easeProgress);
+            
+            if(formatter) {
+                element.textContent = formatter(current);
+            } else {
+                element.textContent = Math.round(current);
+            }
+            
+            if(progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                element.classList.remove('animating');
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+
+    // Store previous values for animation
+    let prevKpiValues = {
+        fatturato: 0,
+        fatturatoPrev: 0,
+        clienti: 0,
+        clientiPrev: 0,
+        target: 0,
+        obiettivo: 0
+    };
 
     function updateDashboard() {
         const ag = document.getElementById('selAgente').value;
@@ -595,8 +878,16 @@
              cliCorrente = new Set(venditeData.map(r => r.Ragione_Sociale_Cliente)).size;
         }
 
-        document.getElementById('kpiFatturato').textContent = fmtEUR.format(fatturatoCorrente);
-        document.getElementById('kpiFatturatoPrev').textContent = fmtEUR.format(fatturatoPrecedente);
+        // Animate KPI - Fatturato
+        const kpiFattEl = document.getElementById('kpiFatturato');
+        animateValue(kpiFattEl, prevKpiValues.fatturato, fatturatoCorrente, 800, (v) => fmtEUR.format(v));
+        prevKpiValues.fatturato = fatturatoCorrente;
+
+        const kpiFattPrevEl = document.getElementById('kpiFatturatoPrev');
+        animateValue(kpiFattPrevEl, prevKpiValues.fatturatoPrev, fatturatoPrecedente, 800, (v) => fmtEUR.format(v));
+        prevKpiValues.fatturatoPrev = fatturatoPrecedente;
+
+        // Trend badge fatturato
         const kpiTrendFatt = document.getElementById('kpiTrendFatt');
         if (fatturatoPrecedente > 0) {
             const deltaEur = fatturatoCorrente - fatturatoPrecedente;
@@ -607,8 +898,19 @@
             kpiTrendFatt.innerHTML = `<i class="${isPos ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i><span class="trend-val-abs">${isPos?'+':''}€ ${fmtNum.format(deltaEur)}</span><span class="trend-sep">|</span><span>${Math.abs(deltaPct).toFixed(1)}%</span>`;
         } else { kpiTrendFatt.style.display = 'none'; }
 
-        document.getElementById('kpiClienti').textContent = cliCorrente;
-        document.getElementById('kpiClientiPrev').textContent = cliPrecedente;
+        // --- YOY COMPARISON BAR ---
+        updateYoYBar(fatturatoCorrente, fatturatoPrecedente, targetTotale);
+
+        // Animate KPI - Clienti
+        const kpiCliEl = document.getElementById('kpiClienti');
+        animateValue(kpiCliEl, prevKpiValues.clienti, cliCorrente, 800);
+        prevKpiValues.clienti = cliCorrente;
+
+        const kpiCliPrevEl = document.getElementById('kpiClientiPrev');
+        animateValue(kpiCliPrevEl, prevKpiValues.clientiPrev, cliPrecedente, 800);
+        prevKpiValues.clientiPrev = cliPrecedente;
+
+        // Trend badge clienti
         const kpiTrendCli = document.getElementById('kpiTrendCli');
         if (cliPrecedente > 0) {
             const deltaCli = cliCorrente - cliPrecedente;
@@ -619,10 +921,15 @@
             kpiTrendCli.innerHTML = `<i class="${isPosCli ? 'ri-arrow-up-line' : 'ri-arrow-down-line'}"></i><span class="trend-val-abs">${isPosCli?'+':''}${deltaCli}</span><span class="trend-sep">|</span><span>${Math.abs(deltaCliPct).toFixed(1)}%</span>`;
         } else { kpiTrendCli.style.display = 'none'; }
 
+        // Target %
         let pctTarget = 0; if(targetTotale > 0) pctTarget = (fatturatoCorrente / targetTotale) * 100;
         charts.radial.updateSeries([pctTarget]);
-        document.getElementById('kpiTargetVal').textContent = pctTarget.toFixed(1) + "%";
+        
+        const kpiTargetEl = document.getElementById('kpiTargetVal');
+        animateValue(kpiTargetEl, prevKpiValues.target, pctTarget, 800, (v) => v.toFixed(1) + "%");
+        prevKpiValues.target = pctTarget;
 
+        // Top Agent
         const agMap = {};
         obiettiviData.forEach(r => { const k = r.Agente_Nome || 'N/D'; agMap[k] = (agMap[k]||0) + asNum(r.Anno_Corrente); });
         if (Object.keys(agMap).length === 0) { venditeData.forEach(r => { const k = r.Agente_Nome || 'N/D'; agMap[k] = (agMap[k]||0) + asNum(r.Fatturato); }); }
@@ -693,6 +1000,33 @@
         charts.map.updateSeries([{ data: regionList }]);
 
         updateTable(venditeData);
+    }
+
+    // --- YOY BAR UPDATE ---
+    function updateYoYBar(curr, prev, target) {
+        const maxVal = Math.max(curr, prev, target, 1);
+        const scale = maxVal * 1.15; // 15% padding
+        
+        const currPct = (curr / scale) * 100;
+        const prevPct = (prev / scale) * 100;
+        const targetPct = (target / scale) * 100;
+        
+        document.getElementById('yoyMaxLabel').textContent = fmtEUR.format(scale);
+        
+        // Animate bars with slight delay
+        setTimeout(() => {
+            document.getElementById('yoyBarPrev').style.width = prevPct + '%';
+            document.getElementById('yoyValPrev').textContent = prev > scale * 0.15 ? (prev/1000).toFixed(0) + 'k' : '';
+        }, 100);
+        
+        setTimeout(() => {
+            document.getElementById('yoyBarCurr').style.width = currPct + '%';
+            document.getElementById('yoyValCurr').textContent = curr > scale * 0.15 ? (curr/1000).toFixed(0) + 'k' : '';
+        }, 300);
+        
+        setTimeout(() => {
+            document.getElementById('yoyBarTarget').style.left = `calc(${targetPct}% - 1.5px)`;
+        }, 500);
     }
 
     function initCharts() {
