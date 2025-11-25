@@ -416,116 +416,63 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pulseIcon { 0%, 100% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
 
-    /* --- YOY COMPARISON BAR --- */
-    .yoy-bar-container {
-
-    /* --- ALERTS SECTION --- */
+    /* --- ALERTS SECTION (Minimal Design) --- */
     .alerts-container {
-      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
-      border: 1px solid #fde047;
-      border-radius: 16px;
-      margin-bottom: 24px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(250, 204, 21, 0.15);
+      display: none;
+      margin-bottom: 20px;
     }
-    .alerts-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      background: rgba(250, 204, 21, 0.2);
-      border-bottom: 1px solid rgba(250, 204, 21, 0.3);
+    .alerts-container.visible {
+      display: block;
     }
-    .alerts-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 14px;
-      color: #854d0e;
-    }
-    .alerts-title i {
-      font-size: 20px;
-      color: #ca8a04;
-    }
-    .alerts-toggle {
-      background: white;
-      border: 1px solid #fde047;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      color: #854d0e;
-      transition: all 0.2s;
-    }
-    .alerts-toggle:hover {
-      background: #fef08a;
-    }
-    .alerts-body {
-      padding: 16px 20px;
+    .alerts-strip {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      transition: all 0.3s ease;
-    }
-    .alerts-body.collapsed {
-      display: none;
-    }
-    
-    /* Alert Items */
-    .alert-item {
-      display: flex;
-      align-items: center;
       gap: 10px;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-    .alert-item i {
-      font-size: 16px;
+      align-items: center;
     }
     
-    /* Alert Types */
-    .alert-critical {
-      background: #fee2e2;
-      color: #991b1b;
+    /* Alert pill badges */
+    .alert-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      cursor: default;
+    }
+    .alert-pill:hover {
+      transform: translateY(-1px);
+    }
+    .alert-pill i {
+      font-size: 14px;
+    }
+    
+    /* Alert Types - Subtle colors */
+    .alert-pill.critical {
+      background: #fef2f2;
+      color: #dc2626;
       border: 1px solid #fecaca;
     }
-    .alert-critical i { color: #dc2626; }
-    
-    .alert-warning {
-      background: #ffedd5;
-      color: #9a3412;
-      border: 1px solid #fed7aa;
+    .alert-pill.warning {
+      background: #fffbeb;
+      color: #d97706;
+      border: 1px solid #fde68a;
     }
-    .alert-warning i { color: #ea580c; }
-    
-    .alert-success {
-      background: #dcfce7;
-      color: #166534;
+    .alert-pill.success {
+      background: #f0fdf4;
+      color: #16a34a;
       border: 1px solid #bbf7d0;
     }
-    .alert-success i { color: #16a34a; }
-    
-    .alert-info {
-      background: #e0f2fe;
-      color: #075985;
-      border: 1px solid #bae6fd;
+    .alert-pill.info {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
     }
-    .alert-info i { color: #0284c7; }
-    
-    .alert-neutral {
-      background: #f1f5f9;
-      color: #475569;
-      border: 1px solid #e2e8f0;
-    }
-    .alert-neutral i { color: #64748b; }
 
-    /* --- YOY COMPARISON BAR (original) --- */
+    /* --- YOY COMPARISON BAR --- */
     .yoy-bar-container {
       margin-top: 8px;
       padding: 12px;
@@ -673,19 +620,10 @@
 
   <div class="container">
     
-    <!-- ALERT SECTION -->
-    <div id="alertsSection" class="alerts-container animate-in" style="animation-delay: 0.05s; display: none;">
-      <div class="alerts-header">
-        <div class="alerts-title">
-          <i class="ri-alarm-warning-line"></i>
-          <span>Insights & Alert</span>
-        </div>
-        <button class="alerts-toggle" onclick="toggleAlerts()">
-          <i class="ri-arrow-up-s-line" id="alertsToggleIcon"></i>
-        </button>
-      </div>
-      <div class="alerts-body" id="alertsBody">
-        <!-- Alerts will be injected here -->
+    <!-- ALERT SECTION - Minimal pills -->
+    <div id="alertsSection" class="alerts-container animate-in" style="animation-delay: 0.05s;">
+      <div class="alerts-strip" id="alertsStrip">
+        <!-- Alert pills injected here -->
       </div>
     </div>
 
@@ -1459,127 +1397,97 @@
         }, 500);
     }
 
-    // --- ALERT AUTOMATICI ---
+    // --- ALERT AUTOMATICI (Ricalcolati su dati filtrati) ---
     function generateAlerts(fattCorr, fattPrev, target, histoCounts, regioniData) {
         const alerts = [];
+        const ag = document.getElementById('selAgente').value;
+        const isFiltered = ag || document.getElementById('selRegione').value || document.getElementById('selProvincia').value;
         
-        // 1. Alert agenti critici (sotto 50%)
-        const critici = histoCounts[0];
-        if(critici > 0) {
-            alerts.push({
-                type: 'critical',
-                icon: 'ri-error-warning-fill',
-                text: `${critici} agent${critici > 1 ? 'i' : 'e'} sotto il 50% dell'obiettivo`
-            });
-        }
-        
-        // 2. Alert agenti in ritardo (50-80%)
-        const inRitardo = histoCounts[1];
-        if(inRitardo >= 3) {
-            alerts.push({
-                type: 'warning',
-                icon: 'ri-time-line',
-                text: `${inRitardo} agenti in ritardo (50-80%)`
-            });
-        }
-        
-        // 3. Alert star performers (>100%)
-        const stars = histoCounts[3];
-        if(stars > 0) {
-            alerts.push({
-                type: 'success',
-                icon: 'ri-star-fill',
-                text: `${stars} agent${stars > 1 ? 'i' : 'e'} ha${stars > 1 ? 'nno' : ''} superato l'obiettivo!`
-            });
-        }
-        
-        // 4. Confronto YoY
-        if(fattPrev > 0) {
-            const deltaYoY = ((fattCorr - fattPrev) / fattPrev) * 100;
-            if(deltaYoY < -10) {
-                alerts.push({
-                    type: 'critical',
-                    icon: 'ri-arrow-down-circle-fill',
-                    text: `Fatturato in calo del ${Math.abs(deltaYoY).toFixed(1)}% vs anno precedente`
-                });
-            } else if(deltaYoY > 15) {
-                alerts.push({
-                    type: 'success',
-                    icon: 'ri-arrow-up-circle-fill',
-                    text: `Fatturato in crescita del ${deltaYoY.toFixed(1)}% vs anno precedente`
-                });
+        // Se è selezionato un singolo agente, mostra alert specifici per lui
+        if(ag) {
+            // Performance vs obiettivo
+            if(target > 0) {
+                const pct = (fattCorr / target) * 100;
+                if(pct >= 100) {
+                    alerts.push({ type: 'success', icon: 'ri-trophy-fill', text: `Obiettivo superato: ${pct.toFixed(0)}%` });
+                } else if(pct >= 80) {
+                    alerts.push({ type: 'info', icon: 'ri-focus-3-line', text: `In target: ${pct.toFixed(0)}% obiettivo` });
+                } else if(pct >= 50) {
+                    alerts.push({ type: 'warning', icon: 'ri-time-line', text: `In ritardo: ${pct.toFixed(0)}% obiettivo` });
+                } else if(pct > 0) {
+                    alerts.push({ type: 'critical', icon: 'ri-alert-fill', text: `Critico: solo ${pct.toFixed(0)}% obiettivo` });
+                }
+            }
+            
+            // Trend YoY
+            if(fattPrev > 0) {
+                const delta = ((fattCorr - fattPrev) / fattPrev) * 100;
+                if(delta > 10) {
+                    alerts.push({ type: 'success', icon: 'ri-arrow-up-line', text: `+${delta.toFixed(0)}% vs anno scorso` });
+                } else if(delta < -10) {
+                    alerts.push({ type: 'critical', icon: 'ri-arrow-down-line', text: `${delta.toFixed(0)}% vs anno scorso` });
+                }
+            }
+            
+            // Aree coperte
+            if(regioniData.length === 1) {
+                alerts.push({ type: 'info', icon: 'ri-map-pin-line', text: `Opera in ${regioniData[0].name}` });
+            } else if(regioniData.length > 1) {
+                alerts.push({ type: 'info', icon: 'ri-map-2-line', text: `${regioniData.length} regioni coperte` });
+            }
+        } else {
+            // Vista generale - alert aggregati
+            
+            // Agenti critici
+            if(histoCounts[0] > 0) {
+                alerts.push({ type: 'critical', icon: 'ri-alert-fill', text: `${histoCounts[0]} agenti sotto 50%` });
+            }
+            
+            // Star performers
+            if(histoCounts[3] > 0) {
+                alerts.push({ type: 'success', icon: 'ri-star-fill', text: `${histoCounts[3]} agenti oltre obiettivo` });
+            }
+            
+            // Trend YoY generale
+            if(fattPrev > 0) {
+                const delta = ((fattCorr - fattPrev) / fattPrev) * 100;
+                if(delta > 10) {
+                    alerts.push({ type: 'success', icon: 'ri-trending-up-line', text: `Crescita +${delta.toFixed(0)}% YoY` });
+                } else if(delta < -10) {
+                    alerts.push({ type: 'critical', icon: 'ri-trending-down-line', text: `Calo ${delta.toFixed(0)}% YoY` });
+                }
+            }
+            
+            // Obiettivo globale
+            if(target > 0) {
+                const pct = (fattCorr / target) * 100;
+                if(pct >= 100) {
+                    alerts.push({ type: 'success', icon: 'ri-trophy-fill', text: `Target raggiunto: ${pct.toFixed(0)}%` });
+                } else if(pct < 50) {
+                    alerts.push({ type: 'warning', icon: 'ri-focus-3-line', text: `${pct.toFixed(0)}% del target annuale` });
+                }
             }
         }
         
-        // 5. Avanzamento obiettivo
-        if(target > 0) {
-            const pctTarget = (fattCorr / target) * 100;
-            if(pctTarget < 50) {
-                alerts.push({
-                    type: 'warning',
-                    icon: 'ri-focus-3-line',
-                    text: `Solo ${pctTarget.toFixed(0)}% dell'obiettivo raggiunto`
-                });
-            } else if(pctTarget >= 90 && pctTarget < 100) {
-                alerts.push({
-                    type: 'info',
-                    icon: 'ri-checkbox-circle-line',
-                    text: `Quasi al traguardo! ${pctTarget.toFixed(1)}% dell'obiettivo`
-                });
-            } else if(pctTarget >= 100) {
-                alerts.push({
-                    type: 'success',
-                    icon: 'ri-trophy-fill',
-                    text: `Obiettivo raggiunto! ${pctTarget.toFixed(1)}%`
-                });
-            }
-        }
-        
-        // 6. Concentrazione geografica (top regione > 40%)
-        if(regioniData.length > 0 && regioniData[0].pct > 40) {
-            alerts.push({
-                type: 'info',
-                icon: 'ri-map-pin-2-fill',
-                text: `${regioniData[0].name} rappresenta il ${regioniData[0].pct.toFixed(0)}% del fatturato`
-            });
-        }
-        
-        // 7. Poche regioni attive
-        if(regioniData.length > 0 && regioniData.length <= 3) {
-            alerts.push({
-                type: 'neutral',
-                icon: 'ri-map-2-line',
-                text: `Presenza in sole ${regioniData.length} region${regioniData.length > 1 ? 'i' : 'e'}`
-            });
-        }
-        
-        // Render alerts
         renderAlerts(alerts);
     }
     
     function renderAlerts(alerts) {
         const section = document.getElementById('alertsSection');
-        const body = document.getElementById('alertsBody');
+        const strip = document.getElementById('alertsStrip');
         
         if(alerts.length === 0) {
-            section.style.display = 'none';
+            section.classList.remove('visible');
             return;
         }
         
-        section.style.display = 'block';
-        body.innerHTML = alerts.map(a => `
-            <div class="alert-item alert-${a.type}">
+        section.classList.add('visible');
+        strip.innerHTML = alerts.map(a => `
+            <span class="alert-pill ${a.type}">
                 <i class="${a.icon}"></i>
-                <span>${a.text}</span>
-            </div>
+                ${a.text}
+            </span>
         `).join('');
-    }
-    
-    function toggleAlerts() {
-        const body = document.getElementById('alertsBody');
-        const icon = document.getElementById('alertsToggleIcon');
-        body.classList.toggle('collapsed');
-        icon.className = body.classList.contains('collapsed') ? 'ri-arrow-down-s-line' : 'ri-arrow-up-s-line';
     }
 
     function initCharts() {
