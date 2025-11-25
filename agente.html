@@ -426,6 +426,119 @@
     }
     .rank-message i { color: #fbbf24; }
 
+    /* Media Team Comparison Card */
+    .kpi-card.media-card {
+      background: linear-gradient(135deg, #eff6ff 0%, #fff 100%);
+      border: 1px solid rgba(37, 99, 235, 0.15);
+    }
+    .media-comparison {
+      margin-top: 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .media-bar-container {
+      position: relative;
+      height: 32px;
+      margin-bottom: 8px;
+    }
+    .media-bar-bg {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+    }
+    .media-bar-you {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 8px;
+      background: linear-gradient(90deg, var(--primary) 0%, #ea580c 100%);
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+    .media-marker {
+      position: absolute;
+      top: 0;
+      width: 3px;
+      height: 32px;
+      background: #2563eb;
+      border-radius: 2px;
+      transition: left 1s ease;
+    }
+    .media-marker::after {
+      content: 'MEDIA';
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      color: #2563eb;
+      white-space: nowrap;
+    }
+    .media-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .media-diff {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .media-diff.above { background: #dcfce7; color: #16a34a; }
+    .media-diff.below { background: #fee2e2; color: #dc2626; }
+    .media-diff.equal { background: #f1f5f9; color: #64748b; }
+
+    /* Clienti Nuovi vs Storici */
+    .clients-split {
+      margin-top: 16px;
+    }
+    .clients-donut-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .clients-donut-mini {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+    .clients-legend {
+      flex: 1;
+    }
+    .clients-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .clients-legend-item:last-child { margin-bottom: 0; }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-dot.new { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); }
+    .legend-dot.old { background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); }
+    .legend-label { color: var(--text-muted); }
+    .legend-value { font-weight: 700; color: var(--text-main); margin-left: auto; }
+
     /* --- CHARTS GRID --- */
     .charts-grid {
       display: grid;
@@ -540,7 +653,7 @@
       <!-- KPI ROW 1 -->
       <div class="kpi-grid">
         
-        <!-- Fatturato -->
+        <!-- Fatturato Anno Corrente -->
         <div class="card kpi-card">
           <div class="kpi-head">
             <div class="kpi-label">Fatturato Anno Corrente</div>
@@ -566,20 +679,83 @@
           </div>
         </div>
         
-        <!-- Clienti -->
+        <!-- Confronto con Media Team -->
+        <div class="card kpi-card media-card">
+          <div class="kpi-head">
+            <div class="kpi-label">Confronto con il Team</div>
+            <div class="kpi-icon blue"><i class="ri-team-line"></i></div>
+          </div>
+          <div class="kpi-value" id="kpiMediaTeam">€ 0</div>
+          <div class="kpi-footer">
+            <span class="kpi-prev">Media team: <strong id="kpiMediaValue">€ 0</strong></span>
+          </div>
+          <div class="media-comparison">
+            <div class="media-bar-container">
+              <div class="media-bar-bg"></div>
+              <div class="media-bar-you" id="mediaBarYou" style="width: 0%"></div>
+              <div class="media-marker" id="mediaMarker" style="left: 50%"></div>
+            </div>
+            <div class="media-labels">
+              <span>€ 0</span>
+              <span id="mediaBarMax">€ 0</span>
+            </div>
+          </div>
+          <div class="media-diff" id="mediaDiff">
+            <i class="ri-arrow-up-line"></i>
+            <span id="mediaDiffText">--</span>
+          </div>
+        </div>
+        
+        <!-- Clienti con Nuovi vs Storici -->
         <div class="card kpi-card">
           <div class="kpi-head">
             <div class="kpi-label">Clienti Attivi</div>
-            <div class="kpi-icon blue"><i class="ri-group-line"></i></div>
+            <div class="kpi-icon green"><i class="ri-group-line"></i></div>
           </div>
           <div class="kpi-value" id="kpiClienti">0</div>
           <div class="kpi-footer">
             <span class="kpi-prev">Anno prec: <strong id="kpiClientiPrev">0</strong></span>
             <span class="kpi-trend" id="kpiTrendCli"><i class="ri-arrow-up-line"></i> --</span>
           </div>
+          <div class="clients-split">
+            <div class="clients-donut-container">
+              <div class="clients-donut-mini" id="clientsDonutMini"></div>
+              <div class="clients-legend">
+                <div class="clients-legend-item">
+                  <span class="legend-dot new"></span>
+                  <span class="legend-label">Nuovi</span>
+                  <span class="legend-value" id="clientsNew">0</span>
+                </div>
+                <div class="clients-legend-item">
+                  <span class="legend-dot old"></span>
+                  <span class="legend-label">Storici</span>
+                  <span class="legend-value" id="clientsOld">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <!-- Obiettivo -->
+
+        <!-- Classifica -->
+        <div class="card kpi-card rank-card">
+          <div class="kpi-head">
+            <div class="kpi-label">La Tua Posizione</div>
+            <div class="kpi-icon"><i class="ri-medal-line"></i></div>
+          </div>
+          <div class="rank-display">
+            <span class="rank-number" id="rankNumber">-</span>
+            <span class="rank-total">/ <span id="rankTotal">-</span></span>
+          </div>
+          <div class="rank-message" id="rankMessage">
+            <i class="ri-lightbulb-line"></i>
+            <span>Caricamento...</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- KPI ROW 2 - Obiettivo -->
+      <div class="kpi-grid" style="grid-template-columns: 1fr; max-width: 400px; margin-bottom: 32px;">
         <div class="card kpi-card goal-card">
           <div class="kpi-head">
             <div class="kpi-label">Obiettivo Annuale</div>
@@ -601,23 +777,6 @@
             <span id="goalStatusText">--</span>
           </div>
         </div>
-
-        <!-- Classifica -->
-        <div class="card kpi-card rank-card">
-          <div class="kpi-head">
-            <div class="kpi-label">La Tua Posizione</div>
-            <div class="kpi-icon"><i class="ri-medal-line"></i></div>
-          </div>
-          <div class="rank-display">
-            <span class="rank-number" id="rankNumber">-</span>
-            <span class="rank-total">/ <span id="rankTotal">-</span></span>
-          </div>
-          <div class="rank-message" id="rankMessage">
-            <i class="ri-lightbulb-line"></i>
-            <span>Caricamento...</span>
-          </div>
-        </div>
-
       </div>
 
       <!-- CHARTS -->
@@ -854,7 +1013,13 @@
       // YoY Bar
       updateYoYBar(fattCorr, fattPrev, obiettivo);
       
-      // Clienti
+      // ========== CONFRONTO CON MEDIA TEAM ==========
+      populateMediaComparison(fattCorr);
+      
+      // ========== CLIENTI NUOVI VS STORICI ==========
+      populateClientsComparison(cliCorr, cliPrev);
+      
+      // Clienti totali
       document.getElementById('kpiClienti').textContent = cliCorr;
       document.getElementById('kpiClientiPrev').textContent = cliPrev;
       
@@ -895,6 +1060,97 @@
         goalStatusEl.className = 'goal-status critical';
         goalStatusText.textContent = 'Attenzione: sotto obiettivo';
         goalStatusEl.querySelector('i').className = 'ri-alert-line';
+      }
+    }
+
+    // =====================================================
+    // CONFRONTO CON MEDIA TEAM
+    // =====================================================
+    function populateMediaComparison(myFatturato) {
+      // Calcola media team (escluso l'agente corrente)
+      const otherAgents = allAgentsRanking.filter(a => a.name !== currentAgent.toUpperCase());
+      const totalOthers = otherAgents.reduce((s, a) => s + a.value, 0);
+      const avgTeam = otherAgents.length > 0 ? totalOthers / otherAgents.length : 0;
+      
+      // Il tuo fatturato nella card
+      document.getElementById('kpiMediaTeam').textContent = fmtEUR.format(myFatturato);
+      document.getElementById('kpiMediaValue').textContent = fmtEUR.format(avgTeam);
+      
+      // Barra confronto
+      const maxVal = Math.max(myFatturato, avgTeam) * 1.3;
+      const myPct = maxVal > 0 ? (myFatturato / maxVal) * 100 : 0;
+      const avgPct = maxVal > 0 ? (avgTeam / maxVal) * 100 : 50;
+      
+      document.getElementById('mediaBarMax').textContent = fmtEUR.format(maxVal);
+      
+      setTimeout(() => {
+        document.getElementById('mediaBarYou').style.width = myPct + '%';
+        document.getElementById('mediaMarker').style.left = avgPct + '%';
+      }, 300);
+      
+      // Differenza
+      const diff = myFatturato - avgTeam;
+      const diffPct = avgTeam > 0 ? (diff / avgTeam) * 100 : 0;
+      const mediaDiffEl = document.getElementById('mediaDiff');
+      const mediaDiffText = document.getElementById('mediaDiffText');
+      
+      if (diff > 0) {
+        mediaDiffEl.className = 'media-diff above';
+        mediaDiffEl.querySelector('i').className = 'ri-arrow-up-line';
+        mediaDiffText.textContent = `+${diffPct.toFixed(0)}% sopra la media`;
+      } else if (diff < 0) {
+        mediaDiffEl.className = 'media-diff below';
+        mediaDiffEl.querySelector('i').className = 'ri-arrow-down-line';
+        mediaDiffText.textContent = `${diffPct.toFixed(0)}% sotto la media`;
+      } else {
+        mediaDiffEl.className = 'media-diff equal';
+        mediaDiffEl.querySelector('i').className = 'ri-equal-line';
+        mediaDiffText.textContent = `In linea con la media`;
+      }
+    }
+
+    // =====================================================
+    // CLIENTI NUOVI VS STORICI
+    // =====================================================
+    function populateClientsComparison(cliCorr, cliPrev) {
+      // Calcola clienti nuovi: quelli che non c'erano l'anno scorso
+      // Per semplicità: nuovi = clienti correnti - clienti precedenti (se positivo)
+      // Storici = clienti che c'erano già
+      
+      let clientiNuovi = Math.max(0, cliCorr - cliPrev);
+      let clientiStorici = cliCorr - clientiNuovi;
+      
+      // Se non abbiamo dati anno precedente, assumiamo 20% nuovi
+      if (cliPrev === 0 && cliCorr > 0) {
+        clientiNuovi = Math.round(cliCorr * 0.2);
+        clientiStorici = cliCorr - clientiNuovi;
+      }
+      
+      document.getElementById('clientsNew').textContent = clientiNuovi;
+      document.getElementById('clientsOld').textContent = clientiStorici;
+      
+      // Mini donut chart
+      if (cliCorr > 0) {
+        new ApexCharts(document.querySelector("#clientsDonutMini"), {
+          series: [clientiNuovi, clientiStorici],
+          chart: { 
+            type: 'donut', 
+            height: 80, 
+            width: 80,
+            sparkline: { enabled: true }
+          },
+          colors: ['#16a34a', '#94a3b8'],
+          plotOptions: { 
+            pie: { 
+              donut: { size: '60%' },
+              expandOnClick: false
+            } 
+          },
+          stroke: { width: 0 },
+          tooltip: { enabled: false },
+          legend: { show: false },
+          dataLabels: { enabled: false }
+        }).render();
       }
     }
 
