@@ -1563,7 +1563,7 @@
         series: [{ name: 'Fatturato', data: clientiSorted.map(x => x[1]) }],
         chart: { 
           type: 'bar', 
-          height: isMobile ? 350 : 320, 
+          height: isMobile ? 400 : 320, 
           fontFamily: font, 
           toolbar: { show: false } 
         },
@@ -1571,20 +1571,21 @@
           bar: { 
             horizontal: true, 
             borderRadius: isMobile ? 4 : 6, 
-            barHeight: isMobile ? '50%' : '60%'
+            barHeight: isMobile ? '45%' : '60%'
           } 
         },
         colors: ['#c2410c'],
         fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.25, inverseColors: true, opacityFrom: 0.85, opacityTo: 0.85, stops: [50, 0, 100] } },
         dataLabels: { 
-          enabled: true,
-          formatter: v => '€' + (v/1000).toFixed(0) + 'k',
-          style: { fontSize: isMobile ? '10px' : '11px', fontWeight: 600, colors: ['#fff'] },
-          offsetX: isMobile ? -5 : 0
+          enabled: isMobile,
+          formatter: v => fmtEUR.format(v),
+          textAnchor: 'start',
+          offsetX: 5,
+          style: { fontSize: '10px', fontWeight: 600, colors: ['#c2410c'] }
         },
         xaxis: { 
           categories: clientiSorted.map(x => {
-            const maxLen = isMobile ? 16 : 22;
+            const maxLen = isMobile ? 18 : 22;
             return x[0].length > maxLen ? x[0].substring(0, maxLen) + '...' : x[0];
           }),
           labels: { 
@@ -1597,8 +1598,8 @@
         },
         yaxis: {
           labels: {
-            style: { fontSize: isMobile ? '10px' : '12px' },
-            maxWidth: isMobile ? 120 : 180
+            style: { fontSize: isMobile ? '11px' : '12px', fontWeight: 500 },
+            maxWidth: isMobile ? 140 : 180
           }
         },
         grid: { 
@@ -1626,7 +1627,7 @@
         }],
         chart: { 
           type: 'bar', 
-          height: isMobile ? 280 : 320, 
+          height: isMobile ? 260 : 320, 
           fontFamily: font, 
           toolbar: { show: false } 
         },
@@ -1634,7 +1635,7 @@
           bar: { 
             horizontal: true, 
             borderRadius: isMobile ? 4 : 6, 
-            barHeight: isMobile ? '50%' : '60%',
+            barHeight: isMobile ? '45%' : '60%',
             colors: {
               ranges: [
                 { from: -100, to: 0, color: '#ef4444' },
@@ -1646,11 +1647,17 @@
         dataLabels: { 
           enabled: true, 
           formatter: v => (v > 0 ? '+' : '') + v + '%',
-          style: { colors: ['#fff'], fontSize: isMobile ? '10px' : '11px', fontWeight: 700 }
+          textAnchor: isMobile ? 'start' : 'middle',
+          offsetX: isMobile ? 5 : 0,
+          style: { 
+            colors: isMobile ? ['#16a34a'] : ['#fff'], 
+            fontSize: isMobile ? '10px' : '11px', 
+            fontWeight: 700 
+          }
         },
         xaxis: { 
           categories: crescitaData.map(x => {
-            const maxLen = isMobile ? 14 : 20;
+            const maxLen = isMobile ? 16 : 20;
             return x.name.length > maxLen ? x.name.substring(0, maxLen) + '...' : x.name;
           }),
           labels: { 
@@ -1662,8 +1669,8 @@
         },
         yaxis: { 
           labels: { 
-            style: { fontSize: isMobile ? '10px' : '11px' },
-            maxWidth: isMobile ? 100 : 160
+            style: { fontSize: isMobile ? '11px' : '11px', fontWeight: 500 },
+            maxWidth: isMobile ? 130 : 160
           } 
         },
         grid: { show: false },
@@ -1685,7 +1692,7 @@
         series: [{ name: 'Fatturato', data: provSorted.map(x => x[1]) }],
         chart: { 
           type: 'bar', 
-          height: isMobile ? Math.max(200, provSorted.length * 40) : 320, 
+          height: isMobile ? Math.max(180, provSorted.length * 38) : 320, 
           fontFamily: font, 
           toolbar: { show: false } 
         },
@@ -1693,15 +1700,17 @@
           bar: { 
             horizontal: true, 
             borderRadius: isMobile ? 4 : 6, 
-            barHeight: isMobile ? '50%' : '65%', 
+            barHeight: isMobile ? '45%' : '65%', 
             distributed: true 
           } 
         },
         colors: ['#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1'],
         dataLabels: { 
-          enabled: true,
-          formatter: v => '€' + (v/1000).toFixed(0) + 'k',
-          style: { fontSize: isMobile ? '9px' : '11px', fontWeight: 600, colors: ['#fff'] }
+          enabled: isMobile,
+          formatter: v => fmtEUR.format(v),
+          textAnchor: 'start',
+          offsetX: 5,
+          style: { fontSize: '10px', fontWeight: 600, colors: ['#1e293b'] }
         },
         legend: { show: false },
         xaxis: { 
@@ -1715,7 +1724,7 @@
         },
         yaxis: {
           labels: {
-            style: { fontSize: isMobile ? '10px' : '12px' }
+            style: { fontSize: isMobile ? '11px' : '12px', fontWeight: 500 }
           }
         },
         grid: { show: false },
