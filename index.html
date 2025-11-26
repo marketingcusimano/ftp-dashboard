@@ -1765,12 +1765,15 @@
     }
 
     function updateTable(data) {
-        const body = data.map(r => [
-            `<div style="font-weight:700; color:var(--text-main)">${r.Agente_Nome||'—'}</div>`,
-            `<div><span class="badge-pill badge-geo"><i class="ri-map-2-line"></i> ${r.Regione}</span> <span class="badge-pill badge-prov">${r.Provincia}</span></div>`,
-            `<div style="font-weight:600; color:#475569">${r.Ragione_Sociale_Cliente}</div>`,
-            `<div class="money-cell">${fmtEUR.format(asNum(r.Fatturato))}</div>`
-        ]);
+        const body = data.map(r => {
+            const fatturatoNum = asNum(r.Fatturato);
+            return [
+                `<div style="font-weight:700; color:var(--text-main)">${r.Agente_Nome||'—'}</div>`,
+                `<div><span class="badge-pill badge-geo"><i class="ri-map-2-line"></i> ${r.Regione}</span> <span class="badge-pill badge-prov">${r.Provincia}</span></div>`,
+                `<div style="font-weight:600; color:#475569">${r.Ragione_Sociale_Cliente}</div>`,
+                `<div class="money-cell" data-order="${fatturatoNum}">${fmtEUR.format(fatturatoNum)}</div>`
+            ];
+        });
         if (dataTable) dataTable.destroy();
         dataTable = new DataTable('#tbl', {
             data: body, columns: [{title:"Agente"},{title:"Area Geografica"},{title:"Cliente"},{title:"Fatturato", className:"dt-right"}],
